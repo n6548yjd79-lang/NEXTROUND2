@@ -32,8 +32,6 @@
     body {
       width: 100%;
       max-width: 100%;
-      overflow-x: hidden;
-      overscroll-behavior-x: none;
     }
 
     body {
@@ -750,8 +748,6 @@
       box-shadow: var(--shadow);
       overflow-x: hidden;
       overflow-y: auto;
-      overscroll-behavior-x: none;
-      touch-action: pan-y;
     }
 
     dialog::backdrop {
@@ -765,8 +761,6 @@
       gap: 12px;
       width: 100%;
       overflow-x: hidden;
-      overscroll-behavior-x: none;
-      touch-action: pan-y;
     }
 
     .form-head {
@@ -805,6 +799,7 @@
       border-radius: 12px;
       background: rgba(255,255,255,.075);
       color: var(--text);
+      font-size: 16px;
       padding: 10px 12px;
       outline: none;
     }
@@ -812,7 +807,7 @@
     input[type="date"] {
       min-height: 40px;
       padding: 8px 7px;
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1.2;
     }
 
@@ -2704,6 +2699,7 @@
             <div class="track"><div class="bar" style="width:${progress}%"></div></div>
           </div>
           ${done ? "" : deadlineMetaMarkup(entry, deadlineClass)}
+          ${entry.stage === "インターン合格" ? internshipScheduleMarkup(entry) : ""}
           <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
           ${entry.credentialVault ? `<button class="secret-open" data-action="credential" type="button">マイページ情報を表示</button>` : ""}
         </div>
