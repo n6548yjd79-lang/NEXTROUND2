@@ -80,6 +80,7 @@
     .brand {
       display: grid;
       gap: 4px;
+      min-width: 0;
     }
 
     h1 {
@@ -96,13 +97,14 @@
     .sub {
       margin: 0;
       color: #d2d9e4;
-      font-size: 14px;
+      font-size: clamp(10px, 2.9vw, 13px);
       font-weight: 650;
+      white-space: nowrap;
     }
 
     .today {
-      min-width: 92px;
-      padding: 11px 12px;
+      min-width: 86px;
+      padding: 10px 11px;
       border: 1px solid rgba(255,255,255,.14);
       background: linear-gradient(180deg, rgba(255,255,255,.105), rgba(255,255,255,.045));
       border-radius: 14px;
@@ -130,11 +132,12 @@
     .header-tools {
       display: flex;
       align-items: stretch;
-      gap: 8px;
+      gap: 7px;
+      flex: 0 0 auto;
     }
 
     .settings-btn {
-      min-width: 54px;
+      min-width: 50px;
       border: 1px solid rgba(255,255,255,.14);
       border-radius: 14px;
       background:
@@ -290,7 +293,7 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
     }
 
-    .deadline-card.danger-deadline {
+    .deadline-card.deadline-critical {
       border-color: rgba(177, 28, 46, .86);
       background:
         linear-gradient(135deg, rgba(255,255,255,.12), transparent 25%),
@@ -298,10 +301,19 @@
       box-shadow: 0 0 0 1px rgba(255,102,120,.12), 0 14px 40px rgba(116,14,28,.22);
     }
 
+    .deadline-card.deadline-soon {
+      border-color: rgba(211, 122, 30, .86);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.12), transparent 25%),
+        linear-gradient(90deg, rgba(135, 70, 18, .54), rgba(61, 32, 12, .34));
+      box-shadow: 0 0 0 1px rgba(255,168,72,.12), 0 14px 40px rgba(135,70,18,.18);
+    }
+
     .deadline-card b { font-size: 14px; overflow-wrap: anywhere; }
     .deadline-card span { color: var(--amber); font-weight: 800; white-space: nowrap; }
 
-    .deadline-card.danger-deadline span { color: #ff9aa6; }
+    .deadline-card.deadline-critical span { color: #ff9aa6; }
+    .deadline-card.deadline-soon span { color: #ffbd72; }
 
     .cards {
       display: grid;
@@ -354,14 +366,24 @@
       background: linear-gradient(90deg, #ffdf72, #c9982c, #ffdf72);
     }
 
-    .card.deadline-danger {
+    .card.deadline-critical {
       border-color: rgba(177, 28, 46, .9);
       box-shadow: 0 0 0 1px rgba(255,102,120,.16), 0 22px 70px rgba(116,14,28,.26), 0 20px 60px rgba(0,0,0,.48);
     }
 
-    .card.deadline-danger::before {
+    .card.deadline-critical::before {
       height: 4px;
       background: #9f1f2f;
+    }
+
+    .card.deadline-soon {
+      border-color: rgba(211, 122, 30, .86);
+      box-shadow: 0 0 0 1px rgba(255,168,72,.14), 0 22px 70px rgba(135,70,18,.2), 0 20px 60px rgba(0,0,0,.48);
+    }
+
+    .card.deadline-soon::before {
+      height: 4px;
+      background: #d37a1e;
     }
 
     .card-main {
@@ -483,9 +505,12 @@
     .urgent b { color: var(--red); }
     .soon b { color: var(--amber); }
 
-    .deadline-danger .urgent b,
-    .deadline-danger .soon b {
+    .deadline-critical .urgent b {
       color: #ff8c99;
+    }
+
+    .deadline-soon .soon b {
+      color: #ffbd72;
     }
 
     .countdown {
@@ -508,6 +533,12 @@
       background: rgba(159,31,47,.24);
       color: #ff9aa6;
       border-color: rgba(255,102,120,.38);
+    }
+
+    .countdown.warning {
+      background: rgba(211,122,30,.2);
+      color: #ffbd72;
+      border-color: rgba(255,168,72,.34);
     }
 
     .schedule-box {
@@ -544,7 +575,7 @@
 
     .actions {
       display: grid;
-      grid-template-columns: 1fr 1fr 44px 44px;
+      grid-template-columns: minmax(120px, 1.2fr) minmax(84px, .9fr) 66px 66px;
       gap: 8px;
       border-top: 1px solid rgba(255,255,255,.1);
       padding: 10px;
@@ -552,7 +583,7 @@
     }
 
     .actions.result-mode {
-      grid-template-columns: 1fr 44px 44px;
+      grid-template-columns: minmax(130px, 1fr) 66px 66px;
     }
 
     [hidden] {
@@ -617,7 +648,8 @@
         linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04)),
         rgba(255,255,255,.075);
       color: var(--text);
-      font-size: 18px;
+      font-size: 13px;
+      font-weight: 900;
       border: 1px solid rgba(255,255,255,.045);
     }
 
@@ -863,6 +895,100 @@
       font-weight: 700;
     }
 
+    .secret-editor {
+      display: grid;
+      gap: 10px;
+      padding: 13px;
+      border: 1px solid rgba(97,244,222,.18);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(97,244,222,.08), rgba(255,255,255,.025)),
+        rgba(255,255,255,.04);
+    }
+
+    .secret-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .secret-head small,
+    .secret-note {
+      color: #9facbd;
+      font-size: 11px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+
+    .secret-clear {
+      display: flex;
+      align-items: center;
+      grid-template-columns: none;
+      gap: 8px;
+      color: #ff9aa6;
+    }
+
+    .secret-clear input {
+      width: 18px;
+      min-height: 18px;
+      accent-color: var(--red);
+    }
+
+    .secret-open {
+      display: grid;
+      place-items: center;
+      min-height: 48px;
+      border: 2px solid rgba(97,244,222,.9);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(18, 45, 62, .98), rgba(5, 14, 22, .98)),
+        #07111a;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 950;
+      text-shadow: 0 1px 8px rgba(0,0,0,.75);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.16),
+        0 0 0 1px rgba(97,244,222,.18),
+        0 12px 30px rgba(0,0,0,.38),
+        0 0 22px rgba(97,244,222,.11);
+    }
+
+    .credential-body,
+    .vault-body {
+      padding: 0 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .credential-result {
+      display: grid;
+      gap: 10px;
+      padding-top: 4px;
+    }
+
+    .secret-value {
+      min-height: 44px;
+      padding: 11px 12px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 12px;
+      background: rgba(255,255,255,.075);
+      color: var(--text);
+      overflow-wrap: anywhere;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .vault-error {
+      min-height: 18px;
+      color: #ff9aa6;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
 
     @media (max-width: 520px) {
       .app { padding-inline: 12px; }
@@ -872,7 +998,7 @@
       .stat strong { font-size: 22px; }
       .meta { grid-template-columns: 1fr; }
       .actions { grid-template-columns: 1fr 1fr; }
-      .actions.result-mode { grid-template-columns: 1fr 42px 42px; }
+      .actions.result-mode { grid-template-columns: minmax(128px, 1fr) 58px 58px; }
       .icon-btn { min-height: 42px; }
       .card-main { padding: 15px; }
       .company h2 { font-size: 20px; }
@@ -969,6 +1095,28 @@
       <label>メモ
         <textarea name="memo" placeholder="GDテーマ、ESで使う話、面接で聞かれそうなことなど"></textarea>
       </label>
+      <section class="secret-editor">
+        <div class="secret-head">
+          <span>マイページ情報</span>
+          <small>保護パスワードで暗号化</small>
+        </div>
+        <label>ログインURL
+          <input name="portalUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://...">
+        </label>
+        <div class="form-grid">
+          <label>ID
+            <input name="portalId" autocomplete="off" placeholder="マイページID">
+          </label>
+          <label>パスワード
+            <input name="portalPassword" type="password" autocomplete="new-password" placeholder="パスワード">
+          </label>
+        </div>
+        <label class="secret-clear" id="clearCredentialField" hidden>
+          <input name="clearCredential" type="checkbox" value="1">
+          保存済みのマイページ情報を削除
+        </label>
+        <div class="secret-note" id="credentialFormNote">入力した場合だけ、保護パスワードで暗号化して保存します。</div>
+      </section>
       <button class="save" type="submit">保存</button>
       <button class="save danger" type="button" id="deleteBtn" hidden>削除</button>
     </form>
@@ -1001,6 +1149,50 @@
       <button class="save" type="button" id="passResultBtn">合格</button>
       <button class="save danger" type="button" id="failResultBtn">不合格</button>
     </form>
+  </dialog>
+
+  <dialog id="credentialDialog">
+    <div class="form-head settings-head">
+      <h2 id="credentialTitle">マイページ情報</h2>
+      <button class="x" type="button" id="closeCredentialDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="credential-body">
+      <p class="settings-note">閲覧するには保護パスワードを入力してください。</p>
+      <label>保護パスワード
+        <input id="credentialPassword" type="password" autocomplete="current-password">
+      </label>
+      <button class="save" type="button" id="unlockCredentialBtn">表示する</button>
+      <div class="vault-error" id="credentialError" aria-live="polite"></div>
+      <div class="credential-result" id="credentialResult" hidden>
+        <label>ログインURL
+          <div class="secret-value" id="credentialUrl"></div>
+        </label>
+        <label>ID
+          <div class="secret-value" id="credentialId"></div>
+        </label>
+        <label>パスワード
+          <div class="secret-value" id="credentialPass"></div>
+        </label>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="vaultDialog">
+    <div class="form-head settings-head">
+      <h2 id="vaultTitle">保護パスワード</h2>
+      <button class="x" type="button" id="closeVaultDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="vault-body">
+      <p class="settings-note" id="vaultMessage"></p>
+      <label>保護パスワード
+        <input id="vaultPassword" type="password" autocomplete="new-password">
+      </label>
+      <label id="vaultConfirmField" hidden>もう一度入力
+        <input id="vaultConfirmPassword" type="password" autocomplete="new-password">
+      </label>
+      <button class="save" type="button" id="vaultSubmitBtn">続ける</button>
+      <div class="vault-error" id="vaultError" aria-live="polite"></div>
+    </div>
   </dialog>
 
   <dialog id="settingsDialog">
@@ -1062,6 +1254,9 @@
       "不採用": "#ff6678"
     };
     const storageKey = "senkou-deck-v1";
+    const vaultStorageKey = "nextround-vault-v1";
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
     const seed = [
       {
         id: crypto.randomUUID(),
@@ -1111,9 +1306,12 @@
     ];
 
     let entries = load();
+    let vaultConfig = loadVaultConfig();
     let activeFilter = "all";
     let editingId = null;
     let resultTargetId = null;
+    let credentialTargetId = null;
+    let vaultResolver = null;
 
     const cards = document.querySelector("#cards");
     const chips = document.querySelector("#chips");
@@ -1130,6 +1328,20 @@
     const settingsDialog = document.querySelector("#settingsDialog");
     const settingsStatus = document.querySelector("#settingsStatus");
     const importFile = document.querySelector("#importFile");
+    const clearCredentialField = document.querySelector("#clearCredentialField");
+    const credentialFormNote = document.querySelector("#credentialFormNote");
+    const credentialDialog = document.querySelector("#credentialDialog");
+    const credentialTitle = document.querySelector("#credentialTitle");
+    const credentialPassword = document.querySelector("#credentialPassword");
+    const credentialError = document.querySelector("#credentialError");
+    const credentialResult = document.querySelector("#credentialResult");
+    const vaultDialog = document.querySelector("#vaultDialog");
+    const vaultTitle = document.querySelector("#vaultTitle");
+    const vaultMessage = document.querySelector("#vaultMessage");
+    const vaultPassword = document.querySelector("#vaultPassword");
+    const vaultConfirmField = document.querySelector("#vaultConfirmField");
+    const vaultConfirmPassword = document.querySelector("#vaultConfirmPassword");
+    const vaultError = document.querySelector("#vaultError");
 
     const now = new Date();
     document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
@@ -1161,6 +1373,23 @@
     document.querySelector("#exportBtn").addEventListener("click", exportData);
     document.querySelector("#importBtn").addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", importData);
+    document.querySelector("#closeCredentialDialog").addEventListener("click", () => credentialDialog.close());
+    document.querySelector("#unlockCredentialBtn").addEventListener("click", unlockCredential);
+    document.querySelector("#closeVaultDialog").addEventListener("click", () => closeVaultRequest(null));
+    document.querySelector("#vaultSubmitBtn").addEventListener("click", submitVaultPassword);
+    vaultPassword.addEventListener("keydown", event => {
+      if (event.key === "Enter") submitVaultPassword();
+    });
+    vaultConfirmPassword.addEventListener("keydown", event => {
+      if (event.key === "Enter") submitVaultPassword();
+    });
+    credentialPassword.addEventListener("keydown", event => {
+      if (event.key === "Enter") unlockCredential();
+    });
+    vaultDialog.addEventListener("cancel", event => {
+      event.preventDefault();
+      closeVaultRequest(null);
+    });
     form.elements.type.addEventListener("change", updateInternScheduleVisibility);
     form.elements.stage.addEventListener("change", updateInternScheduleVisibility);
     Array.from(form.elements.internScheduleMode).forEach(input => {
@@ -1177,9 +1406,17 @@
       });
     });
 
-    form.addEventListener("submit", event => {
+    form.addEventListener("submit", async event => {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
+      const existingEntry = entries.find(entry => entry.id === editingId);
+      let credentialVault;
+      try {
+        credentialVault = await buildCredentialVault(data, existingEntry);
+      } catch (error) {
+        if (error.message) credentialFormNote.textContent = error.message;
+        return;
+      }
       const item = {
         id: editingId || crypto.randomUUID(),
         company: data.company.trim(),
@@ -1188,12 +1425,13 @@
         stage: data.stage,
         deadline: data.deadline,
         nextDate: data.nextDate,
-        internSchedule: buildScheduleFromForm(form, "intern", entries.find(entry => entry.id === editingId)?.internSchedule || ""),
+        internSchedule: buildScheduleFromForm(form, "intern", existingEntry?.internSchedule || ""),
         internScheduleMode: form.elements.internScheduleMode.value,
         internSingleDate: data.internSingleDate || "",
         internStartDate: data.internStartDate || "",
         internEndDate: data.internEndDate || "",
-        memo: data.memo.trim()
+        memo: data.memo.trim(),
+        credentialVault
       };
       entries = editingId
         ? entries.map(entry => entry.id === editingId ? item : entry)
@@ -1219,6 +1457,7 @@
           internSingleDate: "",
           internStartDate: "",
           internEndDate: "",
+          credentialVault: null,
           ...entry
         }));
       } catch {
@@ -1228,6 +1467,19 @@
 
     function save() {
       localStorage.setItem(storageKey, JSON.stringify(entries));
+    }
+
+    function loadVaultConfig() {
+      try {
+        return JSON.parse(localStorage.getItem(vaultStorageKey)) || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveVaultConfig() {
+      if (vaultConfig) localStorage.setItem(vaultStorageKey, JSON.stringify(vaultConfig));
+      else localStorage.removeItem(vaultStorageKey);
     }
 
     function openSettings() {
@@ -1240,7 +1492,8 @@
         app: "NEXTROUND",
         version: 1,
         exportedAt: new Date().toISOString(),
-        entries
+        entries,
+        vault: vaultConfig
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -1268,6 +1521,8 @@
             return;
           }
           entries = importedEntries.map(normalizeEntry);
+          vaultConfig = parsed.vault || null;
+          saveVaultConfig();
           save();
           render();
           settingsStatus.textContent = "保存データを読み込みました。";
@@ -1294,8 +1549,156 @@
         internSingleDate: entry.internSingleDate || "",
         internStartDate: entry.internStartDate || "",
         internEndDate: entry.internEndDate || "",
-        memo: entry.memo || ""
+        memo: entry.memo || "",
+        credentialVault: entry.credentialVault || null
       };
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      bytes.forEach(byte => binary += String.fromCharCode(byte));
+      return btoa(binary);
+    }
+
+    function base64ToBytes(value) {
+      return Uint8Array.from(atob(value), char => char.charCodeAt(0));
+    }
+
+    function randomBase64(length) {
+      const bytes = crypto.getRandomValues(new Uint8Array(length));
+      return bytesToBase64(bytes);
+    }
+
+    async function deriveVaultKey(password, salt) {
+      if (!crypto.subtle) throw new Error("このブラウザでは保護保存を使えません。");
+      const baseKey = await crypto.subtle.importKey(
+        "raw",
+        textEncoder.encode(password),
+        "PBKDF2",
+        false,
+        ["deriveKey"]
+      );
+      return crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: base64ToBytes(salt), iterations: 180000, hash: "SHA-256" },
+        baseKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    async function encryptPayload(key, payload) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encrypted = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        key,
+        textEncoder.encode(JSON.stringify(payload))
+      );
+      return { iv: bytesToBase64(iv), data: bytesToBase64(new Uint8Array(encrypted)) };
+    }
+
+    async function decryptPayload(key, encrypted) {
+      const plain = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: base64ToBytes(encrypted.iv) },
+        key,
+        base64ToBytes(encrypted.data)
+      );
+      return JSON.parse(textDecoder.decode(plain));
+    }
+
+    async function createVaultConfig(password) {
+      const salt = randomBase64(16);
+      const key = await deriveVaultKey(password, salt);
+      const verifier = await encryptPayload(key, { app: "NEXTROUND", ok: true });
+      return { version: 1, salt, verifier };
+    }
+
+    async function verifyVaultPassword(password) {
+      if (!vaultConfig) return false;
+      try {
+        const key = await deriveVaultKey(password, vaultConfig.salt);
+        const result = await decryptPayload(key, vaultConfig.verifier);
+        return result?.ok === true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function requestVaultPassword({ title, message, create = false }) {
+      vaultTitle.textContent = title;
+      vaultMessage.textContent = message;
+      vaultConfirmField.hidden = !create;
+      vaultPassword.value = "";
+      vaultConfirmPassword.value = "";
+      vaultError.textContent = "";
+      vaultDialog.showModal();
+      setTimeout(() => vaultPassword.focus(), 0);
+      return new Promise(resolve => {
+        vaultResolver = resolve;
+      });
+    }
+
+    function closeVaultRequest(value) {
+      if (!vaultDialog.open) return;
+      vaultDialog.close();
+      const resolver = vaultResolver;
+      vaultResolver = null;
+      if (resolver) resolver(value);
+    }
+
+    function submitVaultPassword() {
+      const password = vaultPassword.value;
+      if (password.length < 4) {
+        vaultError.textContent = "4文字以上で入力してください。";
+        return;
+      }
+      if (!vaultConfirmField.hidden && password !== vaultConfirmPassword.value) {
+        vaultError.textContent = "確認用の入力が一致していません。";
+        return;
+      }
+      closeVaultRequest(password);
+    }
+
+    async function getVaultPasswordForSave() {
+      if (!vaultConfig) {
+        const password = await requestVaultPassword({
+          title: "保護パスワードを設定",
+          message: "マイページ情報を見る時に使うパスワードです。忘れると復元できません。",
+          create: true
+        });
+        if (!password) throw new Error("マイページ情報の保存をキャンセルしました。");
+        vaultConfig = await createVaultConfig(password);
+        saveVaultConfig();
+        return password;
+      }
+      const password = await requestVaultPassword({
+        title: "保護パスワードを入力",
+        message: "マイページ情報を暗号化して保存します。",
+        create: false
+      });
+      if (!password) throw new Error("マイページ情報の保存をキャンセルしました。");
+      if (!(await verifyVaultPassword(password))) throw new Error("保護パスワードが違います。");
+      return password;
+    }
+
+    async function buildCredentialVault(data, existingEntry) {
+      if (data.clearCredential === "1") return null;
+      const credential = {
+        url: (data.portalUrl || "").trim(),
+        id: (data.portalId || "").trim(),
+        password: data.portalPassword || ""
+      };
+      if (!credential.url && !credential.id && !credential.password) {
+        return existingEntry?.credentialVault || null;
+      }
+      const password = await getVaultPasswordForSave();
+      const key = await deriveVaultKey(password, vaultConfig.salt);
+      return { version: 1, ...(await encryptPayload(key, credential)) };
+    }
+
+    async function decryptCredential(vault, password) {
+      const key = await deriveVaultKey(password, vaultConfig.salt);
+      return decryptPayload(key, vault);
     }
 
     function nextDate(days) {
@@ -1358,14 +1761,40 @@
       return `あと${left}日`;
     }
 
-    function isDeadlineDanger(entry) {
+    function deadlineLevel(entry) {
       const left = daysLeft(entry.deadline);
-      return left !== null && left >= 0 && left <= 7 && !doneStages.has(entry.stage);
+      if (left === null || left < 0 || doneStages.has(entry.stage)) return "";
+      if (left <= 1) return "critical";
+      if (left <= 7) return "soon";
+      return "";
+    }
+
+    function isDeadlineNear(entry) {
+      return Boolean(deadlineLevel(entry));
+    }
+
+    function deadlineClassName(entry) {
+      const level = deadlineLevel(entry);
+      return level ? `deadline-${level}` : "";
+    }
+
+    function deadlineMetaClass(entry) {
+      const level = deadlineLevel(entry);
+      if (level === "critical") return " urgent";
+      if (level === "soon") return " soon";
+      return "";
+    }
+
+    function countdownClass(entry) {
+      const level = deadlineLevel(entry);
+      if (level === "critical") return "danger";
+      if (level === "soon") return "warning";
+      return "";
     }
 
     function deadlineRank(entry) {
       const left = daysLeft(entry.deadline);
-      if (isDeadlineDanger(entry)) return -100 + left;
+      if (isDeadlineNear(entry)) return -100 + left;
       if (left === null) return 9999;
       if (left < 0) return 9000 + Math.abs(left);
       return left;
@@ -1408,12 +1837,12 @@
       document.querySelector("#winCount").textContent = entries.filter(entry => winStages.has(entry.stage)).length;
 
       entries
-        .filter(isDeadlineDanger)
+        .filter(isDeadlineNear)
         .sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline))
         .slice(0, 3)
         .forEach(entry => {
           const row = document.createElement("article");
-          row.className = "deadline-card danger-deadline";
+          row.className = `deadline-card ${deadlineClassName(entry)}`;
           row.innerHTML = `<b>${escapeHtml(entry.company)} / ${escapeHtml(entry.stage)}</b><span>${deadlineText(entry)}</span>`;
           deadlineStrip.append(row);
         });
@@ -1430,11 +1859,10 @@
 
     function createCard(entry) {
       const card = document.createElement("article");
-      card.className = "card" + (winStages.has(entry.stage) ? " win" : "") + (isDeadlineDanger(entry) ? " deadline-danger" : "");
+      card.className = `card${winStages.has(entry.stage) ? " win" : ""}${deadlineClassName(entry) ? ` ${deadlineClassName(entry)}` : ""}`;
       const progress = stageProgress(entry.stage);
       const stageColor = stageColors[entry.stage] || stageColors["応募予定"];
-      const left = daysLeft(entry.deadline);
-      const deadlineClass = left !== null && left <= 1 ? " urgent" : left !== null && left <= 7 ? " soon" : "";
+      const deadlineClass = deadlineMetaClass(entry);
       const primaryStage = getPrimaryStage(entry);
       const done = doneStages.has(entry.stage) || entry.stage === stages.at(-1);
       const resultMode = entry.stage === "結果待ち";
@@ -1455,12 +1883,13 @@
           </div>
           ${entry.stage === "インターン合格" ? internshipScheduleMarkup(entry) : deadlineMetaMarkup(entry, deadlineClass)}
           <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
+          ${entry.credentialVault ? `<button class="secret-open" data-action="credential" type="button">マイページ情報を表示</button>` : ""}
         </div>
         <div class="actions ${resultMode ? "result-mode" : ""}">
           <button class="primary ${done ? "done" : ""}" data-action="advance">${done ? "完了済み" : escapeHtml(resultMode ? "結果を入力" : primaryLabel(entry, primaryStage))}</button>
           ${resultMode ? "" : `<button class="quick" data-action="wait">結果待ち</button>`}
-          <button class="icon-btn" data-action="edit" aria-label="編集">✎</button>
-          <button class="icon-btn" data-action="back" aria-label="戻す">↶</button>
+          <button class="icon-btn" data-action="edit" aria-label="編集">編集</button>
+          <button class="icon-btn" data-action="back" aria-label="戻る">戻る</button>
         </div>
       `;
       card.querySelector('[data-action="advance"]').addEventListener("click", () => {
@@ -1469,15 +1898,47 @@
       });
       const waitButton = card.querySelector('[data-action="wait"]');
       if (waitButton) waitButton.addEventListener("click", () => setStage(entry.id, "結果待ち"));
+      const credentialButton = card.querySelector('[data-action="credential"]');
+      if (credentialButton) credentialButton.addEventListener("click", () => openCredentialDialog(entry));
       card.querySelector('[data-action="back"]').addEventListener("click", () => advance(entry.id, -1));
       card.querySelector('[data-action="edit"]').addEventListener("click", () => openForm(entry));
       return card;
     }
 
+    function openCredentialDialog(entry) {
+      credentialTargetId = entry.id;
+      credentialTitle.textContent = `${entry.company} のマイページ情報`;
+      credentialPassword.value = "";
+      credentialError.textContent = "";
+      credentialResult.hidden = true;
+      document.querySelector("#credentialUrl").textContent = "";
+      document.querySelector("#credentialId").textContent = "";
+      document.querySelector("#credentialPass").textContent = "";
+      credentialDialog.showModal();
+      setTimeout(() => credentialPassword.focus(), 0);
+    }
+
+    async function unlockCredential() {
+      const entry = entries.find(item => item.id === credentialTargetId);
+      if (!entry?.credentialVault) return;
+      credentialError.textContent = "";
+      try {
+        if (!vaultConfig) throw new Error("保護設定が見つかりません。保存データを読み込んだ場合は、対応する保存ファイルが必要です。");
+        const credential = await decryptCredential(entry.credentialVault, credentialPassword.value);
+        document.querySelector("#credentialUrl").textContent = credential.url || "未設定";
+        document.querySelector("#credentialId").textContent = credential.id || "未設定";
+        document.querySelector("#credentialPass").textContent = credential.password || "未設定";
+        credentialResult.hidden = false;
+      } catch (error) {
+        credentialResult.hidden = true;
+        credentialError.textContent = error.message?.includes("保護設定") ? error.message : "保護パスワードが違います。";
+      }
+    }
+
     function deadlineMetaMarkup(entry, deadlineClass) {
       return `
         <div class="meta">
-          <div class="meta-box${deadlineClass}"><span>締切</span><b>${formatDate(entry.deadline)}</b><em class="countdown ${isDeadlineDanger(entry) ? "danger" : ""}">${deadlineText(entry)}</em></div>
+          <div class="meta-box${deadlineClass}"><span>締切</span><b>${formatDate(entry.deadline)}</b><em class="countdown ${countdownClass(entry)}">${deadlineText(entry)}</em></div>
           <div class="meta-box"><span>次の予定</span><b>${formatDate(entry.nextDate)}</b></div>
         </div>
       `;
@@ -1578,6 +2039,14 @@
       form.elements.nextDate.value = entry?.nextDate || "";
       setScheduleForm(form, "intern", entry || {});
       form.elements.memo.value = entry?.memo || "";
+      form.elements.portalUrl.value = "";
+      form.elements.portalId.value = "";
+      form.elements.portalPassword.value = "";
+      form.elements.clearCredential.checked = false;
+      clearCredentialField.hidden = !entry?.credentialVault;
+      credentialFormNote.textContent = entry?.credentialVault
+        ? "保存済みです。変更する時だけ新しい情報を入力してください。"
+        : "入力した場合だけ、保護パスワードで暗号化して保存します。";
       updateInternScheduleVisibility();
       dialog.showModal();
     }
