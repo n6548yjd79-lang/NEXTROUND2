@@ -941,6 +941,76 @@
       font-weight: 700;
     }
 
+    .choice-body,
+    .import-body {
+      padding: 0 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .choice-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .choice-card {
+      display: grid;
+      gap: 5px;
+      min-height: 74px;
+      padding: 13px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.035)),
+        rgba(255,255,255,.055);
+      color: var(--text);
+      text-align: left;
+      font-weight: 900;
+    }
+
+    .choice-card span {
+      color: #cbd4e0;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .import-preview {
+      display: grid;
+      gap: 10px;
+    }
+
+    .import-item {
+      display: grid;
+      gap: 10px;
+      padding: 13px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.028)),
+        rgba(255,255,255,.045);
+    }
+
+    .import-item-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: #d0d8e4;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .import-item-head .soft-btn {
+      min-height: 32px;
+      padding: 0 12px;
+      font-size: 12px;
+    }
+
+    .import-item textarea {
+      min-height: 58px;
+    }
+
     .secret-editor {
       display: grid;
       gap: 10px;
@@ -1161,6 +1231,25 @@
     <button class="nav-btn fab" id="addBtn">＋ 追加</button>
   </nav>
 
+  <dialog id="addChoiceDialog">
+    <div class="form-head settings-head">
+      <h2>追加方法</h2>
+      <button class="x" type="button" id="closeAddChoiceDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="choice-body">
+      <div class="choice-grid">
+        <button class="choice-card" type="button" id="singleAddBtn">
+          1件ずつ追加
+          <span>会社名や締切を手入力します。</span>
+        </button>
+        <button class="choice-card" type="button" id="memoImportBtn">
+          メモからまとめて追加
+          <span>iPhoneメモなどを貼り付けて、候補を確認して追加します。</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="entryDialog">
     <form id="entryForm" method="dialog">
       <div class="form-head">
@@ -1249,6 +1338,23 @@
       <button class="save" type="submit">保存</button>
       <button class="save danger" type="button" id="deleteBtn" hidden>削除</button>
     </form>
+  </dialog>
+
+  <dialog id="importDialog">
+    <div class="form-head settings-head">
+      <h2>メモからまとめて追加</h2>
+      <button class="x" type="button" id="closeImportDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="import-body">
+      <p class="settings-note">1行1社に近いほど精度が上がります。読み取れない項目は空欄のまま候補にします。</p>
+      <label>メモを貼り付け
+        <textarea id="importText" placeholder="例: サイバーエージェント インターン ES提出済 6/20締切&#10;NRI 本選考 GD 6/25"></textarea>
+      </label>
+      <button class="save" type="button" id="parseImportBtn">候補を作成</button>
+      <div id="importPreview" class="import-preview"></div>
+      <button class="save" type="button" id="confirmImportBtn" hidden>候補をまとめて追加</button>
+      <div class="settings-status" id="importStatus" aria-live="polite"></div>
+    </div>
   </dialog>
 
   <dialog id="resultDialog">
@@ -1378,6 +1484,7 @@
       "不採用"
     ];
 
+    const entryTypes = ["インターン", "本選考", "説明会", "OB/OG訪問"];
     const doneStages = new Set(["ES不合格", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "辞退", "不採用"]);
     const winStages = new Set(["インターン合格", "内定"]);
     const stageColors = {
@@ -1466,10 +1573,12 @@
     let resultTargetId = null;
     let credentialTargetId = null;
     let vaultResolver = null;
+    let importCandidates = [];
 
     const cards = document.querySelector("#cards");
     const chips = document.querySelector("#chips");
     const deadlineStrip = document.querySelector("#deadlineStrip");
+    const addChoiceDialog = document.querySelector("#addChoiceDialog");
     const dialog = document.querySelector("#entryDialog");
     const form = document.querySelector("#entryForm");
     const stageSelect = form.elements.stage;
@@ -1498,6 +1607,11 @@
     const vaultConfirmField = document.querySelector("#vaultConfirmField");
     const vaultConfirmPassword = document.querySelector("#vaultConfirmPassword");
     const vaultError = document.querySelector("#vaultError");
+    const importDialog = document.querySelector("#importDialog");
+    const importText = document.querySelector("#importText");
+    const importPreview = document.querySelector("#importPreview");
+    const confirmImportBtn = document.querySelector("#confirmImportBtn");
+    const importStatus = document.querySelector("#importStatus");
 
     const now = new Date();
     document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
@@ -1519,8 +1633,20 @@
     });
 
     document.querySelector("#search").addEventListener("input", render);
-    document.querySelector("#addBtn").addEventListener("click", () => openForm());
+    document.querySelector("#addBtn").addEventListener("click", () => addChoiceDialog.showModal());
+    document.querySelector("#closeAddChoiceDialog").addEventListener("click", () => addChoiceDialog.close());
+    document.querySelector("#singleAddBtn").addEventListener("click", () => {
+      addChoiceDialog.close();
+      openForm();
+    });
+    document.querySelector("#memoImportBtn").addEventListener("click", () => {
+      addChoiceDialog.close();
+      openImportDialog();
+    });
     document.querySelector("#closeDialog").addEventListener("click", () => dialog.close());
+    document.querySelector("#closeImportDialog").addEventListener("click", () => importDialog.close());
+    document.querySelector("#parseImportBtn").addEventListener("click", parseImportText);
+    confirmImportBtn.addEventListener("click", confirmImportCandidates);
     document.querySelector("#closeResultDialog").addEventListener("click", () => resultDialog.close());
     document.querySelector("#passResultBtn").addEventListener("click", () => applyResult(true));
     document.querySelector("#failResultBtn").addEventListener("click", () => applyResult(false));
@@ -1608,6 +1734,284 @@
       dialog.close();
       render();
     });
+
+    function openImportDialog() {
+      importCandidates = [];
+      importText.value = "";
+      importPreview.innerHTML = "";
+      importStatus.textContent = "";
+      confirmImportBtn.hidden = true;
+      confirmImportBtn.textContent = "候補をまとめて追加";
+      importDialog.showModal();
+      setTimeout(() => importText.focus(), 0);
+    }
+
+    function parseImportText() {
+      const lines = importText.value
+        .split(/\n+/)
+        .map(line => line.trim())
+        .filter(Boolean);
+      importCandidates = lines.map(parseMemoLine);
+      renderImportPreview();
+    }
+
+    function parseMemoLine(line) {
+      const stage = guessStage(line);
+      const type = guessType(line);
+      const deadline = guessDeadline(line);
+      const company = guessCompany(line);
+      const role = guessRole(line);
+      const flow = inferImportFlow(line, stage);
+      return {
+        company,
+        type,
+        role,
+        stage,
+        deadline,
+        nextDate: "",
+        memo: line,
+        flow
+      };
+    }
+
+    function renderImportPreview() {
+      if (!importCandidates.length) {
+        importPreview.innerHTML = "";
+        importStatus.textContent = "メモが空です。1行1社くらいで貼り付けてください。";
+        confirmImportBtn.hidden = true;
+        return;
+      }
+      importPreview.innerHTML = importCandidates.map((candidate, index) => `
+        <section class="import-item" data-index="${index}">
+          <div class="import-item-head">
+            <strong>候補 ${index + 1}</strong>
+            <button class="soft-btn danger" type="button" data-remove-import="${index}">除外</button>
+          </div>
+          <label>会社名
+            <input class="import-company" value="${escapeHtml(candidate.company)}" placeholder="読み取れない場合は入力">
+          </label>
+          <div class="form-grid">
+            <label>種類
+              <select class="import-type">${optionsHtml(entryTypes, candidate.type)}</select>
+            </label>
+            <label>ステータス
+              <select class="import-stage">${optionsHtml(stages, candidate.stage)}</select>
+            </label>
+          </div>
+          <div class="form-grid">
+            <label>職種/コース
+              <input class="import-role" value="${escapeHtml(candidate.role)}" placeholder="空欄でもOK">
+            </label>
+            <label>締切日
+              <input class="import-deadline" type="date" value="${escapeHtml(candidate.deadline)}">
+            </label>
+          </div>
+          <section class="schedule-picker">
+            <label>この選考であるフェーズ</label>
+            <div class="flow-options">
+              <label><input class="import-flow-es" type="checkbox" ${candidate.flow.es ? "checked" : ""}><span>ES</span></label>
+              <label><input class="import-flow-webTest" type="checkbox" ${candidate.flow.webTest ? "checked" : ""}><span>Webテスト</span></label>
+              <label><input class="import-flow-gd" type="checkbox" ${candidate.flow.gd ? "checked" : ""}><span>GD</span></label>
+              <label><input class="import-flow-interview" type="checkbox" ${candidate.flow.interview ? "checked" : ""}><span>面接</span></label>
+            </div>
+          </section>
+          <label>メモ
+            <textarea class="import-memo">${escapeHtml(candidate.memo)}</textarea>
+          </label>
+        </section>
+      `).join("");
+      importPreview.querySelectorAll("[data-remove-import]").forEach(button => {
+        button.addEventListener("click", () => {
+          button.closest(".import-item").remove();
+          updateImportConfirmState();
+        });
+      });
+      importStatus.textContent = `${importCandidates.length}件の候補を作りました。内容を確認してから追加できます。`;
+      updateImportConfirmState();
+    }
+
+    function updateImportConfirmState() {
+      const count = importPreview.querySelectorAll(".import-item").length;
+      confirmImportBtn.hidden = count === 0;
+      confirmImportBtn.textContent = `候補をまとめて追加（${count}件）`;
+      if (!count) importStatus.textContent = "候補がありません。もう一度メモを貼り付けてください。";
+    }
+
+    function confirmImportCandidates() {
+      const candidates = [...importPreview.querySelectorAll(".import-item")].map(readImportCandidate);
+      const missingCompany = candidates.some(candidate => !candidate.company);
+      if (missingCompany) {
+        importStatus.textContent = "会社名が空欄の候補があります。会社名だけ入れてから追加してください。";
+        return;
+      }
+      const imported = candidates.map(candidate => ({
+        id: crypto.randomUUID(),
+        company: candidate.company,
+        type: candidate.type,
+        role: candidate.role,
+        stage: candidate.stage,
+        deadline: candidate.deadline,
+        nextDate: candidate.nextDate,
+        internSchedule: "",
+        internScheduleMode: "single",
+        internSingleDate: "",
+        internStartDate: "",
+        internEndDate: "",
+        memo: candidate.memo,
+        flow: candidate.flow,
+        credentialVault: null,
+        stageHistory: buildImportStageHistory(candidate.stage, candidate.flow)
+      }));
+      entries = [...imported, ...entries];
+      save();
+      render();
+      importDialog.close();
+    }
+
+    function readImportCandidate(item) {
+      return {
+        company: item.querySelector(".import-company").value.trim(),
+        type: item.querySelector(".import-type").value,
+        role: item.querySelector(".import-role").value.trim(),
+        stage: item.querySelector(".import-stage").value,
+        deadline: item.querySelector(".import-deadline").value,
+        nextDate: "",
+        memo: item.querySelector(".import-memo").value.trim(),
+        flow: {
+          es: item.querySelector(".import-flow-es").checked,
+          webTest: item.querySelector(".import-flow-webTest").checked,
+          gd: item.querySelector(".import-flow-gd").checked,
+          interview: item.querySelector(".import-flow-interview").checked
+        }
+      };
+    }
+
+    function optionsHtml(values, selected) {
+      return values.map(value => `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(value)}</option>`).join("");
+    }
+
+    function guessType(line) {
+      if (/OB[\/・]?OG|OB訪問|OG訪問/i.test(line)) return "OB/OG訪問";
+      if (/説明会/.test(line)) return "説明会";
+      if (/本選考|本選/.test(line)) return "本選考";
+      if (/インターン|intern/i.test(line)) return "インターン";
+      return "インターン";
+    }
+
+    function guessStage(line) {
+      const text = line.replace(/\s+/g, "");
+      const rules = [
+        ["Webテスト不合格", /(Web|WEB|ウェブ|SPI|玉手箱|適性検査).*?(不合格|落ち|NG)|不合格.*?(Web|WEB|ウェブ|SPI|玉手箱|適性検査)/i],
+        ["ES不合格", /(ES|エントリーシート|書類).*?(不合格|落ち|NG)|不合格.*?(ES|エントリーシート|書類)/i],
+        ["GD不合格", /(GD|グループディスカッション).*?(不合格|落ち|NG)|不合格.*?(GD|グループディスカッション)/i],
+        ["面接不合格", /(面接|面談|一次|1次|二次|2次|最終).*?(不合格|落ち|NG)|不合格.*?(面接|面談|一次|1次|二次|2次|最終)/i],
+        ["インターン不合格", /インターン.*?(不合格|落ち|NG)/i],
+        ["インターン合格", /インターン.*?(合格|通過)|合格.*?インターン/i],
+        ["内定", /内定|内々定/],
+        ["不採用", /不採用|お祈り/],
+        ["辞退", /辞退/],
+        ["結果待ち", /結果待ち|連絡待ち|返事待ち|選考待ち/],
+        ["最終面接", /最終面接|最終/],
+        ["二次面接", /二次面接|2次面接|二次|2次/],
+        ["一次面接", /一次面接|1次面接|一次|1次|面接/],
+        ["GD", /GD|グループディスカッション/i],
+        ["Webテスト", /Webテスト|WEBテスト|ウェブテスト|SPI|玉手箱|適性検査/i],
+        ["ES提出済", /ES提出済|ES済|提出済|提出完了/i],
+        ["書類選考中", /書類選考中|書類|ES|エントリーシート/i],
+        ["応募予定", /応募予定|応募/],
+        ["気になる", /気になる|候補|検討/]
+      ];
+      return rules.find(([, pattern]) => pattern.test(text))?.[0] || "応募予定";
+    }
+
+    function guessDeadline(line) {
+      const ymd = line.match(/(20\d{2})[\/.-](\d{1,2})[\/.-](\d{1,2})/);
+      if (ymd) return toDateInput(Number(ymd[1]), Number(ymd[2]), Number(ymd[3]), false);
+      const md = line.match(/(?:^|[^\d])(\d{1,2})[\/月](\d{1,2})(?:日)?/);
+      if (!md) return "";
+      return toDateInput(new Date().getFullYear(), Number(md[1]), Number(md[2]), true);
+    }
+
+    function toDateInput(year, month, day, allowNextYear) {
+      if (month < 1 || month > 12 || day < 1 || day > 31) return "";
+      let date = new Date(year, month - 1, day);
+      if (allowNextYear) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (date < new Date(today.getTime() - 30 * 86400000)) {
+          date = new Date(year + 1, month - 1, day);
+        }
+      }
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function guessCompany(line) {
+      const cleaned = line
+        .replace(/20\d{2}[\/.-]\d{1,2}[\/.-]\d{1,2}/g, " ")
+        .replace(/(?:^|[^\d])\d{1,2}[\/月]\d{1,2}(?:日)?/g, " ")
+        .replace(/OB[\/・]?OG|OB訪問|OG訪問|インターン|intern|本選考|本選|説明会/gi, " ")
+        .replace(/締切|〆切|〆|まで|予定|候補|検討|選考中|選考|応募予定|応募/g, " ")
+        .replace(/ES提出済|ES済|エントリーシート|ES|書類選考中|書類/gi, " ")
+        .replace(/Webテスト|WEBテスト|ウェブテスト|SPI|玉手箱|適性検査/gi, " ")
+        .replace(/グループディスカッション|GD|一次面接|1次面接|二次面接|2次面接|最終面接|一次|1次|二次|2次|最終|面接|面談/gi, " ")
+        .replace(/結果待ち|連絡待ち|返事待ち|合格|不合格|落ち|NG|内定|内々定|不採用|お祈り|辞退/gi, " ")
+        .replace(/[：:、,，／/|｜\[\]【】()（）]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      return cleaned.split(" ")[0] || "";
+    }
+
+    function guessRole(line) {
+      const match = line.match(/(総合職|営業|企画|マーケ|エンジニア|デザイナー|コンサル|開発|事業企画|人事|経理|法務|研究|技術職|3days?|5days?)/i);
+      return match?.[0] || "";
+    }
+
+    function inferImportFlow(line, stage) {
+      const text = `${line} ${stage}`;
+      const isAfterEs = ["Webテスト", "GD", "一次面接", "二次面接", "最終面接", "結果待ち", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "不採用", "辞退"].includes(stage);
+      return {
+        es: /(ES|エントリーシート|書類)/i.test(text) || isAfterEs,
+        webTest: /(Web|WEB|ウェブ|SPI|玉手箱|適性検査|テスト)/i.test(text),
+        gd: /(GD|グループディスカッション)/i.test(text),
+        interview: /(面接|面談|一次|1次|二次|2次|最終)/i.test(text)
+      };
+    }
+
+    function buildImportStageHistory(stage, flow) {
+      const sequence = sequenceFromFlow(flow);
+      if (winStages.has(stage) || ["インターン不合格", "不採用", "辞退"].includes(stage)) {
+        return [...sequence, stage];
+      }
+      const failPrevious = {
+        "ES不合格": flow.es ? "ES提出済" : "応募予定",
+        "Webテスト不合格": "Webテスト",
+        "GD不合格": "GD",
+        "面接不合格": "一次面接"
+      };
+      if (failPrevious[stage]) {
+        const previous = failPrevious[stage];
+        const index = sequence.indexOf(previous);
+        return [...(index >= 0 ? sequence.slice(0, index + 1) : []), stage];
+      }
+      const index = sequence.indexOf(stage);
+      if (index >= 0) return sequence.slice(0, index + 1);
+      return [stage];
+    }
+
+    function sequenceFromFlow(flow) {
+      return [
+        "気になる",
+        "応募予定",
+        ...(flow.es ? ["書類選考中", "ES提出済"] : []),
+        ...(flow.webTest ? ["Webテスト"] : []),
+        ...(flow.gd ? ["GD"] : []),
+        ...(flow.interview ? ["一次面接", "二次面接", "最終面接"] : []),
+        "結果待ち"
+      ];
+    }
 
     function load() {
       try {
@@ -1779,6 +2183,9 @@
     }
 
     function hasPhase(entry, phaseKey) {
+      if (entry.flow && Object.prototype.hasOwnProperty.call(entry.flow, phaseKey)) {
+        return Boolean(entry.flow[phaseKey]);
+      }
       const flow = normalizeFlow(entry.flow, entry.stageHistory, entry.stage);
       if (flow[phaseKey]) return true;
       const history = Array.isArray(entry.stageHistory) ? entry.stageHistory.map(normalizeStageName) : [];
