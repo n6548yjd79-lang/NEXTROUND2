@@ -1,0 +1,1426 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>NEXTROUND</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --panel: #111821;
+      --panel-2: #172231;
+      --line: rgba(255,255,255,.1);
+      --text: #f3f7fb;
+      --muted: #95a3b5;
+      --blue: #4bb3fd;
+      --green: #36d399;
+      --amber: #ffcf5a;
+      --red: #ff6678;
+      --violet: #b79cff;
+      --cyan: #61f4de;
+      --ink: #05070b;
+      --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --shadow-strong: 0 24px 90px rgba(0,0,0,.52);
+      --radius: 8px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(145deg, rgba(75,179,253,.17), transparent 28%),
+        linear-gradient(25deg, rgba(255,207,90,.075), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,.035), transparent 18%),
+        var(--bg);
+      color: var(--text);
+      letter-spacing: 0;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.48), transparent 54%);
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    button {
+      transition: transform .16s ease, border-color .16s ease, background .16s ease, opacity .16s ease;
+    }
+
+    button:active {
+      transform: scale(.98);
+    }
+
+    .app {
+      width: min(100%, 920px);
+      margin: 0 auto;
+      padding: 18px 14px 112px;
+      position: relative;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 2px 20px;
+    }
+
+    .brand {
+      display: grid;
+      gap: 4px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 8vw, 46px);
+      line-height: .95;
+      font-weight: 850;
+      background: linear-gradient(95deg, #f9fcff, var(--blue) 48%, var(--cyan));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .sub {
+      margin: 0;
+      color: #d2d9e4;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .today {
+      min-width: 92px;
+      padding: 11px 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.105), rgba(255,255,255,.045));
+      border-radius: 14px;
+      text-align: right;
+      color: #d5deea;
+      font-size: 12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .today strong {
+      display: block;
+      color: var(--text);
+      font-size: 19px;
+      line-height: 1.1;
+    }
+
+    .today small {
+      display: block;
+      margin-top: 2px;
+      color: #d2d9e4;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      padding: 13px 12px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(30,39,52,.94), rgba(12,18,26,.94)),
+        rgba(255,255,255,.04);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 2px;
+      background: var(--accent, #7aa7ff);
+      opacity: .95;
+    }
+
+    .stat-active { --accent: #7aa7ff; }
+    .stat-deadline { --accent: #9f1f2f; }
+    .stat-win { --accent: #c99a33; }
+
+    .stat-deadline strong { color: #ff8b99; }
+    .stat-win strong { color: #ffdf72; }
+
+    .stat span {
+      display: block;
+      color: #eef4fb;
+      font-size: 12px;
+      white-space: nowrap;
+      font-weight: 850;
+      text-shadow: 0 1px 6px rgba(0,0,0,.45);
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 24px;
+      line-height: 1;
+      color: #ffffff;
+      text-shadow: 0 1px 8px rgba(0,0,0,.5);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: grid;
+      gap: 10px;
+      padding: 10px 0 14px;
+      background: linear-gradient(180deg, rgba(8,11,16,.98) 0%, rgba(8,11,16,.92) 72%, transparent 100%);
+      backdrop-filter: blur(14px);
+    }
+
+    .search {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.065)),
+        rgba(255,255,255,.08);
+      color: var(--text);
+      padding: 0 15px;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .search::placeholder {
+      color: #9facbd;
+      opacity: 1;
+    }
+
+    .search:focus {
+      border-color: rgba(75,179,253,.56);
+      box-shadow: 0 0 0 3px rgba(75,179,253,.14), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .chips::-webkit-scrollbar { display: none; }
+
+    .chip {
+      flex: 0 0 auto;
+      min-height: 36px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.055)),
+        rgba(255,255,255,.065);
+      color: #eef3f9;
+      padding: 0 13px;
+      font-weight: 800;
+    }
+
+    .chip.active {
+      color: #061018;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      border-color: transparent;
+      font-weight: 800;
+      box-shadow: 0 8px 24px rgba(75,179,253,.2);
+    }
+
+    .deadline-strip {
+      display: grid;
+      gap: 8px;
+      margin: 2px 0 14px;
+    }
+
+    .deadline-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 13px;
+      border: 1px solid rgba(255,207,90,.32);
+      border-radius: 12px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.16), transparent 26%),
+        linear-gradient(90deg, rgba(255,207,90,.16), rgba(255,207,90,.045));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .deadline-card.danger-deadline {
+      border-color: rgba(177, 28, 46, .86);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.12), transparent 25%),
+        linear-gradient(90deg, rgba(116, 14, 28, .62), rgba(55, 8, 17, .38));
+      box-shadow: 0 0 0 1px rgba(255,102,120,.12), 0 14px 40px rgba(116,14,28,.22);
+    }
+
+    .deadline-card b { font-size: 14px; overflow-wrap: anywhere; }
+    .deadline-card span { color: var(--amber); font-weight: 800; white-space: nowrap; }
+
+    .deadline-card.danger-deadline span { color: #ff9aa6; }
+
+    .cards {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(28,39,55,.98), rgba(10,15,23,.99)),
+        rgba(255,255,255,.04);
+      box-shadow: var(--shadow-strong);
+      overflow: hidden;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 3px;
+      background: linear-gradient(90deg, var(--stage-color, var(--blue)), transparent 74%);
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: 15px;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.11), transparent 18%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+      opacity: .42;
+    }
+
+    .card.win {
+      border-color: rgba(255,207,90,.72);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.2), transparent 24%),
+        linear-gradient(135deg, rgba(255,207,90,.13), transparent 34%),
+        linear-gradient(180deg, rgba(27,31,29,.98), rgba(9,14,17,.99));
+      box-shadow: 0 18px 58px rgba(255,207,90,.12), 0 16px 50px rgba(0,0,0,.44);
+    }
+
+    .card.win::before {
+      height: 4px;
+      background: linear-gradient(90deg, #ffdf72, #c9982c, #ffdf72);
+    }
+
+    .card.deadline-danger {
+      border-color: rgba(177, 28, 46, .9);
+      box-shadow: 0 0 0 1px rgba(255,102,120,.16), 0 22px 70px rgba(116,14,28,.26), 0 20px 60px rgba(0,0,0,.48);
+    }
+
+    .card.deadline-danger::before {
+      height: 4px;
+      background: #9f1f2f;
+    }
+
+    .card-main {
+      padding: 16px;
+      display: grid;
+      gap: 13px;
+    }
+
+    .topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .company {
+      min-width: 0;
+    }
+
+    .company h2 {
+      margin: 0 0 5px;
+      font-size: 21px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+      text-shadow: 0 1px 8px rgba(0,0,0,.45);
+    }
+
+    .company p {
+      margin: 0;
+      color: #d0d8e4;
+      font-size: 13px;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+
+    .type {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--stage-color, var(--blue)) 38%, transparent);
+      color: var(--stage-color, var(--blue));
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+      background: rgba(255,255,255,.055);
+    }
+
+    .stage-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .stage-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: #d0d8e4;
+      font-size: 12px;
+    }
+
+    .stage-label strong {
+      color: var(--stage-color, var(--text));
+      font-size: 14px;
+      text-shadow: 0 1px 8px rgba(0,0,0,.45);
+    }
+
+    .track {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.105);
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.45);
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--stage-color, var(--green)), var(--blue));
+      width: 0;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .meta-box {
+      min-height: 58px;
+      padding: 10px 11px;
+      border: 1px solid rgba(255,255,255,.105);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.028)),
+        rgba(255,255,255,.045);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .meta-box span {
+      display: block;
+      color: #cbd4e0;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .meta-box b {
+      display: block;
+      margin-top: 3px;
+      font-size: 14px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      text-shadow: 0 1px 8px rgba(0,0,0,.4);
+    }
+
+    .urgent b { color: var(--red); }
+    .soon b { color: var(--amber); }
+
+    .deadline-danger .urgent b,
+    .deadline-danger .soon b {
+      color: #ff8c99;
+    }
+
+    .countdown {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 26px;
+      margin-top: 7px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: rgba(255,207,90,.12);
+      color: var(--amber);
+      border: 1px solid rgba(255,207,90,.2);
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 950;
+    }
+
+    .countdown.danger {
+      background: rgba(159,31,47,.24);
+      color: #ff9aa6;
+      border-color: rgba(255,102,120,.38);
+    }
+
+    .schedule-box {
+      border-color: rgba(255,207,90,.34);
+      background:
+        linear-gradient(180deg, rgba(255,207,90,.12), rgba(255,255,255,.03)),
+        rgba(255,255,255,.045);
+    }
+
+    .schedule-box b {
+      color: #ffe6a6;
+      white-space: pre-wrap;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--stage-color, var(--blue)) 18%, transparent);
+      border: 1px solid color-mix(in srgb, var(--stage-color, var(--blue)) 34%, transparent);
+      color: var(--stage-color, var(--blue));
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .card.win .status-pill {
+      color: #ffdf72;
+      border-color: rgba(255,207,90,.44);
+      background: rgba(255,207,90,.14);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 44px 44px;
+      gap: 8px;
+      border-top: 1px solid rgba(255,255,255,.1);
+      padding: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.025));
+    }
+
+    .actions.result-mode {
+      grid-template-columns: 1fr 44px 44px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .primary, .quick, .icon-btn {
+      border: 0;
+      min-height: 44px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: linear-gradient(135deg, var(--green), #75e6ad);
+      color: #04130e;
+      font-weight: 900;
+      box-shadow: 0 10px 24px rgba(54,211,153,.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .primary.done {
+      background: rgba(255,255,255,.08);
+      color: #d5deea;
+      box-shadow: none;
+    }
+
+    .primary::before,
+    .fab::before {
+      content: "";
+      position: absolute;
+      inset: 1px 1px auto;
+      height: 44%;
+      border-radius: inherit;
+      background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,0));
+      pointer-events: none;
+      opacity: .32;
+    }
+
+    .primary.done::before {
+      opacity: .12;
+    }
+
+    .quick {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.025)),
+        rgba(255,207,90,.16);
+      color: var(--amber);
+      font-weight: 900;
+      border: 1px solid rgba(255,207,90,.12);
+    }
+
+    .quick.active {
+      background: rgba(255,207,90,.27);
+      color: #ffe7a3;
+      border: 1px solid rgba(255,207,90,.28);
+    }
+
+    .icon-btn {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04)),
+        rgba(255,255,255,.075);
+      color: var(--text);
+      font-size: 18px;
+      border: 1px solid rgba(255,255,255,.045);
+    }
+
+    .empty {
+      padding: 28px 16px;
+      border: 1px dashed rgba(255,255,255,.2);
+      border-radius: 16px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      z-index: 12;
+      width: min(calc(100% - 24px), 500px);
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035)),
+        rgba(10,14,20,.84);
+      backdrop-filter: blur(22px);
+      box-shadow: 0 20px 70px rgba(0,0,0,.55);
+    }
+
+    .nav-btn {
+      min-height: 46px;
+      border: 0;
+      border-radius: 14px;
+      background: transparent;
+      color: #d0d8e4;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .nav-btn.active {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(75,179,253,.16)),
+        rgba(75,179,253,.18);
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .fab {
+      color: #061018;
+      background: linear-gradient(135deg, var(--blue), #76c7ff);
+      box-shadow: 0 10px 28px rgba(75,179,253,.28);
+      position: relative;
+      overflow: hidden;
+    }
+
+    dialog {
+      width: min(calc(100% - 22px), 520px);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0;
+      color: var(--text);
+      background: linear-gradient(180deg, #111923, #090e15);
+      box-shadow: var(--shadow);
+    }
+
+    dialog::backdrop {
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(3px);
+    }
+
+    form {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .form-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .form-head h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .x {
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 14px;
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: #d0d8e4;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 12px;
+      background: rgba(255,255,255,.075);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .schedule-picker {
+      display: grid;
+      gap: 10px;
+    }
+
+    .segment {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .segment input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .segment span {
+      display: grid;
+      place-items: center;
+      min-height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.13);
+      background: rgba(255,255,255,.075);
+      color: #d0d8e4;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .segment input:checked + span {
+      background: linear-gradient(135deg, var(--blue), #76c7ff);
+      color: #061018;
+      border-color: transparent;
+    }
+
+    .save {
+      min-height: 48px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue), #76c7ff);
+      color: #061018;
+      font-weight: 900;
+    }
+
+    .danger {
+      background: rgba(255,102,120,.14);
+      color: var(--red);
+    }
+
+
+    @media (max-width: 520px) {
+      .app { padding-inline: 12px; }
+      .stats { grid-template-columns: 1fr 1fr 1fr; }
+      .stat { padding: 11px 9px; }
+      .stat span { font-size: 11px; }
+      .stat strong { font-size: 22px; }
+      .meta { grid-template-columns: 1fr; }
+      .actions { grid-template-columns: 1fr 1fr; }
+      .actions.result-mode { grid-template-columns: 1fr 42px 42px; }
+      .icon-btn { min-height: 42px; }
+      .card-main { padding: 15px; }
+      .company h2 { font-size: 20px; }
+      .deadline-card { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <h1>NEXTROUND</h1>
+        <p class="sub">インターンも本選考も、タップで進める。</p>
+      </div>
+      <div class="today"><span>今日</span><strong id="dateLabel"></strong><small id="weekdayLabel"></small></div>
+    </header>
+
+    <section class="stats" aria-label="進捗サマリー">
+      <div class="stat stat-active"><span>進行中</span><strong id="activeCount">0</strong></div>
+      <div class="stat stat-deadline"><span>締切間近</span><strong id="soonCount">0</strong></div>
+      <div class="stat stat-win"><span>合格/内定</span><strong id="winCount">0</strong></div>
+    </section>
+
+    <section class="toolbar">
+      <input id="search" class="search" type="search" placeholder="会社名・職種・メモで検索">
+      <div id="chips" class="chips" aria-label="表示フィルター"></div>
+    </section>
+
+    <section id="deadlineStrip" class="deadline-strip" aria-label="締切"></section>
+    <section id="cards" class="cards" aria-label="選考一覧"></section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="主要操作">
+    <button class="nav-btn active" data-filter="all">一覧</button>
+    <button class="nav-btn" data-filter="deadline">締切</button>
+    <button class="nav-btn fab" id="addBtn">＋ 追加</button>
+  </nav>
+
+  <dialog id="entryDialog">
+    <form id="entryForm" method="dialog">
+      <div class="form-head">
+        <h2 id="formTitle">選考を追加</h2>
+        <button class="x" type="button" id="closeDialog" aria-label="閉じる">×</button>
+      </div>
+      <label>会社名
+        <input name="company" required placeholder="例: サイバーエージェント">
+      </label>
+      <div class="form-grid">
+        <label>種類
+          <select name="type">
+            <option>インターン</option>
+            <option>本選考</option>
+            <option>説明会</option>
+            <option>OB/OG訪問</option>
+          </select>
+        </label>
+        <label>ステータス
+          <select name="stage"></select>
+        </label>
+      </div>
+      <label>職種/コース
+        <input name="role" placeholder="例: 総合職 / エンジニア / 企画">
+      </label>
+      <div class="form-grid">
+        <label>締切日
+          <input name="deadline" type="date">
+        </label>
+        <label>次の予定日
+          <input name="nextDate" type="date">
+        </label>
+      </div>
+      <div id="internScheduleField" class="schedule-picker" hidden>
+        <label>インターン日程</label>
+        <div class="segment">
+          <label><input type="radio" name="internScheduleMode" value="single" checked><span>1日</span></label>
+          <label><input type="radio" name="internScheduleMode" value="range"><span>複数日</span></label>
+        </div>
+        <label id="internSingleField">実施日
+          <input name="internSingleDate" type="date">
+        </label>
+        <div id="internRangeFields" class="form-grid" hidden>
+          <label>開始日
+            <input name="internStartDate" type="date">
+          </label>
+          <label>終了日
+            <input name="internEndDate" type="date">
+          </label>
+        </div>
+      </div>
+      <label>メモ
+        <textarea name="memo" placeholder="GDテーマ、ESで使う話、面接で聞かれそうなことなど"></textarea>
+      </label>
+      <button class="save" type="submit">保存</button>
+      <button class="save danger" type="button" id="deleteBtn" hidden>削除</button>
+    </form>
+  </dialog>
+
+  <dialog id="resultDialog">
+    <form id="resultForm" method="dialog">
+      <div class="form-head">
+        <h2 id="resultTitle">結果を入力</h2>
+        <button class="x" type="button" id="closeResultDialog" aria-label="閉じる">×</button>
+      </div>
+      <div id="resultScheduleField" class="schedule-picker" hidden>
+        <label>合格時のインターン日程</label>
+        <div class="segment">
+          <label><input type="radio" name="resultScheduleMode" value="single" checked><span>1日</span></label>
+          <label><input type="radio" name="resultScheduleMode" value="range"><span>複数日</span></label>
+        </div>
+        <label id="resultSingleField">実施日
+          <input name="resultSingleDate" type="date">
+        </label>
+        <div id="resultRangeFields" class="form-grid" hidden>
+          <label>開始日
+            <input name="resultStartDate" type="date">
+          </label>
+          <label>終了日
+            <input name="resultEndDate" type="date">
+          </label>
+        </div>
+      </div>
+      <button class="save" type="button" id="passResultBtn">合格</button>
+      <button class="save danger" type="button" id="failResultBtn">不合格</button>
+    </form>
+  </dialog>
+
+  <script>
+    const stages = [
+      "気になる",
+      "応募予定",
+      "書類選考中",
+      "ES提出済",
+      "Webテスト",
+      "GD",
+      "一次面接",
+      "二次面接",
+      "最終面接",
+      "結果待ち",
+      "インターン合格",
+      "インターン不合格",
+      "内定",
+      "辞退",
+      "不採用"
+    ];
+
+    const doneStages = new Set(["インターン合格", "インターン不合格", "内定", "辞退", "不採用"]);
+    const winStages = new Set(["インターン合格", "内定"]);
+    const stageColors = {
+      "気になる": "#95a3b5",
+      "応募予定": "#4bb3fd",
+      "書類選考中": "#61f4de",
+      "ES提出済": "#61f4de",
+      "Webテスト": "#b79cff",
+      "GD": "#ffcf5a",
+      "一次面接": "#36d399",
+      "二次面接": "#36d399",
+      "最終面接": "#36d399",
+      "結果待ち": "#ffcf5a",
+      "インターン合格": "#36d399",
+      "インターン不合格": "#ff6678",
+      "内定": "#36d399",
+      "辞退": "#95a3b5",
+      "不採用": "#ff6678"
+    };
+    const storageKey = "senkou-deck-v1";
+    const seed = [
+      {
+        id: crypto.randomUUID(),
+        company: "Blue Orbit",
+        type: "インターン",
+        role: "事業企画 3days",
+        stage: "結果待ち",
+        deadline: nextDate(3),
+        nextDate: nextDate(6),
+        internSchedule: "",
+        internScheduleMode: "single",
+        internSingleDate: "",
+        internStartDate: "",
+        internEndDate: "",
+        memo: "GD終了。結果待ち。通ったら次は人事面談。"
+      },
+      {
+        id: crypto.randomUUID(),
+        company: "Nexa Bank",
+        type: "本選考",
+        role: "総合職",
+        stage: "書類選考中",
+        deadline: nextDate(1),
+        nextDate: "",
+        internSchedule: "",
+        internScheduleMode: "single",
+        internSingleDate: "",
+        internStartDate: "",
+        internEndDate: "",
+        memo: "ES提出済。志望動機を面接用に短くする。"
+      },
+      {
+        id: crypto.randomUUID(),
+        company: "Sakura Systems",
+        type: "インターン",
+        role: "エンジニア",
+        stage: "応募予定",
+        deadline: nextDate(8),
+        nextDate: "",
+        internSchedule: "",
+        internScheduleMode: "single",
+        internSingleDate: "",
+        internStartDate: "",
+        internEndDate: "",
+        memo: "締切前にポートフォリオURLを確認。"
+      }
+    ];
+
+    let entries = load();
+    let activeFilter = "all";
+    let editingId = null;
+    let resultTargetId = null;
+
+    const cards = document.querySelector("#cards");
+    const chips = document.querySelector("#chips");
+    const deadlineStrip = document.querySelector("#deadlineStrip");
+    const dialog = document.querySelector("#entryDialog");
+    const form = document.querySelector("#entryForm");
+    const stageSelect = form.elements.stage;
+    const deleteBtn = document.querySelector("#deleteBtn");
+    const internScheduleField = document.querySelector("#internScheduleField");
+    const resultDialog = document.querySelector("#resultDialog");
+    const resultForm = document.querySelector("#resultForm");
+    const resultTitle = document.querySelector("#resultTitle");
+    const resultScheduleField = document.querySelector("#resultScheduleField");
+
+    const now = new Date();
+    document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
+    document.querySelector("#weekdayLabel").textContent = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(now);
+    stages.forEach(stage => stageSelect.add(new Option(stage, stage)));
+
+    const filters = ["all", "インターン", "本選考", "書類選考中", "GD", "結果待ち", "面接", "合格"];
+    const names = { all: "すべて", 面接: "面接中", 合格: "合格/内定" };
+    filters.forEach(filter => {
+      const button = document.createElement("button");
+      button.className = "chip" + (filter === activeFilter ? " active" : "");
+      button.textContent = names[filter] || filter;
+      button.addEventListener("click", () => {
+        activeFilter = filter;
+        syncNav();
+        render();
+      });
+      chips.append(button);
+    });
+
+    document.querySelector("#search").addEventListener("input", render);
+    document.querySelector("#addBtn").addEventListener("click", () => openForm());
+    document.querySelector("#closeDialog").addEventListener("click", () => dialog.close());
+    document.querySelector("#closeResultDialog").addEventListener("click", () => resultDialog.close());
+    document.querySelector("#passResultBtn").addEventListener("click", () => applyResult(true));
+    document.querySelector("#failResultBtn").addEventListener("click", () => applyResult(false));
+    form.elements.type.addEventListener("change", updateInternScheduleVisibility);
+    form.elements.stage.addEventListener("change", updateInternScheduleVisibility);
+    Array.from(form.elements.internScheduleMode).forEach(input => {
+      input.addEventListener("change", () => updateScheduleMode(form, "intern"));
+    });
+    Array.from(resultForm.elements.resultScheduleMode).forEach(input => {
+      input.addEventListener("change", () => updateScheduleMode(resultForm, "result"));
+    });
+    document.querySelectorAll(".nav-btn[data-filter]").forEach(button => {
+      button.addEventListener("click", () => {
+        activeFilter = button.dataset.filter;
+        syncNav();
+        render();
+      });
+    });
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      const item = {
+        id: editingId || crypto.randomUUID(),
+        company: data.company.trim(),
+        type: data.type,
+        role: data.role.trim(),
+        stage: data.stage,
+        deadline: data.deadline,
+        nextDate: data.nextDate,
+        internSchedule: buildScheduleFromForm(form, "intern", entries.find(entry => entry.id === editingId)?.internSchedule || ""),
+        internScheduleMode: form.elements.internScheduleMode.value,
+        internSingleDate: data.internSingleDate || "",
+        internStartDate: data.internStartDate || "",
+        internEndDate: data.internEndDate || "",
+        memo: data.memo.trim()
+      };
+      entries = editingId
+        ? entries.map(entry => entry.id === editingId ? item : entry)
+        : [item, ...entries];
+      save();
+      dialog.close();
+      render();
+    });
+
+    deleteBtn.addEventListener("click", () => {
+      if (!editingId) return;
+      entries = entries.filter(entry => entry.id !== editingId);
+      save();
+      dialog.close();
+      render();
+    });
+
+    function load() {
+      try {
+        return (JSON.parse(localStorage.getItem(storageKey)) || seed).map(entry => ({
+          internSchedule: "",
+          internScheduleMode: "single",
+          internSingleDate: "",
+          internStartDate: "",
+          internEndDate: "",
+          ...entry
+        }));
+      } catch {
+        return seed;
+      }
+    }
+
+    function save() {
+      localStorage.setItem(storageKey, JSON.stringify(entries));
+    }
+
+    function nextDate(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return date.toISOString().slice(0, 10);
+    }
+
+    function daysLeft(value) {
+      if (!value) return null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const target = new Date(value + "T00:00:00");
+      return Math.round((target - today) / 86400000);
+    }
+
+    function formatDate(value) {
+      if (!value) return "未設定";
+      const date = new Date(value + "T00:00:00");
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    }
+
+    function formatScheduleDate(value) {
+      if (!value) return "";
+      const date = new Date(value + "T00:00:00");
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    }
+
+    function buildScheduleFromForm(targetForm, prefix, fallback = "") {
+      const mode = targetForm.elements[`${prefix}ScheduleMode`].value;
+      if (mode === "single") {
+        return formatScheduleDate(targetForm.elements[`${prefix}SingleDate`].value) || fallback;
+      }
+      const start = formatScheduleDate(targetForm.elements[`${prefix}StartDate`].value);
+      const end = formatScheduleDate(targetForm.elements[`${prefix}EndDate`].value);
+      if (start && end) return `${start}〜${end}`;
+      return start || end || fallback;
+    }
+
+    function setScheduleForm(targetForm, prefix, entry = {}) {
+      const mode = entry.internScheduleMode || "single";
+      targetForm.elements[`${prefix}ScheduleMode`].value = mode;
+      targetForm.elements[`${prefix}SingleDate`].value = entry.internSingleDate || "";
+      targetForm.elements[`${prefix}StartDate`].value = entry.internStartDate || "";
+      targetForm.elements[`${prefix}EndDate`].value = entry.internEndDate || "";
+      updateScheduleMode(targetForm, prefix);
+    }
+
+    function updateScheduleMode(targetForm, prefix) {
+      const mode = targetForm.elements[`${prefix}ScheduleMode`].value;
+      document.querySelector(`#${prefix}SingleField`).hidden = mode !== "single";
+      document.querySelector(`#${prefix}RangeFields`).hidden = mode !== "range";
+    }
+
+    function deadlineText(entry) {
+      const left = daysLeft(entry.deadline);
+      if (left === null) return "締切なし";
+      if (left < 0) return `${Math.abs(left)}日超過`;
+      if (left === 0) return "今日締切";
+      return `あと${left}日`;
+    }
+
+    function isDeadlineDanger(entry) {
+      const left = daysLeft(entry.deadline);
+      return left !== null && left >= 0 && left <= 7 && !doneStages.has(entry.stage);
+    }
+
+    function deadlineRank(entry) {
+      const left = daysLeft(entry.deadline);
+      if (isDeadlineDanger(entry)) return -100 + left;
+      if (left === null) return 9999;
+      if (left < 0) return 9000 + Math.abs(left);
+      return left;
+    }
+
+    function stageProgress(stage) {
+      const index = Math.max(0, stages.indexOf(stage));
+      return Math.round((index / (stages.length - 1)) * 100);
+    }
+
+    function filteredEntries() {
+      const word = document.querySelector("#search").value.trim().toLowerCase();
+      return entries
+        .filter(entry => {
+          if (activeFilter === "deadline") return daysLeft(entry.deadline) !== null;
+          if (activeFilter === "all") return true;
+          if (activeFilter === "面接") return entry.stage.includes("面接");
+          if (activeFilter === "合格") return winStages.has(entry.stage);
+          if (["書類選考中", "GD", "結果待ち"].includes(activeFilter)) return entry.stage === activeFilter;
+          return entry.type === activeFilter;
+        })
+        .filter(entry => !word || [entry.company, entry.role, entry.stage, entry.memo, entry.internSchedule].join(" ").toLowerCase().includes(word))
+        .sort((a, b) => {
+          const rankDiff = deadlineRank(a) - deadlineRank(b);
+          if (rankDiff !== 0) return rankDiff;
+          return a.company.localeCompare(b.company, "ja");
+        });
+    }
+
+    function render() {
+      const visible = filteredEntries();
+      cards.innerHTML = "";
+      deadlineStrip.innerHTML = "";
+
+      document.querySelector("#activeCount").textContent = entries.filter(entry => !doneStages.has(entry.stage)).length;
+      document.querySelector("#soonCount").textContent = entries.filter(entry => {
+        const left = daysLeft(entry.deadline);
+        return left !== null && left <= 7 && left >= 0 && !doneStages.has(entry.stage);
+      }).length;
+      document.querySelector("#winCount").textContent = entries.filter(entry => winStages.has(entry.stage)).length;
+
+      entries
+        .filter(isDeadlineDanger)
+        .sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline))
+        .slice(0, 3)
+        .forEach(entry => {
+          const row = document.createElement("article");
+          row.className = "deadline-card danger-deadline";
+          row.innerHTML = `<b>${escapeHtml(entry.company)} / ${escapeHtml(entry.stage)}</b><span>${deadlineText(entry)}</span>`;
+          deadlineStrip.append(row);
+        });
+
+      if (!visible.length) {
+        cards.innerHTML = `<div class="empty">まだ表示できる選考がありません。下の追加ボタンから入れられます。</div>`;
+        paintFilters();
+        return;
+      }
+
+      visible.forEach(entry => cards.append(createCard(entry)));
+      paintFilters();
+    }
+
+    function createCard(entry) {
+      const card = document.createElement("article");
+      card.className = "card" + (winStages.has(entry.stage) ? " win" : "") + (isDeadlineDanger(entry) ? " deadline-danger" : "");
+      const progress = stageProgress(entry.stage);
+      const stageColor = stageColors[entry.stage] || stageColors["応募予定"];
+      const left = daysLeft(entry.deadline);
+      const deadlineClass = left !== null && left <= 1 ? " urgent" : left !== null && left <= 7 ? " soon" : "";
+      const primaryStage = getPrimaryStage(entry);
+      const done = doneStages.has(entry.stage) || entry.stage === stages.at(-1);
+      const resultMode = entry.stage === "結果待ち";
+      card.style.setProperty("--stage-color", stageColor);
+      card.innerHTML = `
+        <div class="card-main">
+          <div class="topline">
+            <div class="company">
+              <h2>${escapeHtml(entry.company)}</h2>
+              <p>${escapeHtml(entry.role || "職種未設定")}</p>
+            </div>
+            <span class="type">${escapeHtml(entry.type)}</span>
+          </div>
+          <div class="stage-row">
+            <span class="status-pill">${escapeHtml(entry.stage)}</span>
+            <div class="stage-label"><strong>${escapeHtml(statusHint(entry))}</strong><span>${progress}%</span></div>
+            <div class="track"><div class="bar" style="width:${progress}%"></div></div>
+          </div>
+          ${entry.stage === "インターン合格" ? internshipScheduleMarkup(entry) : deadlineMetaMarkup(entry, deadlineClass)}
+          <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
+        </div>
+        <div class="actions ${resultMode ? "result-mode" : ""}">
+          <button class="primary ${done ? "done" : ""}" data-action="advance">${done ? "完了済み" : escapeHtml(resultMode ? "結果を入力" : primaryLabel(entry, primaryStage))}</button>
+          ${resultMode ? "" : `<button class="quick" data-action="wait">結果待ち</button>`}
+          <button class="icon-btn" data-action="edit" aria-label="編集">✎</button>
+          <button class="icon-btn" data-action="back" aria-label="戻す">↶</button>
+        </div>
+      `;
+      card.querySelector('[data-action="advance"]').addEventListener("click", () => {
+        if (resultMode) openResultDialog(entry);
+        else advance(entry.id, 1);
+      });
+      const waitButton = card.querySelector('[data-action="wait"]');
+      if (waitButton) waitButton.addEventListener("click", () => setStage(entry.id, "結果待ち"));
+      card.querySelector('[data-action="back"]').addEventListener("click", () => advance(entry.id, -1));
+      card.querySelector('[data-action="edit"]').addEventListener("click", () => openForm(entry));
+      return card;
+    }
+
+    function deadlineMetaMarkup(entry, deadlineClass) {
+      return `
+        <div class="meta">
+          <div class="meta-box${deadlineClass}"><span>締切</span><b>${formatDate(entry.deadline)}</b><em class="countdown ${isDeadlineDanger(entry) ? "danger" : ""}">${deadlineText(entry)}</em></div>
+          <div class="meta-box"><span>次の予定</span><b>${formatDate(entry.nextDate)}</b></div>
+        </div>
+      `;
+    }
+
+    function internshipScheduleMarkup(entry) {
+      return `<div class="meta-box schedule-box"><span>インターン日程</span><b>${escapeHtml(entry.internSchedule || "未設定（編集から追加）")}</b></div>`;
+    }
+
+    function getPrimaryStage(entry) {
+      if (doneStages.has(entry.stage)) return entry.stage;
+      if (entry.stage === "結果待ち") return entry.type === "インターン" ? "インターン合格" : "内定";
+      return stages[Math.min(stages.indexOf(entry.stage) + 1, stages.indexOf("結果待ち"))];
+    }
+
+    function getQuickStage(entry) {
+      if (entry.stage === "結果待ち") return entry.type === "インターン" ? "インターン不合格" : "不採用";
+      return "結果待ち";
+    }
+
+    function primaryLabel(entry, stage) {
+      if (entry.stage === "結果待ち") return `結果: ${stage}`;
+      return `次へ: ${stage}`;
+    }
+
+    function quickLabel(entry, stage) {
+      if (entry.stage === "結果待ち") return `結果: ${stage}`;
+      return "結果待ち";
+    }
+
+    function statusHint(entry) {
+      if (entry.stage === "結果待ち") return "返事が来たら結果入力";
+      if (entry.stage === "インターン合格") return "インターン日程を確認";
+      if (winStages.has(entry.stage)) return "おめでとう、通過";
+      if (["インターン不合格", "不採用"].includes(entry.stage)) return "記録済み";
+      return "次のステップへ";
+    }
+
+    function advance(id, direction) {
+      entries = entries.map(entry => {
+        if (entry.id !== id) return entry;
+        const current = stages.indexOf(entry.stage);
+        const next = direction > 0
+          ? stages.indexOf(getPrimaryStage(entry))
+          : Math.max(0, current - 1);
+        const nextStage = stages[next];
+        return { ...entry, stage: nextStage };
+      });
+      save();
+      render();
+    }
+
+    function setStage(id, stage, extras = {}) {
+      entries = entries.map(entry => entry.id === id ? { ...entry, stage, ...extras } : entry);
+      save();
+      render();
+    }
+
+    function openResultDialog(entry) {
+      resultTargetId = entry.id;
+      resultForm.reset();
+      resultTitle.textContent = `${entry.company} の結果`;
+      resultScheduleField.hidden = entry.type !== "インターン";
+      setScheduleForm(resultForm, "result", entry);
+      document.querySelector("#passResultBtn").textContent = entry.type === "インターン" ? "インターン合格" : "内定";
+      document.querySelector("#failResultBtn").textContent = entry.type === "インターン" ? "インターン不合格" : "不採用";
+      resultDialog.showModal();
+    }
+
+    function applyResult(passed) {
+      const entry = entries.find(item => item.id === resultTargetId);
+      if (!entry) return;
+      const stage = passed
+        ? (entry.type === "インターン" ? "インターン合格" : "内定")
+        : (entry.type === "インターン" ? "インターン不合格" : "不採用");
+      const extras = {};
+      if (stage === "インターン合格") {
+        extras.internSchedule = buildScheduleFromForm(resultForm, "result", entry.internSchedule || "");
+        extras.internScheduleMode = resultForm.elements.resultScheduleMode.value;
+        extras.internSingleDate = resultForm.elements.resultSingleDate.value;
+        extras.internStartDate = resultForm.elements.resultStartDate.value;
+        extras.internEndDate = resultForm.elements.resultEndDate.value;
+      }
+      setStage(entry.id, stage, extras);
+      resultDialog.close();
+    }
+
+    function openForm(entry) {
+      editingId = entry?.id || null;
+      document.querySelector("#formTitle").textContent = editingId ? "選考を編集" : "選考を追加";
+      deleteBtn.hidden = !editingId;
+      form.reset();
+      form.elements.company.value = entry?.company || "";
+      form.elements.type.value = entry?.type || "インターン";
+      form.elements.stage.value = entry?.stage || "応募予定";
+      form.elements.role.value = entry?.role || "";
+      form.elements.deadline.value = entry?.deadline || "";
+      form.elements.nextDate.value = entry?.nextDate || "";
+      setScheduleForm(form, "intern", entry || {});
+      form.elements.memo.value = entry?.memo || "";
+      updateInternScheduleVisibility();
+      dialog.showModal();
+    }
+
+    function updateInternScheduleVisibility() {
+      internScheduleField.hidden = !(form.elements.type.value === "インターン" && form.elements.stage.value === "インターン合格");
+    }
+
+    function paintFilters() {
+      [...chips.children].forEach(button => {
+        const label = button.textContent;
+        const filter = Object.entries(names).find(([, value]) => value === label)?.[0] || label;
+        button.classList.toggle("active", filter === activeFilter);
+      });
+      syncNav();
+    }
+
+    function syncNav() {
+      document.querySelectorAll(".nav-btn[data-filter]").forEach(button => {
+        button.classList.toggle("active", button.dataset.filter === activeFilter);
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+
+    render();
+  </script>
+</body>
+</html>
