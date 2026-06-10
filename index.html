@@ -28,6 +28,14 @@
 
     * { box-sizing: border-box; }
 
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -53,6 +61,16 @@
     }
 
     button, input, select, textarea { font: inherit; }
+
+    input,
+    select,
+    textarea,
+    label,
+    dialog,
+    form {
+      min-width: 0;
+      max-width: 100%;
+    }
 
     button {
       transition: transform .16s ease, border-color .16s ease, background .16s ease, opacity .16s ease;
@@ -723,12 +741,17 @@
 
     dialog {
       width: min(calc(100% - 22px), 520px);
+      max-height: calc(100dvh - 24px);
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 0;
       color: var(--text);
       background: linear-gradient(180deg, #111923, #090e15);
       box-shadow: var(--shadow);
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-x: none;
+      touch-action: pan-y;
     }
 
     dialog::backdrop {
@@ -740,6 +763,10 @@
       padding: 16px;
       display: grid;
       gap: 12px;
+      width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+      touch-action: pan-y;
     }
 
     .form-head {
@@ -782,6 +809,17 @@
       outline: none;
     }
 
+    input[type="date"] {
+      min-height: 40px;
+      padding: 8px 7px;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
+
     textarea {
       min-height: 76px;
       resize: vertical;
@@ -789,8 +827,15 @@
 
     .form-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .form-grid > label,
+    .segment > label,
+    .flow-options > label {
+      min-width: 0;
     }
 
     .schedule-picker {
