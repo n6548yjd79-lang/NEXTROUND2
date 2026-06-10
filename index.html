@@ -1234,11 +1234,44 @@
       #entryDialog .date-grid {
         grid-template-columns: 1fr;
         gap: 10px;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+      }
+      #entryDialog .date-grid label,
+      #entryDialog .schedule-picker label {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+      }
+      #entryDialog input[type="date"] {
+        display: block;
+        box-sizing: border-box;
+        inline-size: 100%;
+        width: 100%;
+        max-inline-size: 100%;
+        max-width: 100%;
+        min-inline-size: 0;
+        min-width: 0;
+        -webkit-appearance: none;
+        appearance: none;
       }
       #entryDialog .date-grid input[type="date"] {
         min-height: 44px;
         padding: 10px 12px;
         font-size: 16px;
+      }
+      #entryDialog input[type="date"]::-webkit-date-and-time-value {
+        min-width: 0;
+        max-width: 100%;
+        text-align: left;
+      }
+      #entryDialog input[type="date"]::-webkit-calendar-picker-indicator {
+        flex: 0 0 auto;
+        margin: 0;
+        padding: 0;
+        width: 18px;
+        height: 18px;
       }
       .settings-actions { grid-template-columns: 1fr; }
       .header-tools { gap: 5px; }
