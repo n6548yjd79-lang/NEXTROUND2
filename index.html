@@ -103,8 +103,8 @@
     }
 
     .today {
-      min-width: 86px;
-      padding: 10px 11px;
+      min-width: 74px;
+      padding: 9px 9px;
       border: 1px solid rgba(255,255,255,.14);
       background: linear-gradient(180deg, rgba(255,255,255,.105), rgba(255,255,255,.045));
       border-radius: 14px;
@@ -117,7 +117,7 @@
     .today strong {
       display: block;
       color: var(--text);
-      font-size: 19px;
+      font-size: 18px;
       line-height: 1.1;
     }
 
@@ -132,12 +132,13 @@
     .header-tools {
       display: flex;
       align-items: stretch;
-      gap: 7px;
+      gap: 6px;
       flex: 0 0 auto;
     }
 
     .settings-btn {
-      min-width: 50px;
+      min-width: 45px;
+      padding: 0 8px;
       border: 1px solid rgba(255,255,255,.14);
       border-radius: 14px;
       background:
@@ -146,6 +147,7 @@
       color: #eef4fb;
       font-size: 12px;
       font-weight: 900;
+      white-space: nowrap;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
     }
 
@@ -586,6 +588,10 @@
       grid-template-columns: minmax(130px, 1fr) 66px 66px;
     }
 
+    .actions.done-mode {
+      grid-template-columns: minmax(130px, 1fr) 66px 66px;
+    }
+
     [hidden] {
       display: none !important;
     }
@@ -607,9 +613,17 @@
     }
 
     .primary.done {
-      background: rgba(255,255,255,.08);
-      color: #d5deea;
-      box-shadow: none;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.055)),
+        rgba(255,255,255,.08);
+      color: #eef4fb;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      cursor: default;
+    }
+
+    .primary:disabled {
+      opacity: 1;
+      transform: none;
     }
 
     .primary::before,
@@ -814,6 +828,38 @@
       border-color: transparent;
     }
 
+    .flow-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .flow-options input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .flow-options span {
+      display: grid;
+      place-items: center;
+      min-height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.13);
+      background: rgba(255,255,255,.075);
+      color: #d0d8e4;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .flow-options input:checked + span {
+      background:
+        linear-gradient(180deg, rgba(97,244,222,.16), rgba(75,179,253,.12)),
+        rgba(97,244,222,.08);
+      color: #eafffb;
+      border-color: rgba(97,244,222,.42);
+    }
+
     .save {
       min-height: 48px;
       border: 0;
@@ -989,6 +1035,68 @@
       font-weight: 800;
     }
 
+    .analytics-body {
+      padding: 0 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .analytics-grid {
+      display: grid;
+      gap: 11px;
+    }
+
+    .analysis-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.035)),
+        rgba(255,255,255,.045);
+    }
+
+    .analysis-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .analysis-top strong {
+      font-size: 17px;
+    }
+
+    .analysis-rate {
+      color: var(--text);
+      font-size: 28px;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .analysis-bar {
+      height: 13px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.45);
+    }
+
+    .analysis-fill {
+      width: var(--rate, 0%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent, var(--blue)), rgba(255,255,255,.82));
+    }
+
+    .analysis-detail {
+      color: #cbd4e0;
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.6;
+    }
+
 
     @media (max-width: 520px) {
       .app { padding-inline: 12px; }
@@ -999,11 +1107,22 @@
       .meta { grid-template-columns: 1fr; }
       .actions { grid-template-columns: 1fr 1fr; }
       .actions.result-mode { grid-template-columns: minmax(128px, 1fr) 58px 58px; }
+      .actions.done-mode { grid-template-columns: minmax(128px, 1fr) 58px 58px; }
       .icon-btn { min-height: 42px; }
       .card-main { padding: 15px; }
       .company h2 { font-size: 20px; }
       .deadline-card { align-items: flex-start; }
       .settings-actions { grid-template-columns: 1fr; }
+      .header-tools { gap: 5px; }
+      .settings-btn {
+        min-width: 42px;
+        padding-inline: 7px;
+        font-size: 11px;
+      }
+      .today {
+        min-width: 68px;
+        padding-inline: 8px;
+      }
     }
   </style>
 </head>
@@ -1016,6 +1135,7 @@
       </div>
       <div class="header-tools">
         <button class="settings-btn" type="button" id="settingsBtn">設定</button>
+        <button class="settings-btn" type="button" id="analyticsBtn">分析</button>
         <div class="today"><span>今日</span><strong id="dateLabel"></strong><small id="weekdayLabel"></small></div>
       </div>
     </header>
@@ -1074,6 +1194,15 @@
           <input name="nextDate" type="date">
         </label>
       </div>
+      <section class="schedule-picker">
+        <label>この選考であるフェーズ</label>
+        <div class="flow-options">
+          <label><input type="checkbox" name="flowEs" checked><span>ES</span></label>
+          <label><input type="checkbox" name="flowWebTest" checked><span>Webテスト</span></label>
+          <label><input type="checkbox" name="flowGd" checked><span>GD</span></label>
+          <label><input type="checkbox" name="flowInterview" checked><span>面接</span></label>
+        </div>
+      </section>
       <div id="internScheduleField" class="schedule-picker" hidden>
         <label>インターン日程</label>
         <div class="segment">
@@ -1215,6 +1344,17 @@
     </div>
   </dialog>
 
+  <dialog id="analyticsDialog">
+    <div class="form-head settings-head">
+      <h2>選考分析</h2>
+      <button class="x" type="button" id="closeAnalyticsDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="analytics-body">
+      <p class="settings-note">ES・Webテスト・GD・面接の通過率を集計します。不合格フェーズを記録するほど分析が正確になります。</p>
+      <div class="analytics-grid" id="analyticsContent"></div>
+    </div>
+  </dialog>
+
   <script>
     const stages = [
       "気になる",
@@ -1227,6 +1367,10 @@
       "二次面接",
       "最終面接",
       "結果待ち",
+      "ES不合格",
+      "Webテスト不合格",
+      "GD不合格",
+      "面接不合格",
       "インターン合格",
       "インターン不合格",
       "内定",
@@ -1234,7 +1378,7 @@
       "不採用"
     ];
 
-    const doneStages = new Set(["インターン合格", "インターン不合格", "内定", "辞退", "不採用"]);
+    const doneStages = new Set(["ES不合格", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "辞退", "不採用"]);
     const winStages = new Set(["インターン合格", "内定"]);
     const stageColors = {
       "気になる": "#95a3b5",
@@ -1247,6 +1391,10 @@
       "二次面接": "#36d399",
       "最終面接": "#36d399",
       "結果待ち": "#ffcf5a",
+      "ES不合格": "#ff6678",
+      "Webテスト不合格": "#ff6678",
+      "GD不合格": "#ff6678",
+      "面接不合格": "#ff6678",
       "インターン合格": "#36d399",
       "インターン不合格": "#ff6678",
       "内定": "#36d399",
@@ -1257,6 +1405,12 @@
     const vaultStorageKey = "nextround-vault-v1";
     const textEncoder = new TextEncoder();
     const textDecoder = new TextDecoder();
+    const phaseStages = {
+      es: ["書類選考中", "ES提出済", "ES不合格"],
+      webTest: ["Webテスト", "Webテスト不合格"],
+      gd: ["GD", "GD不合格"],
+      interview: ["一次面接", "二次面接", "最終面接", "面接不合格"]
+    };
     const seed = [
       {
         id: crypto.randomUUID(),
@@ -1328,6 +1482,8 @@
     const settingsDialog = document.querySelector("#settingsDialog");
     const settingsStatus = document.querySelector("#settingsStatus");
     const importFile = document.querySelector("#importFile");
+    const analyticsDialog = document.querySelector("#analyticsDialog");
+    const analyticsContent = document.querySelector("#analyticsContent");
     const clearCredentialField = document.querySelector("#clearCredentialField");
     const credentialFormNote = document.querySelector("#credentialFormNote");
     const credentialDialog = document.querySelector("#credentialDialog");
@@ -1373,6 +1529,8 @@
     document.querySelector("#exportBtn").addEventListener("click", exportData);
     document.querySelector("#importBtn").addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", importData);
+    document.querySelector("#analyticsBtn").addEventListener("click", openAnalytics);
+    document.querySelector("#closeAnalyticsDialog").addEventListener("click", () => analyticsDialog.close());
     document.querySelector("#closeCredentialDialog").addEventListener("click", () => credentialDialog.close());
     document.querySelector("#unlockCredentialBtn").addEventListener("click", unlockCredential);
     document.querySelector("#closeVaultDialog").addEventListener("click", () => closeVaultRequest(null));
@@ -1431,7 +1589,9 @@
         internStartDate: data.internStartDate || "",
         internEndDate: data.internEndDate || "",
         memo: data.memo.trim(),
-        credentialVault
+        flow: getFlowFromForm(),
+        credentialVault,
+        stageHistory: addStageToHistory(existingEntry?.stageHistory, data.stage)
       };
       entries = editingId
         ? entries.map(entry => entry.id === editingId ? item : entry)
@@ -1458,10 +1618,16 @@
           internStartDate: "",
           internEndDate: "",
           credentialVault: null,
-          ...entry
+          ...entry,
+          flow: normalizeFlow(entry.flow, entry.stageHistory, entry.stage),
+          stageHistory: normalizeStageHistory(entry.stageHistory, entry.stage)
         }));
       } catch {
-        return seed;
+        return seed.map(entry => ({
+          ...entry,
+          flow: normalizeFlow(entry.flow, entry.stageHistory, entry.stage),
+          stageHistory: normalizeStageHistory(entry.stageHistory, entry.stage)
+        }));
       }
     }
 
@@ -1536,12 +1702,13 @@
     }
 
     function normalizeEntry(entry) {
+      const stage = normalizeStageName(entry.stage);
       return {
         id: entry.id || crypto.randomUUID(),
         company: entry.company || "",
         type: entry.type || "インターン",
         role: entry.role || "",
-        stage: stages.includes(entry.stage) ? entry.stage : "応募予定",
+        stage: stages.includes(stage) ? stage : "応募予定",
         deadline: entry.deadline || "",
         nextDate: entry.nextDate || "",
         internSchedule: entry.internSchedule || "",
@@ -1550,8 +1717,72 @@
         internStartDate: entry.internStartDate || "",
         internEndDate: entry.internEndDate || "",
         memo: entry.memo || "",
-        credentialVault: entry.credentialVault || null
+        flow: normalizeFlow(entry.flow, entry.stageHistory, stage),
+        credentialVault: entry.credentialVault || null,
+        stageHistory: normalizeStageHistory(entry.stageHistory, stage)
       };
+    }
+
+    function normalizeStageName(stage) {
+      return ({
+        "ES落ち": "ES不合格",
+        "Webテスト落ち": "Webテスト不合格",
+        "GD落ち": "GD不合格",
+        "面接落ち": "面接不合格"
+      })[stage] || stage;
+    }
+
+    function defaultFlow() {
+      return { es: true, webTest: true, gd: true, interview: true };
+    }
+
+    function normalizeFlow(flow = {}, history = [], currentStage = "") {
+      const normalized = { ...defaultFlow(), ...flow };
+      const normalizedHistory = Array.isArray(history) ? history.map(normalizeStageName) : [];
+      Object.entries(phaseStages).forEach(([key, values]) => {
+        if (Object.prototype.hasOwnProperty.call(flow, key)) return;
+        if (values.some(stage => normalizedHistory.includes(stage) || normalizeStageName(currentStage) === stage)) {
+          normalized[key] = true;
+        }
+      });
+      return normalized;
+    }
+
+    function getFlowFromForm() {
+      return {
+        es: form.elements.flowEs.checked,
+        webTest: form.elements.flowWebTest.checked,
+        gd: form.elements.flowGd.checked,
+        interview: form.elements.flowInterview.checked
+      };
+    }
+
+    function setFlowForm(entry = {}) {
+      const flow = normalizeFlow(entry.flow, entry.stageHistory, entry.stage);
+      form.elements.flowEs.checked = flow.es;
+      form.elements.flowWebTest.checked = flow.webTest;
+      form.elements.flowGd.checked = flow.gd;
+      form.elements.flowInterview.checked = flow.interview;
+    }
+
+    function activeStageSequence(entry) {
+      const flow = normalizeFlow(entry.flow, entry.stageHistory, entry.stage);
+      return [
+        "気になる",
+        "応募予定",
+        ...(flow.es ? ["書類選考中", "ES提出済"] : []),
+        ...(flow.webTest ? ["Webテスト"] : []),
+        ...(flow.gd ? ["GD"] : []),
+        ...(flow.interview ? ["一次面接", "二次面接", "最終面接"] : []),
+        "結果待ち"
+      ];
+    }
+
+    function hasPhase(entry, phaseKey) {
+      const flow = normalizeFlow(entry.flow, entry.stageHistory, entry.stage);
+      if (flow[phaseKey]) return true;
+      const history = Array.isArray(entry.stageHistory) ? entry.stageHistory.map(normalizeStageName) : [];
+      return phaseStages[phaseKey].some(stage => history.includes(stage) || normalizeStageName(entry.stage) === stage);
     }
 
     function bytesToBase64(bytes) {
@@ -1699,6 +1930,98 @@
     async function decryptCredential(vault, password) {
       const key = await deriveVaultKey(password, vaultConfig.salt);
       return decryptPayload(key, vault);
+    }
+
+    function normalizeStageHistory(history, currentStage) {
+      const values = Array.isArray(history)
+        ? history.map(normalizeStageName).filter(stage => stages.includes(stage))
+        : [];
+      const inferred = inferStageHistory(currentStage);
+      return [...new Set([...inferred, ...values, currentStage].filter(stage => stages.includes(stage)))];
+    }
+
+    function addStageToHistory(history, stage) {
+      return normalizeStageHistory([...(history || []), stage], stage);
+    }
+
+    function removeStageFromHistory(history, stage) {
+      return (history || []).map(normalizeStageName).filter(item => item !== stage);
+    }
+
+    function inferStageHistory(stage) {
+      if (!stage || !stages.includes(stage)) return [];
+      if (winStages.has(stage)) return [...stages.slice(0, stages.indexOf("結果待ち") + 1), stage];
+      if (doneStages.has(stage)) return [stage];
+      return stages.slice(0, stages.indexOf(stage) + 1);
+    }
+
+    function openAnalytics() {
+      renderAnalytics();
+      analyticsDialog.showModal();
+    }
+
+    function renderAnalytics() {
+      const stats = [
+        buildSimplePassRate("ES", "es", ["Webテスト", "GD", "一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], ["ES不合格"], "#61f4de"),
+        buildSimplePassRate("Webテスト", "webTest", ["GD", "一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], ["Webテスト不合格"], "#b79cff"),
+        buildSimplePassRate("GD", "gd", ["一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], ["GD不合格"], "#ffcf5a"),
+        buildInterviewPassRate()
+      ];
+      analyticsContent.innerHTML = stats.map(item => {
+        const rate = item.total ? Math.round((item.passed / item.total) * 100) : 0;
+        const note = item.total < 3 ? "まだデータ少なめ" : "集計中";
+        return `
+          <section class="analysis-card" style="--accent:${item.color};">
+            <div class="analysis-top">
+              <strong>${escapeHtml(item.label)}</strong>
+              <span class="analysis-rate">${rate}%</span>
+            </div>
+            <div class="analysis-bar"><div class="analysis-fill" style="--rate:${rate}%"></div></div>
+            <div class="analysis-detail">通過 ${item.passed} / 対象 ${item.total} ・ ${note}</div>
+          </section>
+        `;
+      }).join("");
+    }
+
+    function buildSimplePassRate(label, phaseKey, passStages, failStages, color) {
+      let total = 0;
+      let passed = 0;
+      entries.forEach(entry => {
+        if (!hasPhase(entry, phaseKey)) return;
+        const history = normalizeStageHistory(entry.stageHistory, entry.stage);
+        const didFail = failStages.includes(entry.stage);
+        if (didFail) {
+          total += 1;
+          return;
+        }
+        const didPass = passStages.some(stage => history.includes(stage)) || winStages.has(entry.stage);
+        if (!didPass) return;
+        total += 1;
+        passed += 1;
+      });
+      return { label, total, passed, color };
+    }
+
+    function buildInterviewPassRate() {
+      const interviewStages = ["一次面接", "二次面接", "最終面接"];
+      let total = 0;
+      let passed = 0;
+      entries.forEach(entry => {
+        if (!hasPhase(entry, "interview")) return;
+        const history = normalizeStageHistory(entry.stageHistory, entry.stage);
+        if (entry.stage === "面接不合格") {
+          total += 1;
+          return;
+        }
+        interviewStages.forEach(stage => {
+          if (!history.includes(stage)) return;
+          const afterInterview = history.some(item => stages.indexOf(item) > stages.indexOf(stage));
+          if (!afterInterview && !winStages.has(entry.stage)) return;
+          total += 1;
+          passed += 1;
+        });
+      });
+      return { label: "面接", total, passed, color: "#36d399" };
     }
 
     function nextDate(days) {
@@ -1866,6 +2189,7 @@
       const primaryStage = getPrimaryStage(entry);
       const done = doneStages.has(entry.stage) || entry.stage === stages.at(-1);
       const resultMode = entry.stage === "結果待ち";
+      const actionMode = done ? "done-mode" : resultMode ? "result-mode" : "";
       card.style.setProperty("--stage-color", stageColor);
       card.innerHTML = `
         <div class="card-main">
@@ -1881,13 +2205,13 @@
             <div class="stage-label"><strong>${escapeHtml(statusHint(entry))}</strong><span>${progress}%</span></div>
             <div class="track"><div class="bar" style="width:${progress}%"></div></div>
           </div>
-          ${entry.stage === "インターン合格" ? internshipScheduleMarkup(entry) : deadlineMetaMarkup(entry, deadlineClass)}
+          ${done ? "" : deadlineMetaMarkup(entry, deadlineClass)}
           <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
           ${entry.credentialVault ? `<button class="secret-open" data-action="credential" type="button">マイページ情報を表示</button>` : ""}
         </div>
-        <div class="actions ${resultMode ? "result-mode" : ""}">
-          <button class="primary ${done ? "done" : ""}" data-action="advance">${done ? "完了済み" : escapeHtml(resultMode ? "結果を入力" : primaryLabel(entry, primaryStage))}</button>
-          ${resultMode ? "" : `<button class="quick" data-action="wait">結果待ち</button>`}
+        <div class="actions ${actionMode}">
+          <button class="primary ${done ? "done" : ""}" data-action="advance" ${done ? "disabled" : ""}>${done ? "完了済み" : escapeHtml(resultMode ? "結果を入力" : primaryLabel(entry, primaryStage))}</button>
+          ${done ? "" : resultMode ? "" : `<button class="quick" data-action="fail">${escapeHtml(failLabel(entry))}</button>`}
           <button class="icon-btn" data-action="edit" aria-label="編集">編集</button>
           <button class="icon-btn" data-action="back" aria-label="戻る">戻る</button>
         </div>
@@ -1896,12 +2220,14 @@
         if (resultMode) openResultDialog(entry);
         else advance(entry.id, 1);
       });
-      const waitButton = card.querySelector('[data-action="wait"]');
-      if (waitButton) waitButton.addEventListener("click", () => setStage(entry.id, "結果待ち"));
+      const failButton = card.querySelector('[data-action="fail"]');
+      if (failButton) failButton.addEventListener("click", () => setStage(entry.id, getFailStage(entry)));
       const credentialButton = card.querySelector('[data-action="credential"]');
       if (credentialButton) credentialButton.addEventListener("click", () => openCredentialDialog(entry));
-      card.querySelector('[data-action="back"]').addEventListener("click", () => advance(entry.id, -1));
-      card.querySelector('[data-action="edit"]').addEventListener("click", () => openForm(entry));
+      const backButton = card.querySelector('[data-action="back"]');
+      if (backButton) backButton.addEventListener("click", () => advance(entry.id, -1));
+      const editButton = card.querySelector('[data-action="edit"]');
+      if (editButton) editButton.addEventListener("click", () => openForm(entry));
       return card;
     }
 
@@ -1951,12 +2277,16 @@
     function getPrimaryStage(entry) {
       if (doneStages.has(entry.stage)) return entry.stage;
       if (entry.stage === "結果待ち") return entry.type === "インターン" ? "インターン合格" : "内定";
-      return stages[Math.min(stages.indexOf(entry.stage) + 1, stages.indexOf("結果待ち"))];
+      const sequence = activeStageSequence(entry);
+      const currentIndex = sequence.indexOf(entry.stage);
+      if (currentIndex >= 0) return sequence[Math.min(currentIndex + 1, sequence.length - 1)];
+      const next = sequence.find(stage => stages.indexOf(stage) > stages.indexOf(entry.stage));
+      return next || "結果待ち";
     }
 
     function getQuickStage(entry) {
       if (entry.stage === "結果待ち") return entry.type === "インターン" ? "インターン不合格" : "不採用";
-      return "結果待ち";
+      return getFailStage(entry);
     }
 
     function primaryLabel(entry, stage) {
@@ -1966,14 +2296,25 @@
 
     function quickLabel(entry, stage) {
       if (entry.stage === "結果待ち") return `結果: ${stage}`;
-      return "結果待ち";
+      return failLabel(entry);
+    }
+
+    function getFailStage(entry) {
+      if (["書類選考中", "ES提出済"].includes(entry.stage)) return "ES不合格";
+      if (entry.stage === "Webテスト") return "Webテスト不合格";
+      if (entry.stage === "GD") return "GD不合格";
+      if (entry.stage.includes("面接")) return "面接不合格";
+      return entry.type === "インターン" ? "インターン不合格" : "不採用";
+    }
+
+    function failLabel(entry) {
+      return getFailStage(entry);
     }
 
     function statusHint(entry) {
       if (entry.stage === "結果待ち") return "返事が来たら結果入力";
-      if (entry.stage === "インターン合格") return "インターン日程を確認";
       if (winStages.has(entry.stage)) return "おめでとう、通過";
-      if (["インターン不合格", "不採用"].includes(entry.stage)) return "記録済み";
+      if (doneStages.has(entry.stage)) return "記録済み";
       return "次のステップへ";
     }
 
@@ -1983,16 +2324,38 @@
         const current = stages.indexOf(entry.stage);
         const next = direction > 0
           ? stages.indexOf(getPrimaryStage(entry))
-          : Math.max(0, current - 1);
+          : stages.indexOf(getPreviousStage(entry));
         const nextStage = stages[next];
-        return { ...entry, stage: nextStage };
+        const baseHistory = direction < 0
+          ? removeStageFromHistory(entry.stageHistory, entry.stage)
+          : entry.stageHistory;
+        return { ...entry, stage: nextStage, stageHistory: addStageToHistory(baseHistory, nextStage) };
       });
       save();
       render();
     }
 
+    function getPreviousStage(entry) {
+      const map = {
+        "ES不合格": "ES提出済",
+        "Webテスト不合格": "Webテスト",
+        "GD不合格": "GD",
+        "面接不合格": "一次面接",
+        "インターン合格": "結果待ち",
+        "インターン不合格": "結果待ち",
+        "内定": "結果待ち",
+        "不採用": "結果待ち",
+        "辞退": "結果待ち"
+      };
+      if (map[entry.stage]) return map[entry.stage];
+      const sequence = activeStageSequence(entry);
+      const current = sequence.indexOf(entry.stage);
+      if (current >= 0) return sequence[Math.max(0, current - 1)];
+      return stages[Math.max(0, stages.indexOf(entry.stage) - 1)];
+    }
+
     function setStage(id, stage, extras = {}) {
-      entries = entries.map(entry => entry.id === id ? { ...entry, stage, ...extras } : entry);
+      entries = entries.map(entry => entry.id === id ? { ...entry, stage, stageHistory: addStageToHistory(entry.stageHistory, stage), ...extras } : entry);
       save();
       render();
     }
@@ -2037,6 +2400,7 @@
       form.elements.role.value = entry?.role || "";
       form.elements.deadline.value = entry?.deadline || "";
       form.elements.nextDate.value = entry?.nextDate || "";
+      setFlowForm(entry || {});
       setScheduleForm(form, "intern", entry || {});
       form.elements.memo.value = entry?.memo || "";
       form.elements.portalUrl.value = "";
