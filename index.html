@@ -838,6 +838,10 @@
       min-width: 0;
     }
 
+    .date-grid {
+      align-items: start;
+    }
+
     .schedule-picker {
       display: grid;
       gap: 10px;
@@ -1227,6 +1231,15 @@
       .card-main { padding: 15px; }
       .company h2 { font-size: 20px; }
       .deadline-card { align-items: flex-start; }
+      #entryDialog .date-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      #entryDialog .date-grid input[type="date"] {
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 16px;
+      }
       .settings-actions { grid-template-columns: 1fr; }
       .header-tools { gap: 5px; }
       .settings-btn {
@@ -1320,7 +1333,7 @@
       <label>職種/コース
         <input name="role" placeholder="例: 総合職 / エンジニア / 企画">
       </label>
-      <div class="form-grid">
+      <div class="form-grid date-grid">
         <label>締切日
           <input name="deadline" type="date">
         </label>
