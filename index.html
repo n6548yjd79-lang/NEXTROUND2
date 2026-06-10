@@ -127,6 +127,30 @@
       font-weight: 750;
     }
 
+    .header-tools {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .settings-btn {
+      min-width: 54px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.105), rgba(255,255,255,.045)),
+        rgba(255,255,255,.045);
+      color: #eef4fb;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .settings-btn:focus-visible {
+      outline: 3px solid rgba(75,179,253,.34);
+      outline-offset: 2px;
+    }
+
     .stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -772,6 +796,73 @@
       color: var(--red);
     }
 
+    .settings-content {
+      display: grid;
+      gap: 14px;
+      padding: 0 16px 16px;
+    }
+
+    .settings-head {
+      padding: 16px 16px 0;
+    }
+
+    .settings-panel {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.035)),
+        rgba(255,255,255,.045);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .settings-panel h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .settings-note {
+      margin: 0;
+      color: #cbd4e0;
+      font-size: 12px;
+      line-height: 1.7;
+      font-weight: 650;
+    }
+
+    .settings-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .soft-btn {
+      min-height: 46px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035)),
+        rgba(255,255,255,.06);
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .soft-btn.accent {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--blue), #76c7ff);
+      color: #061018;
+      box-shadow: 0 10px 24px rgba(75,179,253,.18);
+    }
+
+    .settings-status {
+      min-height: 20px;
+      color: #9facbd;
+      font-size: 11px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+
 
     @media (max-width: 520px) {
       .app { padding-inline: 12px; }
@@ -786,6 +877,7 @@
       .card-main { padding: 15px; }
       .company h2 { font-size: 20px; }
       .deadline-card { align-items: flex-start; }
+      .settings-actions { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -796,7 +888,10 @@
         <h1>NEXTROUND</h1>
         <p class="sub">インターンも本選考も、タップで進める。</p>
       </div>
-      <div class="today"><span>今日</span><strong id="dateLabel"></strong><small id="weekdayLabel"></small></div>
+      <div class="header-tools">
+        <button class="settings-btn" type="button" id="settingsBtn">設定</button>
+        <div class="today"><span>今日</span><strong id="dateLabel"></strong><small id="weekdayLabel"></small></div>
+      </div>
     </header>
 
     <section class="stats" aria-label="進捗サマリー">
@@ -908,6 +1003,26 @@
     </form>
   </dialog>
 
+  <dialog id="settingsDialog">
+    <div class="form-head settings-head">
+      <h2>設定</h2>
+      <button class="x" type="button" id="closeSettingsDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="settings-content">
+      <section class="settings-panel">
+        <h3>データ管理</h3>
+        <p class="settings-note">データはこの端末に自動保存されます。端末変更やブラウザのサイトデータ削除に備えて、たまに保存しておくと安心です。</p>
+        <div class="settings-actions">
+          <button class="soft-btn accent" type="button" id="exportBtn">データを保存</button>
+          <button class="soft-btn" type="button" id="importBtn">保存データを読み込む</button>
+        </div>
+        <p class="settings-note">保存したファイルには会社名やメモが含まれます。人に送らず、自分だけで保管してください。</p>
+        <div class="settings-status" id="settingsStatus" aria-live="polite"></div>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+      </section>
+    </div>
+  </dialog>
+
   <script>
     const stages = [
       "気になる",
@@ -1012,6 +1127,9 @@
     const resultForm = document.querySelector("#resultForm");
     const resultTitle = document.querySelector("#resultTitle");
     const resultScheduleField = document.querySelector("#resultScheduleField");
+    const settingsDialog = document.querySelector("#settingsDialog");
+    const settingsStatus = document.querySelector("#settingsStatus");
+    const importFile = document.querySelector("#importFile");
 
     const now = new Date();
     document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
@@ -1038,6 +1156,11 @@
     document.querySelector("#closeResultDialog").addEventListener("click", () => resultDialog.close());
     document.querySelector("#passResultBtn").addEventListener("click", () => applyResult(true));
     document.querySelector("#failResultBtn").addEventListener("click", () => applyResult(false));
+    document.querySelector("#settingsBtn").addEventListener("click", openSettings);
+    document.querySelector("#closeSettingsDialog").addEventListener("click", () => settingsDialog.close());
+    document.querySelector("#exportBtn").addEventListener("click", exportData);
+    document.querySelector("#importBtn").addEventListener("click", () => importFile.click());
+    importFile.addEventListener("change", importData);
     form.elements.type.addEventListener("change", updateInternScheduleVisibility);
     form.elements.stage.addEventListener("change", updateInternScheduleVisibility);
     Array.from(form.elements.internScheduleMode).forEach(input => {
@@ -1105,6 +1228,74 @@
 
     function save() {
       localStorage.setItem(storageKey, JSON.stringify(entries));
+    }
+
+    function openSettings() {
+      settingsStatus.textContent = "";
+      settingsDialog.showModal();
+    }
+
+    function exportData() {
+      const payload = {
+        app: "NEXTROUND",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        entries
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `nextround-save-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      settingsStatus.textContent = "保存データを作成しました。iCloud Driveなど自分だけの場所に保管してください。";
+    }
+
+    function importData() {
+      const file = importFile.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const importedEntries = Array.isArray(parsed) ? parsed : parsed.entries;
+          if (!Array.isArray(importedEntries)) throw new Error("invalid");
+          if (entries.length && !confirm("今のデータを、選んだ保存データで置き換えます。よろしいですか？")) {
+            importFile.value = "";
+            return;
+          }
+          entries = importedEntries.map(normalizeEntry);
+          save();
+          render();
+          settingsStatus.textContent = "保存データを読み込みました。";
+        } catch {
+          settingsStatus.textContent = "読み込めませんでした。NEXTROUNDで保存したJSONファイルを選んでください。";
+        } finally {
+          importFile.value = "";
+        }
+      });
+      reader.readAsText(file);
+    }
+
+    function normalizeEntry(entry) {
+      return {
+        id: entry.id || crypto.randomUUID(),
+        company: entry.company || "",
+        type: entry.type || "インターン",
+        role: entry.role || "",
+        stage: stages.includes(entry.stage) ? entry.stage : "応募予定",
+        deadline: entry.deadline || "",
+        nextDate: entry.nextDate || "",
+        internSchedule: entry.internSchedule || "",
+        internScheduleMode: entry.internScheduleMode || "single",
+        internSingleDate: entry.internSingleDate || "",
+        internStartDate: entry.internStartDate || "",
+        internEndDate: entry.internEndDate || "",
+        memo: entry.memo || ""
+      };
     }
 
     function nextDate(days) {
