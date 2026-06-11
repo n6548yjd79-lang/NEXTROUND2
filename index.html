@@ -85,6 +85,79 @@
       position: relative;
     }
 
+    .splash {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(145deg, rgba(75,179,253,.18), transparent 32%),
+        linear-gradient(25deg, rgba(97,244,222,.09), transparent 48%),
+        #070b11;
+      opacity: 1;
+      pointer-events: none;
+      transition: opacity .34s ease, visibility .34s ease;
+    }
+
+    .splash.hide {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .splash-mark {
+      display: grid;
+      gap: 12px;
+      justify-items: center;
+      transform: translateY(6px);
+      animation: splashRise .72s cubic-bezier(.2, .8, .2, 1) forwards;
+    }
+
+    .splash-logo {
+      color: #f7fbff;
+      font-size: clamp(40px, 12vw, 74px);
+      font-weight: 950;
+      line-height: .9;
+      letter-spacing: 0;
+      text-shadow: 0 0 28px rgba(75,179,253,.28);
+    }
+
+    .splash-line {
+      width: min(280px, 62vw);
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, var(--cyan), var(--blue), transparent);
+      transform-origin: left;
+      animation: splashLine .72s ease forwards;
+      box-shadow: 0 0 22px rgba(97,244,222,.35);
+    }
+
+    .splash-sub {
+      color: #cbd4e0;
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    @keyframes splashRise {
+      from { opacity: 0; transform: translateY(14px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes splashLine {
+      from { transform: scaleX(0); opacity: .2; }
+      to { transform: scaleX(1); opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .splash,
+      .splash-mark,
+      .splash-line {
+        animation: none;
+        transition: none;
+      }
+    }
+
     header {
       display: flex;
       align-items: flex-start;
@@ -1331,6 +1404,13 @@
   </style>
 </head>
 <body>
+  <div class="splash" id="splash" aria-hidden="true">
+    <div class="splash-mark">
+      <div class="splash-logo">NEXTROUND</div>
+      <div class="splash-line"></div>
+      <div class="splash-sub">Your Next Move</div>
+    </div>
+  </div>
   <main class="app">
     <header>
       <div class="brand">
@@ -1837,6 +1917,11 @@
     const importPreview = document.querySelector("#importPreview");
     const confirmImportBtn = document.querySelector("#confirmImportBtn");
     const importStatus = document.querySelector("#importStatus");
+    const splash = document.querySelector("#splash");
+
+    setTimeout(() => {
+      splash?.classList.add("hide");
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 1250);
 
     const now = new Date();
     document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
