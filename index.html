@@ -985,6 +985,33 @@
       font-weight: 700;
     }
 
+    .privacy-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .privacy-item {
+      display: grid;
+      gap: 5px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      background: rgba(255,255,255,.045);
+    }
+
+    .privacy-item strong {
+      color: #f3f7fb;
+      font-size: 13px;
+    }
+
+    .privacy-item p {
+      margin: 0;
+      color: #cbd4e0;
+      font-size: 12px;
+      line-height: 1.7;
+      font-weight: 650;
+    }
+
     .choice-body,
     .import-body {
       padding: 0 16px 16px;
@@ -1588,6 +1615,56 @@
         <p class="settings-note">忘れた場合は、NEXTROUND内のログイン情報だけを削除して再設定できます。</p>
         <div class="settings-status" id="vaultSettingsStatus" aria-live="polite"></div>
       </section>
+      <section class="settings-panel">
+        <h3>データとプライバシー</h3>
+        <p class="settings-note">入力データの保存先、管理者が見られない情報、注意事項を確認できます。</p>
+        <button class="soft-btn" type="button" id="privacyBtn">内容を見る</button>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="privacyDialog">
+    <div class="form-head settings-head">
+      <h2>データとプライバシー</h2>
+      <button class="x" type="button" id="closePrivacyDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="vault-body">
+      <div class="privacy-list">
+        <section class="privacy-item">
+          <strong>保存場所</strong>
+          <p>入力した選考情報は、あなたの端末内に保存されます。NEXTROUNDの管理者が、会社名・選考状況・締切日・メモを取得・閲覧することはありません。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>端末内に保存される情報</strong>
+          <p>あなたが入力した場合、会社名、選考状況、締切日、次の予定日、インターン日程、通常メモ、ログインURL・ID・パスワードが、あなたの端末内に保存されます。</p>
+          <p>これらの入力内容がNEXTROUNDの管理者に送信されたり、管理者側で閲覧されたりすることはありません。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>ログイン情報</strong>
+          <p>ログインURL・ID・パスワードの入力は任意です。入力した場合は、保護パスワードで暗号化して端末内に保存されます。保護パスワードを忘れた場合、保存済みログイン情報は表示できません。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>バックアップ</strong>
+          <p>データ保存機能で作成したファイルには、会社名・選考状況・メモなどが含まれます。人に送らず、自分だけの場所に保管してください。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>GitHub Pagesでの公開</strong>
+          <p>このアプリはGitHub Pagesで公開されています。ページを表示するために必要な通信情報は、GitHub側で安全管理のために扱われる場合があります。NEXTROUNDの管理者が、あなたの入力内容を取得・閲覧することはありません。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>注意事項</strong>
+          <p>共有端末では使わないでください。重要なパスワードは、専用のパスワード管理アプリとの併用をおすすめします。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>問い合わせ先</strong>
+          <p>不具合報告・改善要望は、X（Twitter）のDMまでお願いします。X：@si28620</p>
+          <p>送信時は、会社名・ログインID・パスワードなど、個人情報やログイン情報を含めないでください。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>更新日</strong>
+          <p>2026年6月11日</p>
+        </section>
+      </div>
     </div>
   </dialog>
 
@@ -1732,6 +1809,7 @@
     const settingsDialog = document.querySelector("#settingsDialog");
     const settingsStatus = document.querySelector("#settingsStatus");
     const vaultSettingsStatus = document.querySelector("#vaultSettingsStatus");
+    const privacyDialog = document.querySelector("#privacyDialog");
     const importFile = document.querySelector("#importFile");
     const analyticsDialog = document.querySelector("#analyticsDialog");
     const analyticsContent = document.querySelector("#analyticsContent");
@@ -1806,6 +1884,8 @@
     document.querySelector("#forgotVaultBtn").addEventListener("click", openForgotVaultDialog);
     document.querySelector("#closeForgotVaultDialog").addEventListener("click", () => forgotVaultDialog.close());
     document.querySelector("#forgotVaultSubmitBtn").addEventListener("click", resetForgottenVaultPassword);
+    document.querySelector("#privacyBtn").addEventListener("click", () => privacyDialog.showModal());
+    document.querySelector("#closePrivacyDialog").addEventListener("click", () => privacyDialog.close());
     document.querySelector("#analyticsBtn").addEventListener("click", openAnalytics);
     document.querySelector("#closeAnalyticsDialog").addEventListener("click", () => analyticsDialog.close());
     document.querySelector("#closeCredentialDialog").addEventListener("click", () => credentialDialog.close());
