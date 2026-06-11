@@ -1097,6 +1097,27 @@
       accent-color: var(--red);
     }
 
+    .reset-check {
+      display: flex;
+      align-items: flex-start;
+      grid-template-columns: none;
+      gap: 9px;
+      padding: 11px;
+      border: 1px solid rgba(255,102,120,.22);
+      border-radius: 12px;
+      background: rgba(255,102,120,.08);
+      color: #ffd4da;
+      line-height: 1.55;
+    }
+
+    .reset-check input {
+      width: 18px;
+      min-height: 18px;
+      margin-top: 2px;
+      accent-color: var(--red);
+      flex: 0 0 auto;
+    }
+
     .secret-open {
       display: grid;
       place-items: center;
@@ -1516,6 +1537,30 @@
     </div>
   </dialog>
 
+  <dialog id="forgotVaultDialog">
+    <div class="form-head settings-head">
+      <h2>忘れた場合の再設定</h2>
+      <button class="x" type="button" id="closeForgotVaultDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="vault-body">
+      <p class="settings-note">保護パスワードを忘れた場合、NEXTROUND内に保存しているログインURL・ID・パスワードは表示できません。</p>
+      <p class="settings-note">再設定すると、NEXTROUND内のログイン情報は削除されます。新しい保護パスワードを設定したあと、必要なログイン情報をもう一度入力してください。</p>
+      <p class="settings-note">企業のマイページやアカウントには影響しません。会社名・選考状況・締切日・通常メモは残ります。</p>
+      <label class="reset-check">
+        <input id="forgotVaultConfirm" type="checkbox">
+        NEXTROUND内のログイン情報だけが削除されることを理解しました
+      </label>
+      <label>新しい保護パスワード
+        <input id="forgotVaultPassword" type="password" autocomplete="new-password">
+      </label>
+      <label>もう一度入力
+        <input id="forgotVaultConfirmPassword" type="password" autocomplete="new-password">
+      </label>
+      <button class="save danger" type="button" id="forgotVaultSubmitBtn">ログイン情報を削除して再設定</button>
+      <div class="vault-error" id="forgotVaultError" aria-live="polite"></div>
+    </div>
+  </dialog>
+
   <dialog id="settingsDialog">
     <div class="form-head settings-head">
       <h2>設定</h2>
@@ -1532,6 +1577,16 @@
         <p class="settings-note">保存したファイルには会社名やメモが含まれます。人に送らず、自分だけで保管してください。</p>
         <div class="settings-status" id="settingsStatus" aria-live="polite"></div>
         <input id="importFile" type="file" accept="application/json,.json" hidden>
+      </section>
+      <section class="settings-panel">
+        <h3>保護パスワード</h3>
+        <p class="settings-note">ログイン情報を見るための保護パスワードを管理します。</p>
+        <div class="settings-actions">
+          <button class="soft-btn" type="button" id="changeVaultBtn">保護パスワードを変更</button>
+          <button class="soft-btn" type="button" id="forgotVaultBtn">忘れた場合の再設定</button>
+        </div>
+        <p class="settings-note">忘れた場合は、NEXTROUND内のログイン情報だけを削除して再設定できます。</p>
+        <div class="settings-status" id="vaultSettingsStatus" aria-live="polite"></div>
       </section>
     </div>
   </dialog>
@@ -1676,6 +1731,7 @@
     const resultScheduleField = document.querySelector("#resultScheduleField");
     const settingsDialog = document.querySelector("#settingsDialog");
     const settingsStatus = document.querySelector("#settingsStatus");
+    const vaultSettingsStatus = document.querySelector("#vaultSettingsStatus");
     const importFile = document.querySelector("#importFile");
     const analyticsDialog = document.querySelector("#analyticsDialog");
     const analyticsContent = document.querySelector("#analyticsContent");
@@ -1693,6 +1749,11 @@
     const vaultConfirmField = document.querySelector("#vaultConfirmField");
     const vaultConfirmPassword = document.querySelector("#vaultConfirmPassword");
     const vaultError = document.querySelector("#vaultError");
+    const forgotVaultDialog = document.querySelector("#forgotVaultDialog");
+    const forgotVaultConfirm = document.querySelector("#forgotVaultConfirm");
+    const forgotVaultPassword = document.querySelector("#forgotVaultPassword");
+    const forgotVaultConfirmPassword = document.querySelector("#forgotVaultConfirmPassword");
+    const forgotVaultError = document.querySelector("#forgotVaultError");
     const importDialog = document.querySelector("#importDialog");
     const importText = document.querySelector("#importText");
     const importPreview = document.querySelector("#importPreview");
@@ -1741,6 +1802,10 @@
     document.querySelector("#exportBtn").addEventListener("click", exportData);
     document.querySelector("#importBtn").addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", importData);
+    document.querySelector("#changeVaultBtn").addEventListener("click", changeVaultPassword);
+    document.querySelector("#forgotVaultBtn").addEventListener("click", openForgotVaultDialog);
+    document.querySelector("#closeForgotVaultDialog").addEventListener("click", () => forgotVaultDialog.close());
+    document.querySelector("#forgotVaultSubmitBtn").addEventListener("click", resetForgottenVaultPassword);
     document.querySelector("#analyticsBtn").addEventListener("click", openAnalytics);
     document.querySelector("#closeAnalyticsDialog").addEventListener("click", () => analyticsDialog.close());
     document.querySelector("#closeCredentialDialog").addEventListener("click", () => credentialDialog.close());
@@ -1752,6 +1817,12 @@
     });
     vaultConfirmPassword.addEventListener("keydown", event => {
       if (event.key === "Enter") submitVaultPassword();
+    });
+    forgotVaultPassword.addEventListener("keydown", event => {
+      if (event.key === "Enter") resetForgottenVaultPassword();
+    });
+    forgotVaultConfirmPassword.addEventListener("keydown", event => {
+      if (event.key === "Enter") resetForgottenVaultPassword();
     });
     credentialPassword.addEventListener("keydown", event => {
       if (event.key === "Enter") unlockCredential();
@@ -2140,6 +2211,7 @@
 
     function openSettings() {
       settingsStatus.textContent = "";
+      vaultSettingsStatus.textContent = "";
       settingsDialog.showModal();
     }
 
@@ -2403,6 +2475,86 @@
       if (!password) throw new Error("マイページ情報の保存をキャンセルしました。");
       if (!(await verifyVaultPassword(password))) throw new Error("保護パスワードが違います。");
       return password;
+    }
+
+    async function changeVaultPassword() {
+      vaultSettingsStatus.textContent = "";
+      if (!vaultConfig) {
+        vaultSettingsStatus.textContent = "まだ保護パスワードは設定されていません。ログイン情報を保存するときに設定できます。";
+        return;
+      }
+      const currentPassword = await requestVaultPassword({
+        title: "現在の保護パスワード",
+        message: "保存済みログイン情報を残したまま変更するため、現在の保護パスワードを入力してください。",
+        create: false
+      });
+      if (!currentPassword) return;
+      if (!(await verifyVaultPassword(currentPassword))) {
+        vaultSettingsStatus.textContent = "現在の保護パスワードが違います。";
+        return;
+      }
+      const oldConfig = vaultConfig;
+      const oldKey = await deriveVaultKey(currentPassword, oldConfig.salt);
+      let decryptedCredentials;
+      try {
+        decryptedCredentials = await Promise.all(entries.map(entry => (
+          entry.credentialVault ? decryptPayload(oldKey, entry.credentialVault) : Promise.resolve(null)
+        )));
+      } catch {
+        vaultSettingsStatus.textContent = "保存済みログイン情報を読み取れませんでした。忘れた場合の再設定を使ってください。";
+        return;
+      }
+      const newPassword = await requestVaultPassword({
+        title: "新しい保護パスワード",
+        message: "保存済みログイン情報は残したまま、新しい保護パスワードに変更します。",
+        create: true
+      });
+      if (!newPassword) return;
+      const newConfig = await createVaultConfig(newPassword);
+      const newKey = await deriveVaultKey(newPassword, newConfig.salt);
+      entries = await Promise.all(entries.map(async (entry, index) => {
+        const credential = decryptedCredentials[index];
+        if (!credential) return entry;
+        return { ...entry, credentialVault: { version: 1, ...(await encryptPayload(newKey, credential)) } };
+      }));
+      vaultConfig = newConfig;
+      saveVaultConfig();
+      save();
+      render();
+      vaultSettingsStatus.textContent = "保護パスワードを変更しました。保存済みログイン情報は残っています。";
+    }
+
+    function openForgotVaultDialog() {
+      forgotVaultConfirm.checked = false;
+      forgotVaultPassword.value = "";
+      forgotVaultConfirmPassword.value = "";
+      forgotVaultError.textContent = "";
+      forgotVaultDialog.showModal();
+      setTimeout(() => forgotVaultPassword.focus(), 0);
+    }
+
+    async function resetForgottenVaultPassword() {
+      forgotVaultError.textContent = "";
+      if (!forgotVaultConfirm.checked) {
+        forgotVaultError.textContent = "確認チェックを入れてください。";
+        return;
+      }
+      const password = forgotVaultPassword.value;
+      if (password.length < 4) {
+        forgotVaultError.textContent = "4文字以上で入力してください。";
+        return;
+      }
+      if (password !== forgotVaultConfirmPassword.value) {
+        forgotVaultError.textContent = "確認用の入力が一致していません。";
+        return;
+      }
+      vaultConfig = await createVaultConfig(password);
+      entries = entries.map(entry => ({ ...entry, credentialVault: null }));
+      saveVaultConfig();
+      save();
+      render();
+      forgotVaultDialog.close();
+      vaultSettingsStatus.textContent = "保護パスワードを再設定しました。必要なログイン情報は各カードの編集からもう一度入力してください。";
     }
 
     async function buildCredentialVault(data, existingEntry) {
