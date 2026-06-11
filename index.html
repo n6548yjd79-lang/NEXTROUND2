@@ -1018,6 +1018,21 @@
       font-size: 15px;
     }
 
+    .settings-section {
+      display: grid;
+      gap: 9px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      background: rgba(255,255,255,.035);
+    }
+
+    .settings-section h4 {
+      margin: 0;
+      color: #f3f7fb;
+      font-size: 13px;
+    }
+
     .settings-note {
       margin: 0;
       color: #cbd4e0;
@@ -1056,6 +1071,14 @@
       font-size: 11px;
       line-height: 1.6;
       font-weight: 700;
+    }
+
+    .sync-code {
+      min-height: 180px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      word-break: break-all;
     }
 
     .privacy-list {
@@ -1668,6 +1691,38 @@
     </div>
   </dialog>
 
+  <dialog id="syncCodeDialog">
+    <div class="form-head settings-head">
+      <h2>同期コードを作る</h2>
+      <button class="x" type="button" id="closeSyncCodeDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="vault-body">
+      <p class="settings-note">このコードを別端末で読み込むと、同じデータを移せます。自動同期ではありません。</p>
+      <p class="settings-note">コードには会社名・選考状況・メモ・暗号化済みログイン情報が含まれる場合があります。自分以外に送らないでください。</p>
+      <label>同期コード
+        <textarea id="syncCodeOutput" class="sync-code" readonly></textarea>
+      </label>
+      <button class="save" type="button" id="copySyncCodeBtn">コードをコピー</button>
+      <div class="settings-status" id="syncCodeStatus" aria-live="polite"></div>
+    </div>
+  </dialog>
+
+  <dialog id="syncImportDialog">
+    <div class="form-head settings-head">
+      <h2>同期コードを読み込む</h2>
+      <button class="x" type="button" id="closeSyncImportDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="vault-body">
+      <p class="settings-note">この端末に入っている今の一覧は、同期コードの内容に入れ替わります。必要なら先にバックアップしてください。</p>
+      <p class="settings-note">ログイン情報は暗号化されたまま移ります。別端末で表示するには、コピー元で設定した保護パスワードが必要です。</p>
+      <label>同期コードを貼り付け
+        <textarea id="syncCodeInput" class="sync-code" placeholder="ここに同期コードを貼り付け"></textarea>
+      </label>
+      <button class="save" type="button" id="applySyncCodeBtn">読み込む</button>
+      <div class="vault-error" id="syncImportStatus" aria-live="polite"></div>
+    </div>
+  </dialog>
+
   <dialog id="settingsDialog">
     <div class="form-head settings-head">
       <h2>設定</h2>
@@ -1676,12 +1731,23 @@
     <div class="settings-content">
       <section class="settings-panel">
         <h3>データ管理</h3>
-        <p class="settings-note">データはこの端末に自動保存されます。端末変更やブラウザのサイトデータ削除に備えて、たまに保存しておくと安心です。</p>
-        <div class="settings-actions">
-          <button class="soft-btn accent" type="button" id="exportBtn">データを保存</button>
-          <button class="soft-btn" type="button" id="importBtn">保存データを読み込む</button>
-        </div>
-        <p class="settings-note">保存したファイルには会社名やメモが含まれます。人に送らず、自分だけで保管してください。</p>
+        <section class="settings-section">
+          <h4>別端末へ同期</h4>
+          <p class="settings-note">別のスマホやPCに同じデータを移します。自動同期ではありません。</p>
+          <div class="settings-actions">
+            <button class="soft-btn accent" type="button" id="createSyncCodeBtn">同期コードを作る</button>
+            <button class="soft-btn" type="button" id="readSyncCodeBtn">同期コードを読み込む</button>
+          </div>
+        </section>
+        <section class="settings-section">
+          <h4>バックアップ</h4>
+          <p class="settings-note">消えた時に戻せるよう保存ファイルを残します。</p>
+          <div class="settings-actions">
+            <button class="soft-btn" type="button" id="exportBtn">データを保存</button>
+            <button class="soft-btn" type="button" id="importBtn">保存データを読み込む</button>
+          </div>
+          <p class="settings-note">保存したファイルには会社名やメモが含まれます。人に送らず、自分だけで保管してください。</p>
+        </section>
         <div class="settings-status" id="settingsStatus" aria-live="polite"></div>
         <input id="importFile" type="file" accept="application/json,.json" hidden>
       </section>
@@ -1891,6 +1957,12 @@
     const vaultSettingsStatus = document.querySelector("#vaultSettingsStatus");
     const privacyDialog = document.querySelector("#privacyDialog");
     const importFile = document.querySelector("#importFile");
+    const syncCodeDialog = document.querySelector("#syncCodeDialog");
+    const syncCodeOutput = document.querySelector("#syncCodeOutput");
+    const syncCodeStatus = document.querySelector("#syncCodeStatus");
+    const syncImportDialog = document.querySelector("#syncImportDialog");
+    const syncCodeInput = document.querySelector("#syncCodeInput");
+    const syncImportStatus = document.querySelector("#syncImportStatus");
     const analyticsDialog = document.querySelector("#analyticsDialog");
     const analyticsContent = document.querySelector("#analyticsContent");
     const clearCredentialField = document.querySelector("#clearCredentialField");
@@ -1962,6 +2034,12 @@
     document.querySelector("#failResultBtn").addEventListener("click", () => applyResult(false));
     document.querySelector("#settingsBtn").addEventListener("click", openSettings);
     document.querySelector("#closeSettingsDialog").addEventListener("click", () => settingsDialog.close());
+    document.querySelector("#createSyncCodeBtn").addEventListener("click", openSyncCodeDialog);
+    document.querySelector("#readSyncCodeBtn").addEventListener("click", openSyncImportDialog);
+    document.querySelector("#closeSyncCodeDialog").addEventListener("click", () => syncCodeDialog.close());
+    document.querySelector("#closeSyncImportDialog").addEventListener("click", () => syncImportDialog.close());
+    document.querySelector("#copySyncCodeBtn").addEventListener("click", copySyncCode);
+    document.querySelector("#applySyncCodeBtn").addEventListener("click", applySyncCode);
     document.querySelector("#exportBtn").addEventListener("click", exportData);
     document.querySelector("#importBtn").addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", importData);
@@ -2380,14 +2458,75 @@
       settingsDialog.showModal();
     }
 
-    function exportData() {
-      const payload = {
+    function buildPortableData() {
+      return {
         app: "NEXTROUND",
         version: 1,
         exportedAt: new Date().toISOString(),
         entries,
         vault: vaultConfig
       };
+    }
+
+    function encodeSyncCode(payload) {
+      return `NEXTROUND-SYNC:${bytesToBase64(textEncoder.encode(JSON.stringify(payload)))}`;
+    }
+
+    function decodeSyncCode(value) {
+      const clean = value.trim().replace(/\s/g, "");
+      const code = clean.replace(/^NEXTROUND-SYNC:/i, "");
+      return JSON.parse(textDecoder.decode(base64ToBytes(code)));
+    }
+
+    function openSyncCodeDialog() {
+      syncCodeStatus.textContent = "";
+      syncCodeOutput.value = encodeSyncCode(buildPortableData());
+      syncCodeDialog.showModal();
+      setTimeout(() => syncCodeOutput.focus(), 0);
+    }
+
+    function openSyncImportDialog() {
+      syncCodeInput.value = "";
+      syncImportStatus.textContent = "";
+      syncImportDialog.showModal();
+      setTimeout(() => syncCodeInput.focus(), 0);
+    }
+
+    async function copySyncCode() {
+      syncCodeStatus.textContent = "";
+      try {
+        await navigator.clipboard.writeText(syncCodeOutput.value);
+        syncCodeStatus.textContent = "同期コードをコピーしました。別端末で貼り付けて読み込めます。";
+      } catch {
+        syncCodeOutput.select();
+        document.execCommand("copy");
+        syncCodeStatus.textContent = "コピーしました。別端末で貼り付けて読み込めます。";
+      }
+    }
+
+    function applySyncCode() {
+      syncImportStatus.textContent = "";
+      try {
+        const parsed = decodeSyncCode(syncCodeInput.value);
+        const importedEntries = Array.isArray(parsed) ? parsed : parsed.entries;
+        if (!Array.isArray(importedEntries)) throw new Error("invalid");
+        if (entries.length && !confirm("この端末に入っている今の一覧は、同期コードの内容に入れ替わります。必要なら先にバックアップしてください。よろしいですか？")) {
+          return;
+        }
+        entries = importedEntries.map(normalizeEntry);
+        vaultConfig = parsed.vault || null;
+        saveVaultConfig();
+        save();
+        render();
+        syncImportDialog.close();
+        settingsStatus.textContent = "同期コードを読み込みました。ログイン情報を見るには、コピー元の保護パスワードが必要です。";
+      } catch {
+        syncImportStatus.textContent = "読み込めませんでした。NEXTROUNDで作成した同期コードを貼り付けてください。";
+      }
+    }
+
+    function exportData() {
+      const payload = buildPortableData();
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
