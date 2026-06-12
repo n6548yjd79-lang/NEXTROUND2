@@ -531,6 +531,40 @@
       background: rgba(255,255,255,.055);
     }
 
+    .entry-badges {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 7px;
+      max-width: 42%;
+    }
+
+    .entry-badges .type {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .industry-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      max-width: 100%;
+      padding: 0 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(97,244,222,.28);
+      background:
+        linear-gradient(180deg, rgba(97,244,222,.14), rgba(255,255,255,.035)),
+        rgba(255,255,255,.045);
+      color: #9ff8ed;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .stage-row {
       display: grid;
       gap: 8px;
@@ -943,6 +977,10 @@
       color: #d0d8e4;
       font-size: 13px;
       font-weight: 900;
+      line-height: 1.35;
+      text-align: center;
+      padding: 4px 8px;
+      overflow-wrap: anywhere;
     }
 
     .segment input:checked + span {
@@ -957,13 +995,21 @@
       gap: 8px;
     }
 
-    .flow-options input {
+    .tag-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .flow-options input,
+    .tag-options input {
       position: absolute;
       opacity: 0;
       pointer-events: none;
     }
 
-    .flow-options span {
+    .flow-options span,
+    .tag-options span {
       display: grid;
       place-items: center;
       min-height: 40px;
@@ -975,12 +1021,44 @@
       font-weight: 900;
     }
 
-    .flow-options input:checked + span {
+    .flow-options input:checked + span,
+    .tag-options input:checked + span {
       background:
         linear-gradient(180deg, rgba(97,244,222,.16), rgba(75,179,253,.12)),
         rgba(97,244,222,.08);
       color: #eafffb;
       border-color: rgba(97,244,222,.42);
+    }
+
+    .tag-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(97,244,222,.24);
+      background: rgba(97,244,222,.09);
+      color: #dffff9;
+      font-size: 11px;
+      font-weight: 900;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .next-plan {
+      display: block;
+      margin-top: 4px;
+      color: #eaf6ff;
+      font-size: 12px;
+      font-weight: 850;
+      font-style: normal;
+      overflow-wrap: anywhere;
     }
 
     .save {
@@ -1472,6 +1550,14 @@
       line-height: 1.6;
     }
 
+    .analysis-section-title {
+      margin: 4px 0 0;
+      color: #f4f7fb;
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
     .calendar-body {
       padding: 0 16px 16px;
       display: grid;
@@ -1782,6 +1868,9 @@
       .archive-item .form-grid {
         grid-template-columns: 1fr;
       }
+      .tag-options {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -1813,7 +1902,7 @@
     </section>
 
     <section class="toolbar">
-      <input id="search" class="search" type="search" placeholder="会社名・職種・メモで検索">
+      <input id="search" class="search" type="search" placeholder="会社名・業界・職種・メモで検索">
       <div id="chips" class="chips" aria-label="表示フィルター"></div>
     </section>
 
@@ -1868,6 +1957,9 @@
           <select name="stage"></select>
         </label>
       </div>
+      <label>業界
+        <select name="industry"></select>
+      </label>
       <label>職種/コース
         <input name="role" placeholder="例: 総合職 / エンジニア / 企画">
       </label>
@@ -1879,6 +1971,9 @@
           <input name="nextDate" type="date">
         </label>
       </div>
+      <label>次の予定内容
+        <input name="nextPlan" placeholder="例: AI面接 / 動画提出 / Webテスト受験">
+      </label>
       <section class="schedule-picker">
         <label>この選考であるフェーズ</label>
         <div class="flow-options">
@@ -1887,6 +1982,21 @@
           <label><input type="checkbox" name="flowGd" checked><span>GD</span></label>
           <label><input type="checkbox" name="flowInterview" checked><span>面接</span></label>
         </div>
+        <label>面接回数
+          <select name="interviewCount">
+            <option value="0">なし</option>
+            <option value="1">1回</option>
+            <option value="2">2回</option>
+            <option value="3">3回以上</option>
+          </select>
+        </label>
+      </section>
+      <section class="schedule-picker">
+        <label>選考タグ</label>
+        <div class="tag-options" id="selectionTagOptions"></div>
+        <label id="selectionTagOtherField" hidden>その他のタグ
+          <input name="selectionTagOther" placeholder="例: リクルーター面談">
+        </label>
       </section>
       <div id="internScheduleField" class="schedule-picker" hidden>
         <label>インターン日程</label>
@@ -2052,7 +2162,7 @@
     <div class="vault-body">
       <p class="settings-note">保護パスワードを忘れた場合、NEXTROUND内に保存しているログインURL・ID・パスワード、ESアーカイブは表示できません。</p>
       <p class="settings-note">再設定すると、NEXTROUND内のログイン情報とESアーカイブは削除されます。新しい保護パスワードを設定したあと、必要な情報をもう一度入力してください。</p>
-      <p class="settings-note">企業のマイページやアカウントには影響しません。会社名・選考状況・締切日・通常メモは残ります。</p>
+      <p class="settings-note">企業のマイページやアカウントには影響しません。会社名・業界・選考状況・締切日・通常メモは残ります。</p>
       <label class="reset-check">
         <input id="forgotVaultConfirm" type="checkbox">
         NEXTROUND内のログイン情報とESアーカイブが削除されることを理解しました
@@ -2075,7 +2185,7 @@
     </div>
     <div class="vault-body">
       <p class="settings-note">このコードを別端末で読み込むと、同じデータを移せます。自動同期ではありません。</p>
-      <p class="settings-note">コードには会社名・選考状況・メモ・暗号化済み保護データが含まれる場合があります。自分以外に送らないでください。</p>
+      <p class="settings-note">コードには会社名・業界・選考状況・メモ・暗号化済み保護データが含まれる場合があります。自分以外に送らないでください。</p>
       <label>同期コード
         <textarea id="syncCodeOutput" class="sync-code" readonly></textarea>
       </label>
@@ -2123,7 +2233,7 @@
             <button class="soft-btn" type="button" id="exportBtn">データを保存</button>
             <button class="soft-btn" type="button" id="importBtn">保存データを読み込む</button>
           </div>
-          <p class="settings-note">保存したファイルには会社名・メモ・暗号化済み保護データが含まれます。人に送らず、自分だけで保管してください。</p>
+          <p class="settings-note">保存したファイルには会社名・業界・メモ・暗号化済み保護データが含まれます。人に送らず、自分だけで保管してください。</p>
         </section>
         <div class="settings-status" id="settingsStatus" aria-live="polite"></div>
         <input id="importFile" type="file" accept="application/json,.json" hidden>
@@ -2155,11 +2265,11 @@
       <div class="privacy-list">
         <section class="privacy-item">
           <strong>保存場所</strong>
-          <p>入力した選考情報は、あなたの端末内に保存されます。NEXTROUNDの管理者が、会社名・選考状況・締切日・メモを取得・閲覧することはありません。</p>
+          <p>入力した選考情報は、あなたの端末内に保存されます。NEXTROUNDの管理者が、会社名・業界・選考状況・締切日・メモを取得・閲覧することはありません。</p>
         </section>
         <section class="privacy-item">
           <strong>端末内に保存される情報</strong>
-          <p>あなたが入力した場合、会社名、選考状況、締切日、次の予定日、インターン日程、通常メモ、ESアーカイブ、ログインURL・ID・パスワードが、あなたの端末内に保存されます。</p>
+          <p>あなたが入力した場合、会社名、業界、選考状況、締切日、次の予定日、インターン日程、通常メモ、ESアーカイブ、ログインURL・ID・パスワードが、あなたの端末内に保存されます。</p>
           <p>これらの入力内容がNEXTROUNDの管理者に送信されたり、管理者側で閲覧されたりすることはありません。</p>
         </section>
         <section class="privacy-item">
@@ -2168,7 +2278,7 @@
         </section>
         <section class="privacy-item">
           <strong>バックアップ</strong>
-          <p>データ保存機能で作成したファイルには、会社名・選考状況・メモ・暗号化済み保護データなどが含まれます。人に送らず、自分だけの場所に保管してください。</p>
+          <p>データ保存機能で作成したファイルには、会社名・業界・選考状況・メモ・暗号化済み保護データなどが含まれます。人に送らず、自分だけの場所に保管してください。</p>
         </section>
         <section class="privacy-item">
           <strong>GitHub Pagesでの公開</strong>
@@ -2202,7 +2312,7 @@
       <button class="x" type="button" id="closeAnalyticsDialog" aria-label="閉じる">×</button>
     </div>
     <div class="analytics-body">
-      <p class="settings-note">ES・Webテスト・GD・面接の通過率を集計します。不合格フェーズを記録するほど分析が正確になります。</p>
+      <p class="settings-note">ES・Webテスト・GD・面接と、業界別の通過率を集計します。不合格フェーズを記録するほど分析が正確になります。</p>
       <div class="analytics-grid" id="analyticsContent"></div>
     </div>
   </dialog>
@@ -2244,6 +2354,7 @@
       "ES提出済",
       "Webテスト",
       "GD",
+      "面接",
       "一次面接",
       "二次面接",
       "最終面接",
@@ -2260,6 +2371,7 @@
     ];
 
     const entryTypes = ["インターン", "本選考", "説明会", "OB/OG訪問"];
+    const industryOptions = ["未設定", "IT・通信", "金融", "メーカー", "商社", "コンサル", "広告・メディア", "人材", "不動産・建設", "インフラ", "小売・サービス", "官公庁・団体", "医療・ヘルスケア", "教育", "その他"];
     const doneStages = new Set(["ES不合格", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "辞退", "不採用"]);
     const winStages = new Set(["インターン合格", "内定"]);
     const stageColors = {
@@ -2269,6 +2381,7 @@
       "ES提出済": "#61f4de",
       "Webテスト": "#b79cff",
       "GD": "#ffcf5a",
+      "面接": "#36d399",
       "一次面接": "#36d399",
       "二次面接": "#36d399",
       "最終面接": "#36d399",
@@ -2287,19 +2400,27 @@
     const vaultStorageKey = "nextround-vault-v1";
     const protectedUnlockMs = 30 * 60 * 1000;
     const esArchiveLabels = ["ガクチカ", "自己PR", "志望動機", "研究内容", "長所・短所", "挫折経験", "将来像", "企業理解", "その他"];
+    const selectionTagOptions = ["ES+Webテスト同時提出", "動画選考", "AI面接", "適性検査", "ケース面接", "面談", "その他"];
     const textEncoder = new TextEncoder();
     const textDecoder = new TextDecoder();
     const phaseStages = {
       es: ["書類選考中", "ES提出済", "ES不合格"],
       webTest: ["Webテスト", "Webテスト不合格"],
       gd: ["GD", "GD不合格"],
-      interview: ["一次面接", "二次面接", "最終面接", "面接不合格"]
+      interview: ["面接", "一次面接", "二次面接", "最終面接", "面接不合格"]
     };
+    const analysisPhaseDefinitions = [
+      { label: "ES", key: "es", passStages: ["Webテスト", "GD", "面接", "一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], failStages: ["ES不合格"], color: "#61f4de" },
+      { label: "Webテスト", key: "webTest", passStages: ["GD", "面接", "一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], failStages: ["Webテスト不合格"], color: "#b79cff" },
+      { label: "GD", key: "gd", passStages: ["面接", "一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], failStages: ["GD不合格"], color: "#ffcf5a" }
+    ];
+    const industryColors = ["#61f4de", "#ffcf5a", "#b79cff", "#36d399", "#ff9f7a", "#7ad7ff", "#ff8fb3", "#c5ff7a"];
     const seed = [
       {
         id: crypto.randomUUID(),
         company: "Blue Orbit",
         type: "インターン",
+        industry: "IT・通信",
         role: "事業企画 3days",
         stage: "結果待ち",
         deadline: nextDate(3),
@@ -2315,6 +2436,7 @@
         id: crypto.randomUUID(),
         company: "Nexa Bank",
         type: "本選考",
+        industry: "金融",
         role: "総合職",
         stage: "書類選考中",
         deadline: nextDate(1),
@@ -2330,6 +2452,7 @@
         id: crypto.randomUUID(),
         company: "Sakura Systems",
         type: "インターン",
+        industry: "IT・通信",
         role: "エンジニア",
         stage: "応募予定",
         deadline: nextDate(8),
@@ -2365,6 +2488,9 @@
     const dialog = document.querySelector("#entryDialog");
     const form = document.querySelector("#entryForm");
     const stageSelect = form.elements.stage;
+    const industrySelect = form.elements.industry;
+    const selectionTagOptionsEl = document.querySelector("#selectionTagOptions");
+    const selectionTagOtherField = document.querySelector("#selectionTagOtherField");
     const deleteBtn = document.querySelector("#deleteBtn");
     const internScheduleField = document.querySelector("#internScheduleField");
     const resultDialog = document.querySelector("#resultDialog");
@@ -2430,6 +2556,10 @@
     document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
     document.querySelector("#weekdayLabel").textContent = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(now);
     stages.forEach(stage => stageSelect.add(new Option(stage, stage)));
+    industryOptions.forEach(industry => industrySelect.add(new Option(industry, industry)));
+    selectionTagOptionsEl.innerHTML = selectionTagOptions.map(tag => `
+      <label><input class="selection-tag" type="checkbox" value="${escapeHtml(tag)}"><span>${escapeHtml(tag)}</span></label>
+    `).join("");
 
     const filters = ["all", "インターン", "本選考", "書類選考中", "GD", "結果待ち", "面接", "合格"];
     const names = { all: "すべて", 面接: "面接中", 合格: "合格/内定" };
@@ -2520,7 +2650,10 @@
       closeVaultRequest(null);
     });
     form.elements.type.addEventListener("change", updateInternScheduleVisibility);
+    form.elements.type.addEventListener("change", updateInterviewCountState);
     form.elements.stage.addEventListener("change", updateInternScheduleVisibility);
+    form.elements.flowInterview.addEventListener("change", updateInterviewCountState);
+    selectionTagOptionsEl.addEventListener("change", updateSelectionTagOtherVisibility);
     Array.from(form.elements.internScheduleMode).forEach(input => {
       input.addEventListener("change", () => updateScheduleMode(form, "intern"));
     });
@@ -2550,10 +2683,12 @@
         id: editingId || crypto.randomUUID(),
         company: data.company.trim(),
         type: data.type,
+        industry: normalizeIndustry(data.industry),
         role: data.role.trim(),
         stage: data.stage,
         deadline: data.deadline,
         nextDate: data.nextDate,
+        nextPlan: data.nextPlan.trim(),
         internSchedule: buildScheduleFromForm(form, "intern", existingEntry?.internSchedule || ""),
         internScheduleMode: form.elements.internScheduleMode.value,
         internSingleDate: data.internSingleDate || "",
@@ -2561,6 +2696,8 @@
         internEndDate: data.internEndDate || "",
         memo: data.memo.trim(),
         flow: getFlowFromForm(),
+        interviewCount: form.elements.interviewCount.value,
+        selectionTags: getSelectionTagsFromForm(),
         credentialVault,
         esArchiveVault: existingEntry?.esArchiveVault || null,
         stageHistory: addStageToHistory(existingEntry?.stageHistory, data.stage)
@@ -2607,16 +2744,21 @@
       const deadline = guessDeadline(line);
       const company = guessCompany(line);
       const role = guessRole(line);
+      const industry = guessIndustry(line);
       const flow = inferImportFlow(line, stage);
       return {
         company,
         type,
+        industry,
         role,
         stage,
         deadline,
         nextDate: "",
+        nextPlan: "",
         memo: line,
-        flow
+        flow,
+        interviewCount: type === "本選考" ? "3" : "1",
+        selectionTags: []
       };
     }
 
@@ -2644,6 +2786,9 @@
               <select class="import-stage">${optionsHtml(stages, candidate.stage)}</select>
             </label>
           </div>
+          <label>業界
+            <select class="import-industry">${optionsHtml(industryOptions, candidate.industry)}</select>
+          </label>
           <div class="form-grid">
             <label>職種/コース
               <input class="import-role" value="${escapeHtml(candidate.role)}" placeholder="空欄でもOK">
@@ -2694,10 +2839,12 @@
         id: crypto.randomUUID(),
         company: candidate.company,
         type: candidate.type,
+        industry: candidate.industry,
         role: candidate.role,
         stage: candidate.stage,
         deadline: candidate.deadline,
         nextDate: candidate.nextDate,
+        nextPlan: candidate.nextPlan,
         internSchedule: "",
         internScheduleMode: "single",
         internSingleDate: "",
@@ -2705,6 +2852,8 @@
         internEndDate: "",
         memo: candidate.memo,
         flow: candidate.flow,
+        interviewCount: candidate.interviewCount,
+        selectionTags: candidate.selectionTags,
         credentialVault: null,
         esArchiveVault: null,
         stageHistory: buildImportStageHistory(candidate.stage, candidate.flow)
@@ -2719,17 +2868,21 @@
       return {
         company: item.querySelector(".import-company").value.trim(),
         type: item.querySelector(".import-type").value,
+        industry: normalizeIndustry(item.querySelector(".import-industry").value),
         role: item.querySelector(".import-role").value.trim(),
         stage: item.querySelector(".import-stage").value,
         deadline: item.querySelector(".import-deadline").value,
         nextDate: "",
+        nextPlan: "",
         memo: item.querySelector(".import-memo").value.trim(),
         flow: {
           es: item.querySelector(".import-flow-es").checked,
           webTest: item.querySelector(".import-flow-webTest").checked,
           gd: item.querySelector(".import-flow-gd").checked,
           interview: item.querySelector(".import-flow-interview").checked
-        }
+        },
+        interviewCount: item.querySelector(".import-type").value === "本選考" ? "3" : "1",
+        selectionTags: []
       };
     }
 
@@ -2760,7 +2913,8 @@
         ["結果待ち", /結果待ち|連絡待ち|返事待ち|選考待ち/],
         ["最終面接", /最終面接|最終/],
         ["二次面接", /二次面接|2次面接|二次|2次/],
-        ["一次面接", /一次面接|1次面接|一次|1次|面接/],
+        ["一次面接", /一次面接|1次面接|一次|1次/],
+        ["面接", /面接|面談/],
         ["GD", /GD|グループディスカッション/i],
         ["Webテスト", /Webテスト|WEBテスト|ウェブテスト|SPI|玉手箱|適性検査/i],
         ["ES提出済", /ES提出済|ES済|提出済|提出完了/i],
@@ -2801,6 +2955,7 @@
         .replace(/(?:^|[^\d])\d{1,2}[\/月]\d{1,2}(?:日)?/g, " ")
         .replace(/OB[\/・]?OG|OB訪問|OG訪問|インターン|intern|本選考|本選|説明会/gi, " ")
         .replace(/締切|〆切|〆|まで|予定|候補|検討|選考中|選考|応募予定|応募/g, " ")
+        .replace(/IT・通信|IT|通信|金融|銀行|証券|保険|リース|メーカー|商社|コンサル|広告|メディア|出版|テレビ|新聞|人材|不動産|建設|インフラ|電力|ガス|鉄道|航空|小売|サービス|官公庁|団体|医療|ヘルスケア|教育/gi, " ")
         .replace(/ES提出済|ES済|エントリーシート|ES|書類選考中|書類/gi, " ")
         .replace(/Webテスト|WEBテスト|ウェブテスト|SPI|玉手箱|適性検査/gi, " ")
         .replace(/グループディスカッション|GD|一次面接|1次面接|二次面接|2次面接|最終面接|一次|1次|二次|2次|最終|面接|面談/gi, " ")
@@ -2816,9 +2971,28 @@
       return match?.[0] || "";
     }
 
+    function guessIndustry(line) {
+      const rules = [
+        ["IT・通信", /(IT|通信|SaaS|SIer|システム|ソフトウェア|アプリ|クラウド|データ|AI|DX)/i],
+        ["金融", /(金融|銀行|証券|保険|カード|リース|信託|フィンテック|FinTech)/i],
+        ["メーカー", /(メーカー|製造|自動車|電機|食品|化学|素材|機械|製薬|消費財)/i],
+        ["商社", /(商社|総合商社|専門商社)/i],
+        ["コンサル", /(コンサル|戦略|シンクタンク)/i],
+        ["広告・メディア", /(広告|メディア|出版|テレビ|新聞|放送|PR|エンタメ)/i],
+        ["人材", /(人材|HR|採用|転職|求人)/i],
+        ["不動産・建設", /(不動産|建設|住宅|デベロッパー|ゼネコン)/i],
+        ["インフラ", /(インフラ|電力|ガス|鉄道|航空|物流|海運|通信キャリア)/i],
+        ["小売・サービス", /(小売|サービス|百貨店|EC|旅行|ホテル|外食)/i],
+        ["官公庁・団体", /(官公庁|自治体|団体|NPO|公益)/i],
+        ["医療・ヘルスケア", /(医療|ヘルスケア|病院|介護|バイオ)/i],
+        ["教育", /(教育|塾|学校|EdTech)/i]
+      ];
+      return rules.find(([, pattern]) => pattern.test(line))?.[0] || "未設定";
+    }
+
     function inferImportFlow(line, stage) {
       const text = `${line} ${stage}`;
-      const isAfterEs = ["Webテスト", "GD", "一次面接", "二次面接", "最終面接", "結果待ち", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "不採用", "辞退"].includes(stage);
+      const isAfterEs = ["Webテスト", "GD", "面接", "一次面接", "二次面接", "最終面接", "結果待ち", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "不採用", "辞退"].includes(stage);
       return {
         es: /(ES|エントリーシート|書類)/i.test(text) || isAfterEs,
         webTest: /(Web|WEB|ウェブ|SPI|玉手箱|適性検査|テスト)/i.test(text),
@@ -2836,7 +3010,7 @@
         "ES不合格": flow.es ? "ES提出済" : "応募予定",
         "Webテスト不合格": "Webテスト",
         "GD不合格": "GD",
-        "面接不合格": "一次面接"
+        "面接不合格": "面接"
       };
       if (failPrevious[stage]) {
         const previous = failPrevious[stage];
@@ -2855,7 +3029,7 @@
         ...(flow.es ? ["書類選考中", "ES提出済"] : []),
         ...(flow.webTest ? ["Webテスト"] : []),
         ...(flow.gd ? ["GD"] : []),
-        ...(flow.interview ? ["一次面接", "二次面接", "最終面接"] : []),
+        ...(flow.interview ? ["面接", "一次面接", "二次面接", "最終面接"] : []),
         "結果待ち"
       ];
     }
@@ -2871,6 +3045,10 @@
           credentialVault: null,
           esArchiveVault: null,
           ...entry,
+          industry: normalizeIndustry(entry.industry),
+          nextPlan: entry.nextPlan || "",
+          interviewCount: normalizeInterviewCount(entry),
+          selectionTags: normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther),
           flow: normalizeFlow(entry.flow, entry.stageHistory, entry.stage),
           stageHistory: normalizeStageHistory(entry.stageHistory, entry.stage)
         }));
@@ -3021,10 +3199,12 @@
         id: entry.id || crypto.randomUUID(),
         company: entry.company || "",
         type: entry.type || "インターン",
+        industry: normalizeIndustry(entry.industry),
         role: entry.role || "",
         stage: stages.includes(stage) ? stage : "応募予定",
         deadline: entry.deadline || "",
         nextDate: entry.nextDate || "",
+        nextPlan: entry.nextPlan || "",
         internSchedule: entry.internSchedule || "",
         internScheduleMode: entry.internScheduleMode || "single",
         internSingleDate: entry.internSingleDate || "",
@@ -3032,6 +3212,8 @@
         internEndDate: entry.internEndDate || "",
         memo: entry.memo || "",
         flow: normalizeFlow(entry.flow, entry.stageHistory, stage),
+        interviewCount: normalizeInterviewCount(entry),
+        selectionTags: normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther),
         credentialVault: entry.credentialVault || null,
         esArchiveVault: entry.esArchiveVault || null,
         stageHistory: normalizeStageHistory(entry.stageHistory, stage)
@@ -3045,6 +3227,26 @@
         "GD落ち": "GD不合格",
         "面接落ち": "面接不合格"
       })[stage] || stage;
+    }
+
+    function normalizeIndustry(industry = "") {
+      const value = String(industry || "").trim();
+      if (!value || value === "未選択") return "未設定";
+      return industryOptions.includes(value) ? value : "その他";
+    }
+
+    function normalizeSelectionTags(tags = [], other = "") {
+      const values = Array.isArray(tags) ? tags : tags ? [tags] : [];
+      return [...new Set([...values, other].filter(Boolean))];
+    }
+
+    function normalizeInterviewCount(entry = {}) {
+      const value = String(entry.interviewCount || "");
+      if (["0", "1", "2", "3"].includes(value)) return value;
+      if (["一次面接", "二次面接", "最終面接"].includes(normalizeStageName(entry.stage))) return "3";
+      if (normalizeStageName(entry.stage) === "面接") return "1";
+      if (entry.flow && entry.flow.interview === false) return "0";
+      return entry.type === "本選考" ? "3" : "1";
     }
 
     function defaultFlow() {
@@ -3078,17 +3280,63 @@
       form.elements.flowWebTest.checked = flow.webTest;
       form.elements.flowGd.checked = flow.gd;
       form.elements.flowInterview.checked = flow.interview;
+      form.elements.interviewCount.value = normalizeInterviewCount(entry);
+      updateInterviewCountState();
+    }
+
+    function getSelectionTagsFromForm() {
+      const tags = [...form.querySelectorAll(".selection-tag:checked")].map(input => input.value);
+      const other = form.elements.selectionTagOther.value.trim();
+      if (tags.includes("その他") && other) tags.push(other);
+      return [...new Set(tags.filter(tag => tag !== "その他" || !other))];
+    }
+
+    function setSelectionTagsForm(entry = {}) {
+      const tags = normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther);
+      form.querySelectorAll(".selection-tag").forEach(input => {
+        input.checked = tags.includes(input.value) || (input.value === "その他" && tags.some(tag => !selectionTagOptions.includes(tag)));
+      });
+      const custom = tags.find(tag => !selectionTagOptions.includes(tag)) || "";
+      form.elements.selectionTagOther.value = custom;
+      updateSelectionTagOtherVisibility();
+    }
+
+    function updateSelectionTagOtherVisibility() {
+      const otherChecked = Boolean(form.querySelector('.selection-tag[value="その他"]')?.checked);
+      selectionTagOtherField.hidden = !otherChecked;
+    }
+
+    function updateInterviewCountState() {
+      form.elements.interviewCount.disabled = !form.elements.flowInterview.checked;
+      if (!form.elements.flowInterview.checked) form.elements.interviewCount.value = "0";
+      if (form.elements.flowInterview.checked && form.elements.interviewCount.value === "0") {
+        form.elements.interviewCount.value = form.elements.type.value === "本選考" ? "3" : "1";
+      }
+    }
+
+    function hasSelectionTag(entry, tag) {
+      return normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther).includes(tag);
+    }
+
+    function interviewStagesFor(entry) {
+      if (!normalizeFlow(entry.flow, entry.stageHistory, entry.stage).interview) return [];
+      const count = normalizeInterviewCount(entry);
+      if (count === "0") return [];
+      if (count === "1") return ["面接"];
+      if (count === "2") return ["一次面接", "最終面接"];
+      return ["一次面接", "二次面接", "最終面接"];
     }
 
     function activeStageSequence(entry) {
       const flow = normalizeFlow(entry.flow, entry.stageHistory, entry.stage);
+      const skipWebTest = hasSelectionTag(entry, "ES+Webテスト同時提出");
       return [
         "気になる",
         "応募予定",
         ...(flow.es ? ["書類選考中", "ES提出済"] : []),
-        ...(flow.webTest ? ["Webテスト"] : []),
+        ...(flow.webTest && !skipWebTest ? ["Webテスト"] : []),
         ...(flow.gd ? ["GD"] : []),
-        ...(flow.interview ? ["一次面接", "二次面接", "最終面接"] : []),
+        ...interviewStagesFor(entry),
         "結果待ち"
       ];
     }
@@ -3568,25 +3816,40 @@
 
     function renderAnalytics() {
       const stats = [
-        buildSimplePassRate("ES", "es", ["Webテスト", "GD", "一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], ["ES不合格"], "#61f4de"),
-        buildSimplePassRate("Webテスト", "webTest", ["GD", "一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], ["Webテスト不合格"], "#b79cff"),
-        buildSimplePassRate("GD", "gd", ["一次面接", "二次面接", "最終面接", "結果待ち", "インターン合格", "内定"], ["GD不合格"], "#ffcf5a"),
+        ...analysisPhaseDefinitions.map(item => buildSimplePassRate(item)),
         buildInterviewPassRate()
       ];
-      analyticsContent.innerHTML = stats.map(item => {
-        const rate = item.total ? Math.round((item.passed / item.total) * 100) : 0;
-        const note = item.total < 3 ? "まだデータ少なめ" : "集計中";
-        return `
-          <section class="analysis-card" style="--accent:${item.color};">
+      const industryStats = buildIndustryPassRates();
+      analyticsContent.innerHTML = `
+        <h3 class="analysis-section-title">フェーズ別</h3>
+        ${stats.map(item => analysisCardMarkup(item, "対象")).join("")}
+        <h3 class="analysis-section-title">業界別 通過率</h3>
+        ${industryStats.length ? industryStats.map((item, index) => analysisCardMarkup({ ...item, color: industryColors[index % industryColors.length] }, "判定")).join("") : `
+          <section class="analysis-card" style="--accent:#61f4de;">
             <div class="analysis-top">
-              <strong>${escapeHtml(item.label)}</strong>
-              <span class="analysis-rate">${rate}%</span>
+              <strong>業界データなし</strong>
+              <span class="analysis-rate">0%</span>
             </div>
-            <div class="analysis-bar"><div class="analysis-fill" style="--rate:${rate}%"></div></div>
-            <div class="analysis-detail">通過 ${item.passed} / 対象 ${item.total} ・ ${note}</div>
+            <div class="analysis-bar"><div class="analysis-fill" style="--rate:0%"></div></div>
+            <div class="analysis-detail">企業の業界を入れると、ここに業界別の通過率が表示されます。</div>
           </section>
-        `;
-      }).join("");
+        `}
+      `;
+    }
+
+    function analysisCardMarkup(item, totalLabel = "対象") {
+      const rate = item.total ? Math.round((item.passed / item.total) * 100) : 0;
+      const note = item.total < 3 ? "まだデータ少なめ" : "集計中";
+      return `
+        <section class="analysis-card" style="--accent:${item.color};">
+          <div class="analysis-top">
+            <strong>${escapeHtml(item.label)}</strong>
+            <span class="analysis-rate">${rate}%</span>
+          </div>
+          <div class="analysis-bar"><div class="analysis-fill" style="--rate:${rate}%"></div></div>
+          <div class="analysis-detail">通過 ${item.passed} / ${totalLabel} ${item.total} ・ ${note}</div>
+        </section>
+      `;
     }
 
     function openCalendar() {
@@ -3720,6 +3983,7 @@
     }
 
     function nextCalendarLabel(entry) {
+      if (entry.nextPlan) return entry.nextPlan;
       if (entry.stage === "GD") return "GD予定";
       if (entry.stage === "Webテスト") return "Webテスト予定";
       if (entry.stage.includes("面接")) return "面接予定";
@@ -3770,45 +4034,62 @@
       return `${date.getMonth() + 1}/${date.getDate()}（${weekday}）`;
     }
 
-    function buildSimplePassRate(label, phaseKey, passStages, failStages, color) {
+    function buildSimplePassRate(definition) {
       let total = 0;
       let passed = 0;
       entries.forEach(entry => {
-        if (!hasPhase(entry, phaseKey)) return;
-        const history = normalizeStageHistory(entry.stageHistory, entry.stage);
-        const didFail = failStages.includes(entry.stage);
-        if (didFail) {
-          total += 1;
-          return;
-        }
-        const didPass = passStages.some(stage => history.includes(stage)) || winStages.has(entry.stage);
-        if (!didPass) return;
+        const outcome = phaseOutcome(entry, definition);
+        if (!outcome) return;
         total += 1;
-        passed += 1;
+        if (outcome.passed) passed += 1;
       });
-      return { label, total, passed, color };
+      return { label: definition.label, total, passed, color: definition.color };
+    }
+
+    function phaseOutcome(entry, definition) {
+      if (!hasPhase(entry, definition.key)) return null;
+      const history = normalizeStageHistory(entry.stageHistory, entry.stage);
+      const didFail = definition.failStages.includes(entry.stage);
+      if (didFail) return { passed: false };
+      const didPass = definition.passStages.some(stage => history.includes(stage)) || winStages.has(entry.stage);
+      return didPass ? { passed: true } : null;
     }
 
     function buildInterviewPassRate() {
-      const interviewStages = ["一次面接", "二次面接", "最終面接"];
-      let total = 0;
-      let passed = 0;
-      entries.forEach(entry => {
-        if (!hasPhase(entry, "interview")) return;
-        const history = normalizeStageHistory(entry.stageHistory, entry.stage);
-        if (entry.stage === "面接不合格") {
-          total += 1;
-          return;
-        }
-        interviewStages.forEach(stage => {
-          if (!history.includes(stage)) return;
-          const afterInterview = history.some(item => stages.indexOf(item) > stages.indexOf(stage));
-          if (!afterInterview && !winStages.has(entry.stage)) return;
-          total += 1;
-          passed += 1;
-        });
-      });
+      const outcomes = entries.flatMap(interviewOutcomes);
+      const total = outcomes.length;
+      const passed = outcomes.filter(Boolean).length;
       return { label: "面接", total, passed, color: "#36d399" };
+    }
+
+    function interviewOutcomes(entry) {
+      if (!hasPhase(entry, "interview")) return [];
+      const interviewStages = interviewStagesFor(entry);
+      if (!interviewStages.length) return [];
+      const history = normalizeStageHistory(entry.stageHistory, entry.stage);
+      if (entry.stage === "面接不合格") return [false];
+      return interviewStages
+        .filter(stage => history.includes(stage))
+        .filter(stage => history.some(item => stages.indexOf(item) > stages.indexOf(stage)) || winStages.has(entry.stage))
+        .map(() => true);
+    }
+
+    function buildIndustryPassRates() {
+      const map = new Map();
+      entries.forEach(entry => {
+        const industry = normalizeIndustry(entry.industry);
+        if (industry === "未設定") return;
+        const outcomes = [
+          ...analysisPhaseDefinitions.map(definition => phaseOutcome(entry, definition)).filter(Boolean).map(outcome => outcome.passed),
+          ...interviewOutcomes(entry)
+        ];
+        if (!outcomes.length) return;
+        if (!map.has(industry)) map.set(industry, { label: industry, total: 0, passed: 0 });
+        const stat = map.get(industry);
+        stat.total += outcomes.length;
+        stat.passed += outcomes.filter(Boolean).length;
+      });
+      return [...map.values()].sort((a, b) => b.total - a.total || b.passed - a.passed || a.label.localeCompare(b.label, "ja"));
     }
 
     function nextDate(days) {
@@ -3926,7 +4207,7 @@
           if (["書類選考中", "GD", "結果待ち"].includes(activeFilter)) return entry.stage === activeFilter;
           return entry.type === activeFilter;
         })
-        .filter(entry => !word || [entry.company, entry.role, entry.stage, entry.memo, entry.internSchedule].join(" ").toLowerCase().includes(word))
+        .filter(entry => !word || [entry.company, entry.role, entry.industry, entry.stage, entry.memo, entry.internSchedule, entry.nextPlan, ...normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther)].join(" ").toLowerCase().includes(word))
         .sort((a, b) => {
           const rankDiff = deadlineRank(a) - deadlineRank(b);
           if (rankDiff !== 0) return rankDiff;
@@ -3979,6 +4260,7 @@
       const done = doneStages.has(entry.stage) || entry.stage === stages.at(-1);
       const resultMode = entry.stage === "結果待ち";
       const actionMode = done ? "done-mode" : resultMode ? "result-mode" : "";
+      const industry = normalizeIndustry(entry.industry);
       card.style.setProperty("--stage-color", stageColor);
       card.innerHTML = `
         <div class="card-main">
@@ -3987,13 +4269,17 @@
               <h2>${escapeHtml(entry.company)}</h2>
               <p>${escapeHtml(entry.role || "職種未設定")}</p>
             </div>
-            <span class="type">${escapeHtml(entry.type)}</span>
+            <div class="entry-badges">
+              <span class="type">${escapeHtml(entry.type)}</span>
+              ${industry !== "未設定" ? `<span class="industry-pill">${escapeHtml(industry)}</span>` : ""}
+            </div>
           </div>
           <div class="stage-row">
             <span class="status-pill">${escapeHtml(entry.stage)}</span>
             <div class="stage-label"><strong>${escapeHtml(statusHint(entry))}</strong><span>${progress}%</span></div>
             <div class="track"><div class="bar" style="width:${progress}%"></div></div>
           </div>
+          ${selectionTagsMarkup(entry)}
           ${done ? "" : deadlineMetaMarkup(entry, deadlineClass)}
           ${entry.stage === "インターン合格" ? internshipScheduleMarkup(entry) : ""}
           <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
@@ -4066,13 +4352,19 @@
       return `
         <div class="meta">
           <div class="meta-box${deadlineClass}"><span>締切</span><b>${formatDate(entry.deadline)}</b><em class="countdown ${countdownClass(entry)}">${deadlineText(entry)}</em></div>
-          <div class="meta-box"><span>次の予定</span><b>${formatDate(entry.nextDate)}</b></div>
+          <div class="meta-box"><span>次の予定</span><b>${formatDate(entry.nextDate)}</b>${entry.nextPlan ? `<em class="next-plan">${escapeHtml(entry.nextPlan)}</em>` : ""}</div>
         </div>
       `;
     }
 
     function internshipScheduleMarkup(entry) {
       return `<div class="meta-box schedule-box"><span>インターン日程</span><b>${escapeHtml(entry.internSchedule || "未設定（編集から追加）")}</b></div>`;
+    }
+
+    function selectionTagsMarkup(entry) {
+      const tags = normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther);
+      if (!tags.length) return "";
+      return `<div class="tag-pills">${tags.map(tag => `<span class="tag-pill">${escapeHtml(tag)}</span>`).join("")}</div>`;
     }
 
     function getPrimaryStage(entry) {
@@ -4141,18 +4433,22 @@
         "ES不合格": "ES提出済",
         "Webテスト不合格": "Webテスト",
         "GD不合格": "GD",
-        "面接不合格": "一次面接",
         "インターン合格": "結果待ち",
         "インターン不合格": "結果待ち",
         "内定": "結果待ち",
         "不採用": "結果待ち",
         "辞退": "結果待ち"
       };
+      if (entry.stage === "面接不合格") return lastInterviewStage(entry);
       if (map[entry.stage]) return map[entry.stage];
       const sequence = activeStageSequence(entry);
       const current = sequence.indexOf(entry.stage);
       if (current >= 0) return sequence[Math.max(0, current - 1)];
       return stages[Math.max(0, stages.indexOf(entry.stage) - 1)];
+    }
+
+    function lastInterviewStage(entry) {
+      return interviewStagesFor(entry).at(-1) || "面接";
     }
 
     function setStage(id, stage, extras = {}) {
@@ -4198,10 +4494,13 @@
       form.elements.company.value = entry?.company || "";
       form.elements.type.value = entry?.type || "インターン";
       form.elements.stage.value = entry?.stage || "応募予定";
+      form.elements.industry.value = normalizeIndustry(entry?.industry);
       form.elements.role.value = entry?.role || "";
       form.elements.deadline.value = entry?.deadline || "";
       form.elements.nextDate.value = entry?.nextDate || "";
+      form.elements.nextPlan.value = entry?.nextPlan || "";
       setFlowForm(entry || {});
+      setSelectionTagsForm(entry || {});
       setScheduleForm(form, "intern", entry || {});
       form.elements.memo.value = entry?.memo || "";
       form.elements.portalUrl.value = "";
