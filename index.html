@@ -201,6 +201,7 @@
       color: #d5deea;
       font-size: 12px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      cursor: pointer;
     }
 
     .today strong {
@@ -216,6 +217,11 @@
       color: #d2d9e4;
       font-size: 11px;
       font-weight: 750;
+    }
+
+    .today:focus-visible {
+      outline: 3px solid rgba(97,244,222,.34);
+      outline-offset: 2px;
     }
 
     .header-tools {
@@ -1355,6 +1361,224 @@
       line-height: 1.6;
     }
 
+    .calendar-body {
+      padding: 0 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .calendar-toolbar {
+      display: grid;
+      grid-template-columns: 42px 1fr 42px;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.032)),
+        rgba(255,255,255,.04);
+    }
+
+    .calendar-month {
+      margin: 0;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 950;
+      color: #f3f7fb;
+    }
+
+    .calendar-nav {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035)),
+        rgba(255,255,255,.055);
+      color: #eef4fb;
+      font-size: 20px;
+      font-weight: 950;
+    }
+
+    .calendar-weekdays,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .calendar-weekdays span {
+      color: #9facbd;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .calendar-day {
+      min-width: 0;
+      min-height: 58px;
+      padding: 7px 5px;
+      border: 1px solid rgba(255,255,255,.105);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.026)),
+        rgba(255,255,255,.035);
+      color: #eef4fb;
+      text-align: left;
+      display: grid;
+      align-content: start;
+      gap: 5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .calendar-day.outside {
+      opacity: .42;
+    }
+
+    .calendar-day.today-mark {
+      border-color: rgba(255,255,255,.58);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.14), inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    .calendar-day.selected {
+      border-color: rgba(97,244,222,.75);
+      background:
+        linear-gradient(180deg, rgba(97,244,222,.16), rgba(75,179,253,.08)),
+        rgba(255,255,255,.055);
+      box-shadow: 0 0 0 2px rgba(97,244,222,.12), inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    .calendar-date-num {
+      font-size: 13px;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .calendar-dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      min-height: 8px;
+    }
+
+    .calendar-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--dot, var(--blue));
+      box-shadow: 0 0 10px color-mix(in srgb, var(--dot, var(--blue)) 38%, transparent);
+    }
+
+    .calendar-count {
+      width: fit-content;
+      min-width: 18px;
+      min-height: 18px;
+      padding: 2px 5px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      color: #f3f7fb;
+      font-size: 10px;
+      font-weight: 950;
+      line-height: 1.25;
+    }
+
+    .calendar-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 2px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #cbd4e0;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--dot);
+    }
+
+    .calendar-events {
+      display: grid;
+      gap: 9px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.028)),
+        rgba(255,255,255,.04);
+    }
+
+    .calendar-events h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .calendar-event {
+      display: grid;
+      grid-template-columns: 6px 1fr;
+      gap: 10px;
+      width: 100%;
+      min-height: 58px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      background: rgba(255,255,255,.045);
+      color: var(--text);
+      text-align: left;
+    }
+
+    .calendar-event::before {
+      content: "";
+      width: 6px;
+      border-radius: 999px;
+      background: var(--event, var(--blue));
+      box-shadow: 0 0 14px color-mix(in srgb, var(--event, var(--blue)) 45%, transparent);
+    }
+
+    .calendar-event-content {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .calendar-event-label {
+      color: var(--event, var(--blue));
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .calendar-event-title {
+      color: #f3f7fb;
+      font-size: 14px;
+      font-weight: 950;
+      overflow-wrap: anywhere;
+    }
+
+    .calendar-event-detail {
+      color: #cbd4e0;
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .calendar-empty {
+      margin: 0;
+      color: #9facbd;
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.6;
+    }
+
 
     @media (max-width: 520px) {
       .app { padding-inline: 12px; }
@@ -1423,6 +1647,27 @@
         min-width: 68px;
         padding-inline: 8px;
       }
+      .calendar-body { padding-inline: 12px; }
+      .calendar-weekdays,
+      .calendar-grid {
+        gap: 4px;
+      }
+      .calendar-day {
+        min-height: 52px;
+        padding: 6px 4px;
+        border-radius: 10px;
+      }
+      .calendar-toolbar {
+        grid-template-columns: 38px 1fr 38px;
+        padding: 8px;
+      }
+      .calendar-nav {
+        width: 38px;
+        height: 38px;
+      }
+      .calendar-month {
+        font-size: 16px;
+      }
     }
   </style>
 </head>
@@ -1443,7 +1688,7 @@
       <div class="header-tools">
         <button class="settings-btn" type="button" id="settingsBtn">設定</button>
         <button class="settings-btn" type="button" id="analyticsBtn">分析</button>
-        <div class="today"><span>今日</span><strong id="dateLabel"></strong><small id="weekdayLabel"></small></div>
+        <button class="today" type="button" id="calendarBtn" aria-label="カレンダーを開く"><span>今日</span><strong id="dateLabel"></strong><small id="weekdayLabel"></small></button>
       </div>
     </header>
 
@@ -1825,6 +2070,35 @@
     </div>
   </dialog>
 
+  <dialog id="calendarDialog">
+    <div class="form-head settings-head">
+      <h2>カレンダー</h2>
+      <button class="x" type="button" id="closeCalendarDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="calendar-body">
+      <div class="calendar-toolbar">
+        <button class="calendar-nav" type="button" id="calendarPrevBtn" aria-label="前の月">‹</button>
+        <h3 class="calendar-month" id="calendarMonthLabel"></h3>
+        <button class="calendar-nav" type="button" id="calendarNextBtn" aria-label="次の月">›</button>
+      </div>
+      <div class="calendar-weekdays" aria-hidden="true">
+        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div class="calendar-legend" aria-label="予定の色分け">
+        <span class="legend-item"><i class="legend-dot" style="--dot:#ff6678;"></i>締切</span>
+        <span class="legend-item"><i class="legend-dot" style="--dot:#ffbd72;"></i>締切間近</span>
+        <span class="legend-item"><i class="legend-dot" style="--dot:#61f4de;"></i>次の予定</span>
+        <span class="legend-item"><i class="legend-dot" style="--dot:#ffdf72;"></i>インターン</span>
+      </div>
+      <div class="calendar-events">
+        <h3 id="calendarSelectedLabel"></h3>
+        <div id="calendarEventList"></div>
+      </div>
+      <button class="soft-btn accent" type="button" id="calendarTodayBtn">今日に戻る</button>
+    </div>
+  </dialog>
+
   <script>
     const stages = [
       "気になる",
@@ -1938,6 +2212,8 @@
     let credentialTargetId = null;
     let vaultResolver = null;
     let importCandidates = [];
+    let calendarCursor = null;
+    let selectedCalendarDate = "";
 
     const cards = document.querySelector("#cards");
     const chips = document.querySelector("#chips");
@@ -1965,6 +2241,11 @@
     const syncImportStatus = document.querySelector("#syncImportStatus");
     const analyticsDialog = document.querySelector("#analyticsDialog");
     const analyticsContent = document.querySelector("#analyticsContent");
+    const calendarDialog = document.querySelector("#calendarDialog");
+    const calendarGrid = document.querySelector("#calendarGrid");
+    const calendarMonthLabel = document.querySelector("#calendarMonthLabel");
+    const calendarSelectedLabel = document.querySelector("#calendarSelectedLabel");
+    const calendarEventList = document.querySelector("#calendarEventList");
     const clearCredentialField = document.querySelector("#clearCredentialField");
     const credentialFormNote = document.querySelector("#credentialFormNote");
     const credentialDialog = document.querySelector("#credentialDialog");
@@ -1996,6 +2277,8 @@
     }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 1250);
 
     const now = new Date();
+    calendarCursor = new Date(now.getFullYear(), now.getMonth(), 1);
+    selectedCalendarDate = localDateKey(now);
     document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
     document.querySelector("#weekdayLabel").textContent = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(now);
     stages.forEach(stage => stageSelect.add(new Option(stage, stage)));
@@ -2051,6 +2334,16 @@
     document.querySelector("#closePrivacyDialog").addEventListener("click", () => privacyDialog.close());
     document.querySelector("#analyticsBtn").addEventListener("click", openAnalytics);
     document.querySelector("#closeAnalyticsDialog").addEventListener("click", () => analyticsDialog.close());
+    document.querySelector("#calendarBtn").addEventListener("click", openCalendar);
+    document.querySelector("#closeCalendarDialog").addEventListener("click", () => calendarDialog.close());
+    document.querySelector("#calendarPrevBtn").addEventListener("click", () => moveCalendarMonth(-1));
+    document.querySelector("#calendarNextBtn").addEventListener("click", () => moveCalendarMonth(1));
+    document.querySelector("#calendarTodayBtn").addEventListener("click", () => {
+      const today = new Date();
+      calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+      selectedCalendarDate = localDateKey(today);
+      renderCalendar();
+    });
     document.querySelector("#closeCredentialDialog").addEventListener("click", () => credentialDialog.close());
     document.querySelector("#unlockCredentialBtn").addEventListener("click", unlockCredential);
     document.querySelector("#closeVaultDialog").addEventListener("click", () => closeVaultRequest(null));
@@ -2932,6 +3225,187 @@
       }).join("");
     }
 
+    function openCalendar() {
+      const today = new Date();
+      selectedCalendarDate = localDateKey(today);
+      calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+      calendarDialog.showModal();
+      renderCalendar();
+    }
+
+    function moveCalendarMonth(offset) {
+      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + offset, 1);
+      selectedCalendarDate = localDateKey(new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), 1));
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      if (!calendarDialog.open) return;
+      const year = calendarCursor.getFullYear();
+      const month = calendarCursor.getMonth();
+      const todayKey = localDateKey(new Date());
+      const eventsByDate = groupCalendarEvents();
+      const first = new Date(year, month, 1);
+      const gridStart = new Date(year, month, 1 - first.getDay());
+      calendarMonthLabel.textContent = `${year}年${month + 1}月`;
+      calendarGrid.innerHTML = Array.from({ length: 42 }, (_, index) => {
+        const date = new Date(gridStart);
+        date.setDate(gridStart.getDate() + index);
+        const key = localDateKey(date);
+        const events = eventsByDate.get(key) || [];
+        const dots = events.slice(0, 4).map(event => `<i class="calendar-dot" style="--dot:${event.color};"></i>`).join("");
+        return `
+          <button class="calendar-day${date.getMonth() === month ? "" : " outside"}${key === todayKey ? " today-mark" : ""}${key === selectedCalendarDate ? " selected" : ""}" type="button" data-date="${key}" aria-label="${formatLongDate(key)}">
+            <span class="calendar-date-num">${date.getDate()}</span>
+            <span class="calendar-dots">${dots}</span>
+            ${events.length > 1 ? `<span class="calendar-count">${events.length}</span>` : ""}
+          </button>
+        `;
+      }).join("");
+      calendarGrid.querySelectorAll(".calendar-day").forEach(button => {
+        button.addEventListener("click", () => {
+          selectedCalendarDate = button.dataset.date;
+          const selected = parseDateKey(selectedCalendarDate);
+          if (selected.getMonth() !== calendarCursor.getMonth() || selected.getFullYear() !== calendarCursor.getFullYear()) {
+            calendarCursor = new Date(selected.getFullYear(), selected.getMonth(), 1);
+          }
+          renderCalendar();
+        });
+      });
+      renderSelectedCalendarEvents(eventsByDate.get(selectedCalendarDate) || []);
+    }
+
+    function renderSelectedCalendarEvents(events) {
+      calendarSelectedLabel.textContent = formatLongDate(selectedCalendarDate);
+      if (!events.length) {
+        calendarEventList.innerHTML = `<p class="calendar-empty">この日の予定はありません。</p>`;
+        return;
+      }
+      calendarEventList.innerHTML = events
+        .sort((a, b) => a.priority - b.priority || a.company.localeCompare(b.company, "ja"))
+        .map(event => `
+          <button class="calendar-event" type="button" data-entry-id="${escapeHtml(event.entryId)}" style="--event:${event.color};">
+            <span class="calendar-event-content">
+              <span class="calendar-event-label">${escapeHtml(event.label)}</span>
+              <span class="calendar-event-title">${escapeHtml(event.company)}</span>
+              <span class="calendar-event-detail">${escapeHtml(event.detail)}</span>
+            </span>
+          </button>
+        `).join("");
+      calendarEventList.querySelectorAll("[data-entry-id]").forEach(button => {
+        button.addEventListener("click", () => {
+          const entry = entries.find(item => item.id === button.dataset.entryId);
+          if (!entry) return;
+          calendarDialog.close();
+          openForm(entry);
+        });
+      });
+    }
+
+    function groupCalendarEvents() {
+      const map = new Map();
+      getCalendarEvents().forEach(event => {
+        if (!map.has(event.date)) map.set(event.date, []);
+        map.get(event.date).push(event);
+      });
+      return map;
+    }
+
+    function getCalendarEvents() {
+      const result = [];
+      entries.forEach(entry => {
+        const done = doneStages.has(entry.stage);
+        if (entry.deadline && !done) {
+          const level = deadlineLevel(entry);
+          result.push({
+            entryId: entry.id,
+            company: entry.company,
+            date: entry.deadline,
+            label: level === "critical" ? "締切 24時間以内" : level === "soon" ? "締切間近" : "締切",
+            detail: `${entry.stage} ・ ${deadlineText(entry)}`,
+            color: level === "critical" ? "#ff6678" : level === "soon" ? "#ffbd72" : "#ff6678",
+            priority: level === "critical" ? 1 : 2
+          });
+        }
+        if (entry.nextDate && !done) {
+          result.push({
+            entryId: entry.id,
+            company: entry.company,
+            date: entry.nextDate,
+            label: nextCalendarLabel(entry),
+            detail: `${entry.type} ・ ${entry.stage}`,
+            color: "#61f4de",
+            priority: 3
+          });
+        }
+        if (entry.stage === "インターン合格") {
+          internshipDateKeys(entry).forEach(date => {
+            result.push({
+              entryId: entry.id,
+              company: entry.company,
+              date,
+              label: "インターン日程",
+              detail: entry.internSchedule || `${formatDate(date)} 実施`,
+              color: "#ffdf72",
+              priority: 4
+            });
+          });
+        }
+      });
+      return result.filter(event => isDateKey(event.date));
+    }
+
+    function nextCalendarLabel(entry) {
+      if (entry.stage === "GD") return "GD予定";
+      if (entry.stage === "Webテスト") return "Webテスト予定";
+      if (entry.stage.includes("面接")) return "面接予定";
+      if (["書類選考中", "ES提出済"].includes(entry.stage)) return "書類/ES予定";
+      return "次の予定";
+    }
+
+    function internshipDateKeys(entry) {
+      if (entry.internScheduleMode === "range") {
+        return dateKeysBetween(entry.internStartDate, entry.internEndDate);
+      }
+      if (isDateKey(entry.internSingleDate)) return [entry.internSingleDate];
+      return [];
+    }
+
+    function dateKeysBetween(startValue, endValue) {
+      if (!isDateKey(startValue) || !isDateKey(endValue)) return [];
+      const start = parseDateKey(startValue);
+      const end = parseDateKey(endValue);
+      if (end < start) return [startValue];
+      const keys = [];
+      const cursor = new Date(start);
+      while (cursor <= end && keys.length < 45) {
+        keys.push(localDateKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return keys;
+    }
+
+    function isDateKey(value) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(value || "");
+    }
+
+    function localDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function parseDateKey(value) {
+      return new Date(`${value}T00:00:00`);
+    }
+
+    function formatLongDate(value) {
+      const date = parseDateKey(value);
+      const weekday = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(date);
+      return `${date.getMonth() + 1}/${date.getDate()}（${weekday}）`;
+    }
+
     function buildSimplePassRate(label, phaseKey, passStages, failStages, color) {
       let total = 0;
       let passed = 0;
@@ -3122,11 +3596,13 @@
       if (!visible.length) {
         cards.innerHTML = `<div class="empty">まだ表示できる選考がありません。下の追加ボタンから入れられます。</div>`;
         paintFilters();
+        if (calendarDialog.open) renderCalendar();
         return;
       }
 
       visible.forEach(entry => cards.append(createCard(entry)));
       paintFilters();
+      if (calendarDialog.open) renderCalendar();
     }
 
     function createCard(entry) {
