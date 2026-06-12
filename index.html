@@ -1289,11 +1289,100 @@
         0 0 22px rgba(97,244,222,.11);
     }
 
+    .archive-open {
+      display: grid;
+      place-items: center;
+      min-height: 46px;
+      border: 1px solid rgba(255,207,90,.34);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(255,207,90,.14), rgba(255,255,255,.035)),
+        rgba(255,255,255,.045);
+      color: #ffe7a3;
+      font-size: 14px;
+      font-weight: 950;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .protected-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
     .credential-body,
-    .vault-body {
+    .vault-body,
+    .archive-body {
       padding: 0 16px 16px;
       display: grid;
       gap: 12px;
+    }
+
+    .archive-toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .archive-lock-note {
+      margin: 0;
+      color: #ffe7a3;
+      font-size: 11px;
+      font-weight: 850;
+      line-height: 1.6;
+    }
+
+    .archive-items {
+      display: grid;
+      gap: 12px;
+    }
+
+    .archive-item {
+      display: grid;
+      gap: 10px;
+      padding: 13px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.028)),
+        rgba(255,255,255,.045);
+    }
+
+    .archive-item-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: #f3f7fb;
+      font-size: 13px;
+      font-weight: 950;
+    }
+
+    .archive-remove {
+      min-height: 32px;
+      padding: 0 11px;
+      border: 1px solid rgba(255,102,120,.22);
+      border-radius: 10px;
+      background: rgba(255,102,120,.12);
+      color: #ff9aa6;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .archive-answer {
+      min-height: 150px;
+    }
+
+    .archive-custom-label[hidden] {
+      display: none !important;
+    }
+
+    .char-count {
+      color: #9facbd;
+      font-size: 11px;
+      font-weight: 850;
+      text-align: right;
     }
 
     .credential-result {
@@ -1690,6 +1779,9 @@
       .calendar-month {
         font-size: 16px;
       }
+      .archive-item .form-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -1916,6 +2008,24 @@
     </div>
   </dialog>
 
+  <dialog id="esArchiveDialog">
+    <div class="form-head settings-head">
+      <h2 id="esArchiveTitle">ESアーカイブ</h2>
+      <button class="x" type="button" id="closeEsArchiveDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="archive-body">
+      <p class="settings-note">提出したESの設問・回答・面接前メモを保存できます。内容は保護パスワードで暗号化されます。</p>
+      <p class="archive-lock-note" id="esArchiveLockNote">一度解除すると、30分間は再入力なしで開けます。</p>
+      <div class="archive-toolbar">
+        <button class="soft-btn accent" type="button" id="addArchiveItemBtn">設問を追加</button>
+        <button class="soft-btn" type="button" id="lockArchiveBtn">今すぐロック</button>
+      </div>
+      <div class="archive-items" id="esArchiveItems"></div>
+      <button class="save" type="button" id="saveEsArchiveBtn">ESアーカイブを保存</button>
+      <div class="vault-error" id="esArchiveError" aria-live="polite"></div>
+    </div>
+  </dialog>
+
   <dialog id="vaultDialog">
     <div class="form-head settings-head">
       <h2 id="vaultTitle">保護パスワード</h2>
@@ -1940,12 +2050,12 @@
       <button class="x" type="button" id="closeForgotVaultDialog" aria-label="閉じる">×</button>
     </div>
     <div class="vault-body">
-      <p class="settings-note">保護パスワードを忘れた場合、NEXTROUND内に保存しているログインURL・ID・パスワードは表示できません。</p>
-      <p class="settings-note">再設定すると、NEXTROUND内のログイン情報は削除されます。新しい保護パスワードを設定したあと、必要なログイン情報をもう一度入力してください。</p>
+      <p class="settings-note">保護パスワードを忘れた場合、NEXTROUND内に保存しているログインURL・ID・パスワード、ESアーカイブは表示できません。</p>
+      <p class="settings-note">再設定すると、NEXTROUND内のログイン情報とESアーカイブは削除されます。新しい保護パスワードを設定したあと、必要な情報をもう一度入力してください。</p>
       <p class="settings-note">企業のマイページやアカウントには影響しません。会社名・選考状況・締切日・通常メモは残ります。</p>
       <label class="reset-check">
         <input id="forgotVaultConfirm" type="checkbox">
-        NEXTROUND内のログイン情報だけが削除されることを理解しました
+        NEXTROUND内のログイン情報とESアーカイブが削除されることを理解しました
       </label>
       <label>新しい保護パスワード
         <input id="forgotVaultPassword" type="password" autocomplete="new-password">
@@ -1953,7 +2063,7 @@
       <label>もう一度入力
         <input id="forgotVaultConfirmPassword" type="password" autocomplete="new-password">
       </label>
-      <button class="save danger" type="button" id="forgotVaultSubmitBtn">ログイン情報を削除して再設定</button>
+      <button class="save danger" type="button" id="forgotVaultSubmitBtn">保護データを削除して再設定</button>
       <div class="vault-error" id="forgotVaultError" aria-live="polite"></div>
     </div>
   </dialog>
@@ -1965,7 +2075,7 @@
     </div>
     <div class="vault-body">
       <p class="settings-note">このコードを別端末で読み込むと、同じデータを移せます。自動同期ではありません。</p>
-      <p class="settings-note">コードには会社名・選考状況・メモ・暗号化済みログイン情報が含まれる場合があります。自分以外に送らないでください。</p>
+      <p class="settings-note">コードには会社名・選考状況・メモ・暗号化済み保護データが含まれる場合があります。自分以外に送らないでください。</p>
       <label>同期コード
         <textarea id="syncCodeOutput" class="sync-code" readonly></textarea>
       </label>
@@ -1981,7 +2091,7 @@
     </div>
     <div class="vault-body">
       <p class="settings-note">この端末に入っている今の一覧は、同期コードの内容に入れ替わります。必要なら先にバックアップしてください。</p>
-      <p class="settings-note">ログイン情報は暗号化されたまま移ります。別端末で表示するには、コピー元で設定した保護パスワードが必要です。</p>
+      <p class="settings-note">保護データは暗号化されたまま移ります。別端末で表示するには、コピー元で設定した保護パスワードが必要です。</p>
       <label>同期コードを貼り付け
         <textarea id="syncCodeInput" class="sync-code" placeholder="ここに同期コードを貼り付け"></textarea>
       </label>
@@ -2013,19 +2123,19 @@
             <button class="soft-btn" type="button" id="exportBtn">データを保存</button>
             <button class="soft-btn" type="button" id="importBtn">保存データを読み込む</button>
           </div>
-          <p class="settings-note">保存したファイルには会社名やメモが含まれます。人に送らず、自分だけで保管してください。</p>
+          <p class="settings-note">保存したファイルには会社名・メモ・暗号化済み保護データが含まれます。人に送らず、自分だけで保管してください。</p>
         </section>
         <div class="settings-status" id="settingsStatus" aria-live="polite"></div>
         <input id="importFile" type="file" accept="application/json,.json" hidden>
       </section>
       <section class="settings-panel">
         <h3>保護パスワード</h3>
-        <p class="settings-note">ログイン情報を見るための保護パスワードを管理します。</p>
+        <p class="settings-note">マイページ情報とESアーカイブを見るための保護パスワードを管理します。解除後30分で自動ロックされます。</p>
         <div class="settings-actions">
           <button class="soft-btn" type="button" id="changeVaultBtn">保護パスワードを変更</button>
           <button class="soft-btn" type="button" id="forgotVaultBtn">忘れた場合の再設定</button>
         </div>
-        <p class="settings-note">忘れた場合は、NEXTROUND内のログイン情報だけを削除して再設定できます。</p>
+        <p class="settings-note">忘れた場合は、NEXTROUND内のログイン情報とESアーカイブを削除して再設定できます。</p>
         <div class="settings-status" id="vaultSettingsStatus" aria-live="polite"></div>
       </section>
       <section class="settings-panel">
@@ -2049,16 +2159,16 @@
         </section>
         <section class="privacy-item">
           <strong>端末内に保存される情報</strong>
-          <p>あなたが入力した場合、会社名、選考状況、締切日、次の予定日、インターン日程、通常メモ、ログインURL・ID・パスワードが、あなたの端末内に保存されます。</p>
+          <p>あなたが入力した場合、会社名、選考状況、締切日、次の予定日、インターン日程、通常メモ、ESアーカイブ、ログインURL・ID・パスワードが、あなたの端末内に保存されます。</p>
           <p>これらの入力内容がNEXTROUNDの管理者に送信されたり、管理者側で閲覧されたりすることはありません。</p>
         </section>
         <section class="privacy-item">
-          <strong>ログイン情報</strong>
-          <p>ログインURL・ID・パスワードの入力は任意です。入力した場合は、保護パスワードで暗号化して端末内に保存されます。保護パスワードを忘れた場合、保存済みログイン情報は表示できません。</p>
+          <strong>保護データ</strong>
+          <p>ログインURL・ID・パスワード、ESアーカイブの入力は任意です。入力した場合は、保護パスワードで暗号化して端末内に保存されます。保護パスワードを忘れた場合、保存済みの保護データは表示できません。</p>
         </section>
         <section class="privacy-item">
           <strong>バックアップ</strong>
-          <p>データ保存機能で作成したファイルには、会社名・選考状況・メモなどが含まれます。人に送らず、自分だけの場所に保管してください。</p>
+          <p>データ保存機能で作成したファイルには、会社名・選考状況・メモ・暗号化済み保護データなどが含まれます。人に送らず、自分だけの場所に保管してください。</p>
         </section>
         <section class="privacy-item">
           <strong>GitHub Pagesでの公開</strong>
@@ -2175,6 +2285,8 @@
     };
     const storageKey = "senkou-deck-v1";
     const vaultStorageKey = "nextround-vault-v1";
+    const protectedUnlockMs = 30 * 60 * 1000;
+    const esArchiveLabels = ["ガクチカ", "自己PR", "志望動機", "研究内容", "長所・短所", "挫折経験", "将来像", "企業理解", "その他"];
     const textEncoder = new TextEncoder();
     const textDecoder = new TextDecoder();
     const phaseStages = {
@@ -2237,10 +2349,14 @@
     let editingId = null;
     let resultTargetId = null;
     let credentialTargetId = null;
+    let esArchiveTargetId = null;
     let vaultResolver = null;
     let importCandidates = [];
     let calendarCursor = null;
     let selectedCalendarDate = "";
+    let protectedSession = { password: "", until: 0 };
+    let protectedLockTimer = null;
+    let esArchiveDraft = [];
 
     const cards = document.querySelector("#cards");
     const chips = document.querySelector("#chips");
@@ -2280,6 +2396,11 @@
     const credentialPassword = document.querySelector("#credentialPassword");
     const credentialError = document.querySelector("#credentialError");
     const credentialResult = document.querySelector("#credentialResult");
+    const esArchiveDialog = document.querySelector("#esArchiveDialog");
+    const esArchiveTitle = document.querySelector("#esArchiveTitle");
+    const esArchiveItems = document.querySelector("#esArchiveItems");
+    const esArchiveError = document.querySelector("#esArchiveError");
+    const esArchiveLockNote = document.querySelector("#esArchiveLockNote");
     const vaultDialog = document.querySelector("#vaultDialog");
     const vaultTitle = document.querySelector("#vaultTitle");
     const vaultMessage = document.querySelector("#vaultMessage");
@@ -2373,6 +2494,10 @@
     });
     document.querySelector("#closeCredentialDialog").addEventListener("click", () => credentialDialog.close());
     document.querySelector("#unlockCredentialBtn").addEventListener("click", unlockCredential);
+    document.querySelector("#closeEsArchiveDialog").addEventListener("click", () => esArchiveDialog.close());
+    document.querySelector("#addArchiveItemBtn").addEventListener("click", () => addEsArchiveItem());
+    document.querySelector("#saveEsArchiveBtn").addEventListener("click", saveEsArchive);
+    document.querySelector("#lockArchiveBtn").addEventListener("click", lockProtectedSession);
     document.querySelector("#closeVaultDialog").addEventListener("click", () => closeVaultRequest(null));
     document.querySelector("#vaultSubmitBtn").addEventListener("click", submitVaultPassword);
     vaultPassword.addEventListener("keydown", event => {
@@ -2437,6 +2562,7 @@
         memo: data.memo.trim(),
         flow: getFlowFromForm(),
         credentialVault,
+        esArchiveVault: existingEntry?.esArchiveVault || null,
         stageHistory: addStageToHistory(existingEntry?.stageHistory, data.stage)
       };
       entries = editingId
@@ -2580,6 +2706,7 @@
         memo: candidate.memo,
         flow: candidate.flow,
         credentialVault: null,
+        esArchiveVault: null,
         stageHistory: buildImportStageHistory(candidate.stage, candidate.flow)
       }));
       entries = [...imported, ...entries];
@@ -2742,6 +2869,7 @@
           internStartDate: "",
           internEndDate: "",
           credentialVault: null,
+          esArchiveVault: null,
           ...entry,
           flow: normalizeFlow(entry.flow, entry.stageHistory, entry.stage),
           stageHistory: normalizeStageHistory(entry.stageHistory, entry.stage)
@@ -2839,7 +2967,7 @@
         save();
         render();
         syncImportDialog.close();
-        settingsStatus.textContent = "同期コードを読み込みました。ログイン情報を見るには、コピー元の保護パスワードが必要です。";
+        settingsStatus.textContent = "同期コードを読み込みました。保護データを見るには、コピー元の保護パスワードが必要です。";
       } catch {
         syncImportStatus.textContent = "読み込めませんでした。NEXTROUNDで作成した同期コードを貼り付けてください。";
       }
@@ -2905,6 +3033,7 @@
         memo: entry.memo || "",
         flow: normalizeFlow(entry.flow, entry.stageHistory, stage),
         credentialVault: entry.credentialVault || null,
+        esArchiveVault: entry.esArchiveVault || null,
         stageHistory: normalizeStageHistory(entry.stageHistory, stage)
       };
     }
@@ -3083,33 +3212,231 @@
       if (!vaultConfig) {
         const password = await requestVaultPassword({
           title: "保護パスワードを設定",
-          message: "マイページ情報を見る時に使うパスワードです。忘れると復元できません。",
+          message: "マイページ情報とESアーカイブを守るパスワードです。忘れると復元できません。",
           create: true
         });
-        if (!password) throw new Error("マイページ情報の保存をキャンセルしました。");
+        if (!password) throw new Error("保護保存をキャンセルしました。");
         vaultConfig = await createVaultConfig(password);
         saveVaultConfig();
+        rememberProtectedPassword(password);
         return password;
       }
+      if (isProtectedUnlocked()) return protectedSession.password;
       const password = await requestVaultPassword({
         title: "保護パスワードを入力",
-        message: "マイページ情報を暗号化して保存します。",
+        message: "保護された情報を暗号化して保存します。",
         create: false
       });
-      if (!password) throw new Error("マイページ情報の保存をキャンセルしました。");
+      if (!password) throw new Error("保護保存をキャンセルしました。");
       if (!(await verifyVaultPassword(password))) throw new Error("保護パスワードが違います。");
+      rememberProtectedPassword(password);
       return password;
+    }
+
+    async function getProtectedPassword(title, message) {
+      if (isProtectedUnlocked()) return protectedSession.password;
+      if (!vaultConfig) {
+        const password = await requestVaultPassword({
+          title: "保護パスワードを設定",
+          message: "マイページ情報とESアーカイブを守るパスワードです。忘れると復元できません。",
+          create: true
+        });
+        if (!password) return null;
+        vaultConfig = await createVaultConfig(password);
+        saveVaultConfig();
+        rememberProtectedPassword(password);
+        return password;
+      }
+      const password = await requestVaultPassword({ title, message, create: false });
+      if (!password) return null;
+      if (!(await verifyVaultPassword(password))) return "";
+      rememberProtectedPassword(password);
+      return password;
+    }
+
+    function isProtectedUnlocked() {
+      return Boolean(protectedSession.password && Date.now() < protectedSession.until);
+    }
+
+    function rememberProtectedPassword(password) {
+      protectedSession = { password, until: Date.now() + protectedUnlockMs };
+      if (protectedLockTimer) clearTimeout(protectedLockTimer);
+      protectedLockTimer = setTimeout(lockProtectedSession, protectedUnlockMs + 500);
+      updateArchiveLockNote();
+    }
+
+    function lockProtectedSession() {
+      protectedSession = { password: "", until: 0 };
+      if (protectedLockTimer) clearTimeout(protectedLockTimer);
+      protectedLockTimer = null;
+      updateArchiveLockNote();
+      if (esArchiveDialog.open) esArchiveError.textContent = "ロックしました。次に開く時は保護パスワードが必要です。";
+    }
+
+    function updateArchiveLockNote() {
+      if (!esArchiveLockNote) return;
+      if (!isProtectedUnlocked()) {
+        esArchiveLockNote.textContent = "一度解除すると、30分間は再入力なしで開けます。";
+        return;
+      }
+      const minutes = Math.max(1, Math.ceil((protectedSession.until - Date.now()) / 60000));
+      esArchiveLockNote.textContent = `解除中です。約${minutes}分後に自動ロックされます。`;
+    }
+
+    async function openEsArchive(entry) {
+      esArchiveTargetId = entry.id;
+      esArchiveError.textContent = "";
+      esArchiveTitle.textContent = `${entry.company} のESアーカイブ`;
+      const password = await getProtectedPassword(
+        "保護パスワード",
+        "ESアーカイブを開きます。一度解除すると30分間は再入力なしで確認できます。"
+      );
+      if (password === null) return;
+      if (password === "") {
+        alert("保護パスワードが違います。");
+        return;
+      }
+      try {
+        esArchiveDraft = entry.esArchiveVault ? await decryptEsArchive(entry.esArchiveVault, password) : [];
+      } catch {
+        alert("ESアーカイブを読み取れませんでした。保護パスワードを確認してください。");
+        return;
+      }
+      esArchiveDialog.showModal();
+      renderEsArchiveItems(esArchiveDraft);
+      updateArchiveLockNote();
+    }
+
+    function renderEsArchiveItems(items = []) {
+      esArchiveItems.innerHTML = "";
+      const values = items.length ? items : [emptyArchiveItem()];
+      values.forEach(item => addEsArchiveItem(item));
+    }
+
+    function addEsArchiveItem(item = emptyArchiveItem()) {
+      const index = esArchiveItems.children.length + 1;
+      const section = document.createElement("section");
+      section.className = "archive-item";
+      const labelValue = item.label || "";
+      const isKnownLabel = esArchiveLabels.includes(labelValue) && labelValue !== "その他";
+      const selectedLabel = isKnownLabel ? labelValue : labelValue ? "その他" : "ガクチカ";
+      const customLabel = isKnownLabel ? "" : labelValue === "その他" ? "" : labelValue;
+      section.innerHTML = `
+        <div class="archive-item-head">
+          <span>設問 ${index}</span>
+          <button class="archive-remove" type="button">削除</button>
+        </div>
+        <div class="form-grid">
+          <label>ラベル
+            <select class="archive-label">
+              ${esArchiveLabels.map(label => `<option value="${escapeHtml(label)}" ${label === selectedLabel ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+            </select>
+          </label>
+          <label class="archive-custom-label" ${selectedLabel === "その他" ? "" : "hidden"}>その他のラベル
+            <input class="archive-label-custom" value="${escapeHtml(customLabel)}" placeholder="例: 価値観 / キャリア観">
+          </label>
+          <label>提出日
+            <input class="archive-date" type="date" value="${escapeHtml(item.submittedDate || "")}">
+          </label>
+        </div>
+        <label>設問
+          <textarea class="archive-question" placeholder="企業ごとの設問を自由に入力">${escapeHtml(item.question || "")}</textarea>
+        </label>
+        <label>提出した回答
+          <textarea class="archive-answer" placeholder="提出したES本文を保存">${escapeHtml(item.answer || "")}</textarea>
+          <span class="char-count">${countChars(item.answer || "")}文字</span>
+        </label>
+        <label>面接前メモ
+          <textarea class="archive-memo" placeholder="深掘りされそうな点、文字数、補足など">${escapeHtml(item.memo || "")}</textarea>
+        </label>
+      `;
+      section.querySelector(".archive-remove").addEventListener("click", () => {
+        section.remove();
+        refreshArchiveIndexes();
+      });
+      const labelSelect = section.querySelector(".archive-label");
+      const customLabelField = section.querySelector(".archive-custom-label");
+      labelSelect.addEventListener("change", () => {
+        customLabelField.hidden = labelSelect.value !== "その他";
+      });
+      const answer = section.querySelector(".archive-answer");
+      const counter = section.querySelector(".char-count");
+      answer.addEventListener("input", () => {
+        counter.textContent = `${countChars(answer.value)}文字`;
+      });
+      esArchiveItems.append(section);
+      refreshArchiveIndexes();
+    }
+
+    function refreshArchiveIndexes() {
+      [...esArchiveItems.querySelectorAll(".archive-item-head span")].forEach((label, index) => {
+        label.textContent = `設問 ${index + 1}`;
+      });
+    }
+
+    function readEsArchiveItems() {
+      return [...esArchiveItems.querySelectorAll(".archive-item")]
+        .map(section => ({
+          id: crypto.randomUUID(),
+          label: readArchiveLabel(section),
+          submittedDate: section.querySelector(".archive-date").value,
+          question: section.querySelector(".archive-question").value.trim(),
+          answer: section.querySelector(".archive-answer").value.trim(),
+          memo: section.querySelector(".archive-memo").value.trim()
+        }))
+        .filter(item => item.label || item.submittedDate || item.question || item.answer || item.memo);
+    }
+
+    function readArchiveLabel(section) {
+      const selected = section.querySelector(".archive-label").value;
+      if (selected !== "その他") return selected;
+      return section.querySelector(".archive-label-custom").value.trim() || "その他";
+    }
+
+    async function saveEsArchive() {
+      const entry = entries.find(item => item.id === esArchiveTargetId);
+      if (!entry) return;
+      esArchiveError.textContent = "";
+      try {
+        const items = readEsArchiveItems();
+        let esArchiveVault = null;
+        if (items.length) {
+          const password = await getVaultPasswordForSave();
+          const key = await deriveVaultKey(password, vaultConfig.salt);
+          esArchiveVault = { version: 1, ...(await encryptPayload(key, items)) };
+        }
+        entries = entries.map(item => item.id === entry.id ? { ...item, esArchiveVault } : item);
+        save();
+        render();
+        esArchiveError.textContent = items.length ? "ESアーカイブを保存しました。" : "ESアーカイブを空にしました。";
+      } catch (error) {
+        esArchiveError.textContent = error.message || "保存できませんでした。";
+      }
+    }
+
+    async function decryptEsArchive(vault, password) {
+      const key = await deriveVaultKey(password, vaultConfig.salt);
+      const data = await decryptPayload(key, vault);
+      return Array.isArray(data) ? data : [];
+    }
+
+    function emptyArchiveItem() {
+      return { label: "", submittedDate: "", question: "", answer: "", memo: "" };
+    }
+
+    function countChars(value) {
+      return [...String(value || "")].length;
     }
 
     async function changeVaultPassword() {
       vaultSettingsStatus.textContent = "";
       if (!vaultConfig) {
-        vaultSettingsStatus.textContent = "まだ保護パスワードは設定されていません。ログイン情報を保存するときに設定できます。";
+        vaultSettingsStatus.textContent = "まだ保護パスワードは設定されていません。ログイン情報やESアーカイブを保存するときに設定できます。";
         return;
       }
       const currentPassword = await requestVaultPassword({
         title: "現在の保護パスワード",
-        message: "保存済みログイン情報を残したまま変更するため、現在の保護パスワードを入力してください。",
+        message: "保存済みのログイン情報とESアーカイブを残したまま変更するため、現在の保護パスワードを入力してください。",
         create: false
       });
       if (!currentPassword) return;
@@ -3120,17 +3447,21 @@
       const oldConfig = vaultConfig;
       const oldKey = await deriveVaultKey(currentPassword, oldConfig.salt);
       let decryptedCredentials;
+      let decryptedArchives;
       try {
         decryptedCredentials = await Promise.all(entries.map(entry => (
           entry.credentialVault ? decryptPayload(oldKey, entry.credentialVault) : Promise.resolve(null)
         )));
+        decryptedArchives = await Promise.all(entries.map(entry => (
+          entry.esArchiveVault ? decryptPayload(oldKey, entry.esArchiveVault) : Promise.resolve(null)
+        )));
       } catch {
-        vaultSettingsStatus.textContent = "保存済みログイン情報を読み取れませんでした。忘れた場合の再設定を使ってください。";
+        vaultSettingsStatus.textContent = "保存済みの保護データを読み取れませんでした。忘れた場合の再設定を使ってください。";
         return;
       }
       const newPassword = await requestVaultPassword({
         title: "新しい保護パスワード",
-        message: "保存済みログイン情報は残したまま、新しい保護パスワードに変更します。",
+        message: "保存済みのログイン情報とESアーカイブは残したまま、新しい保護パスワードに変更します。",
         create: true
       });
       if (!newPassword) return;
@@ -3138,14 +3469,19 @@
       const newKey = await deriveVaultKey(newPassword, newConfig.salt);
       entries = await Promise.all(entries.map(async (entry, index) => {
         const credential = decryptedCredentials[index];
-        if (!credential) return entry;
-        return { ...entry, credentialVault: { version: 1, ...(await encryptPayload(newKey, credential)) } };
+        const archive = decryptedArchives[index];
+        return {
+          ...entry,
+          credentialVault: credential ? { version: 1, ...(await encryptPayload(newKey, credential)) } : null,
+          esArchiveVault: archive ? { version: 1, ...(await encryptPayload(newKey, archive)) } : null
+        };
       }));
       vaultConfig = newConfig;
       saveVaultConfig();
+      rememberProtectedPassword(newPassword);
       save();
       render();
-      vaultSettingsStatus.textContent = "保護パスワードを変更しました。保存済みログイン情報は残っています。";
+      vaultSettingsStatus.textContent = "保護パスワードを変更しました。保存済みの保護データは残っています。";
     }
 
     function openForgotVaultDialog() {
@@ -3173,12 +3509,13 @@
         return;
       }
       vaultConfig = await createVaultConfig(password);
-      entries = entries.map(entry => ({ ...entry, credentialVault: null }));
+      entries = entries.map(entry => ({ ...entry, credentialVault: null, esArchiveVault: null }));
       saveVaultConfig();
+      rememberProtectedPassword(password);
       save();
       render();
       forgotVaultDialog.close();
-      vaultSettingsStatus.textContent = "保護パスワードを再設定しました。必要なログイン情報は各カードの編集からもう一度入力してください。";
+      vaultSettingsStatus.textContent = "保護パスワードを再設定しました。必要なログイン情報やESアーカイブはもう一度入力してください。";
     }
 
     async function buildCredentialVault(data, existingEntry) {
@@ -3660,7 +3997,10 @@
           ${done ? "" : deadlineMetaMarkup(entry, deadlineClass)}
           ${entry.stage === "インターン合格" ? internshipScheduleMarkup(entry) : ""}
           <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
-          ${entry.credentialVault ? `<button class="secret-open" data-action="credential" type="button">マイページ情報を表示</button>` : ""}
+          <div class="protected-actions">
+            <button class="archive-open" data-action="esArchive" type="button">ESアーカイブ${entry.esArchiveVault ? "を開く" : "を作成"}</button>
+            ${entry.credentialVault ? `<button class="secret-open" data-action="credential" type="button">マイページ情報を表示</button>` : ""}
+          </div>
         </div>
         <div class="actions ${actionMode}">
           <button class="primary ${done ? "done" : ""}" data-action="advance" ${done ? "disabled" : ""}>${done ? "完了済み" : escapeHtml(resultMode ? "結果を入力" : primaryLabel(entry, primaryStage))}</button>
@@ -3677,6 +4017,8 @@
       if (failButton) failButton.addEventListener("click", () => setStage(entry.id, getFailStage(entry)));
       const credentialButton = card.querySelector('[data-action="credential"]');
       if (credentialButton) credentialButton.addEventListener("click", () => openCredentialDialog(entry));
+      const archiveButton = card.querySelector('[data-action="esArchive"]');
+      if (archiveButton) archiveButton.addEventListener("click", () => openEsArchive(entry));
       const backButton = card.querySelector('[data-action="back"]');
       if (backButton) backButton.addEventListener("click", () => advance(entry.id, -1));
       const editButton = card.querySelector('[data-action="edit"]');
@@ -3694,7 +4036,11 @@
       document.querySelector("#credentialId").textContent = "";
       document.querySelector("#credentialPass").textContent = "";
       credentialDialog.showModal();
-      setTimeout(() => credentialPassword.focus(), 0);
+      if (isProtectedUnlocked()) {
+        setTimeout(unlockCredential, 0);
+      } else {
+        setTimeout(() => credentialPassword.focus(), 0);
+      }
     }
 
     async function unlockCredential() {
@@ -3703,7 +4049,9 @@
       credentialError.textContent = "";
       try {
         if (!vaultConfig) throw new Error("保護設定が見つかりません。保存データを読み込んだ場合は、対応する保存ファイルが必要です。");
-        const credential = await decryptCredential(entry.credentialVault, credentialPassword.value);
+        const password = credentialPassword.value || (isProtectedUnlocked() ? protectedSession.password : "");
+        const credential = await decryptCredential(entry.credentialVault, password);
+        rememberProtectedPassword(password);
         document.querySelector("#credentialUrl").textContent = credential.url || "未設定";
         document.querySelector("#credentialId").textContent = credential.id || "未設定";
         document.querySelector("#credentialPass").textContent = credential.password || "未設定";
