@@ -1114,6 +1114,28 @@
       font-weight: 650;
     }
 
+    .privacy-link {
+      display: grid;
+      place-items: center;
+      min-height: 44px;
+      margin-top: 4px;
+      border: 1px solid rgba(97,244,222,.3);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(97,244,222,.12), rgba(75,179,253,.07)),
+        rgba(255,255,255,.045);
+      color: #eafffb;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 950;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .privacy-link:focus-visible {
+      outline: 3px solid rgba(97,244,222,.3);
+      outline-offset: 2px;
+    }
+
     .choice-body,
     .import-body {
       padding: 0 16px 16px;
@@ -2043,6 +2065,11 @@
           <p>このアプリはGitHub Pagesで公開されています。ページを表示するために必要な通信情報は、GitHub側で安全管理のために扱われる場合があります。NEXTROUNDの管理者が、あなたの入力内容を取得・閲覧することはありません。</p>
         </section>
         <section class="privacy-item">
+          <strong>ソースコード</strong>
+          <p>入力データを外部送信していないことを確認できるよう、NEXTROUNDのソースコードをGitHubで公開しています。コードを公開しても、管理者以外がこのアプリ本体を勝手に更新することはできません。</p>
+          <a class="privacy-link" href="https://github.com/n6548yjd79-lang/NEXTROUND2" target="_blank" rel="noopener noreferrer">GitHubでソースコードを見る</a>
+        </section>
+        <section class="privacy-item">
           <strong>注意事項</strong>
           <p>共有端末では使わないでください。重要なパスワードは、専用のパスワード管理アプリとの併用をおすすめします。</p>
         </section>
@@ -2053,7 +2080,7 @@
         </section>
         <section class="privacy-item">
           <strong>更新日</strong>
-          <p>2026年6月11日</p>
+          <p>2026年6月12日</p>
         </section>
       </div>
     </div>
