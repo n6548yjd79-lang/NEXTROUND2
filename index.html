@@ -2269,7 +2269,7 @@
         </section>
         <section class="privacy-item">
           <strong>端末内に保存される情報</strong>
-          <p>あなたが入力した場合、会社名、業界、選考状況、締切日、次の予定日、インターン日程、通常メモ、ESアーカイブ、ログインURL・ID・パスワードが、あなたの端末内に保存されます。</p>
+          <p>あなたが入力した場合、会社名、業界、選考状況、締切日、次の予定日・内容、インターン日程、通常メモ、ESアーカイブ、ログインURL・ID・パスワードが、あなたの端末内に保存されます。</p>
           <p>これらの入力内容がNEXTROUNDの管理者に送信されたり、管理者側で閲覧されたりすることはありません。</p>
         </section>
         <section class="privacy-item">
@@ -4352,9 +4352,16 @@
       return `
         <div class="meta">
           <div class="meta-box${deadlineClass}"><span>締切</span><b>${formatDate(entry.deadline)}</b><em class="countdown ${countdownClass(entry)}">${deadlineText(entry)}</em></div>
-          <div class="meta-box"><span>次の予定</span><b>${formatDate(entry.nextDate)}</b>${entry.nextPlan ? `<em class="next-plan">${escapeHtml(entry.nextPlan)}</em>` : ""}</div>
+          <div class="meta-box"><span>次の予定</span>${nextScheduleMarkup(entry)}</div>
         </div>
       `;
+    }
+
+    function nextScheduleMarkup(entry) {
+      if (entry.nextDate) {
+        return `<b>${formatDate(entry.nextDate)}</b>${entry.nextPlan ? `<em class="next-plan">${escapeHtml(entry.nextPlan)}</em>` : ""}`;
+      }
+      return `<b>${escapeHtml(entry.nextPlan || "未設定")}</b>`;
     }
 
     function internshipScheduleMarkup(entry) {
