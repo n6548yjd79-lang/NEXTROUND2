@@ -1396,6 +1396,27 @@
         0 0 22px rgba(97,244,222,.11);
     }
 
+    .portal-link {
+      display: grid;
+      place-items: center;
+      min-height: 46px;
+      border: 1px solid rgba(75,179,253,.34);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(75,179,253,.16), rgba(255,255,255,.035)),
+        rgba(255,255,255,.045);
+      color: #dff3ff;
+      font-size: 14px;
+      font-weight: 950;
+      text-decoration: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .portal-link:focus-visible {
+      outline: 3px solid rgba(75,179,253,.28);
+      outline-offset: 2px;
+    }
+
     .archive-open {
       display: grid;
       place-items: center;
@@ -2052,7 +2073,7 @@
       <section class="secret-editor">
         <div class="secret-head">
           <span>マイページ情報</span>
-          <small>保護パスワードで暗号化</small>
+          <small>ID・パスワードは暗号化</small>
         </div>
         <label>ログインURL
           <input name="portalUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://...">
@@ -2069,7 +2090,7 @@
           <input name="clearCredential" type="checkbox" value="1">
           保存済みのマイページ情報を削除
         </label>
-        <div class="secret-note" id="credentialFormNote">入力した場合だけ、保護パスワードで暗号化して保存します。</div>
+        <div class="secret-note" id="credentialFormNote">URLはカードから開けるように保存します。ID・パスワードは保護パスワードで暗号化します。</div>
       </section>
       <button class="save" type="submit">保存</button>
       <button class="save danger" type="button" id="deleteBtn" hidden>削除</button>
@@ -2190,8 +2211,8 @@
       <button class="x" type="button" id="closeForgotVaultDialog" aria-label="閉じる">×</button>
     </div>
     <div class="vault-body">
-      <p class="settings-note">保護パスワードを忘れた場合、NEXTROUND内に保存しているログインURL・ID・パスワード、ESアーカイブは表示できません。</p>
-      <p class="settings-note">再設定すると、NEXTROUND内のログイン情報とESアーカイブは削除されます。新しい保護パスワードを設定したあと、必要な情報をもう一度入力してください。</p>
+      <p class="settings-note">保護パスワードを忘れた場合、NEXTROUND内のID・パスワード、ESアーカイブは表示できません。</p>
+      <p class="settings-note">再設定すると、NEXTROUND内のログインURL・ID・パスワードとESアーカイブは削除されます。新しい保護パスワードを設定したあと、必要な情報をもう一度入力してください。</p>
       <p class="settings-note">企業のマイページやアカウントには影響しません。会社名・業界・選考状況・締切日・通常メモは残ります。</p>
       <label class="reset-check">
         <input id="forgotVaultConfirm" type="checkbox">
@@ -2215,7 +2236,7 @@
     </div>
     <div class="vault-body">
       <p class="settings-note">このコードを別端末で読み込むと、同じデータを移せます。自動同期ではありません。</p>
-      <p class="settings-note">コードには会社名・業界・選考状況・メモ・暗号化済み保護データが含まれる場合があります。自分以外に送らないでください。</p>
+      <p class="settings-note">コードには会社名・業界・選考状況・メモ・ログインURL・暗号化済み保護データが含まれる場合があります。自分以外に送らないでください。</p>
       <label>同期コード
         <textarea id="syncCodeOutput" class="sync-code" readonly></textarea>
       </label>
@@ -2263,7 +2284,7 @@
             <button class="soft-btn" type="button" id="exportBtn">データを保存</button>
             <button class="soft-btn" type="button" id="importBtn">保存データを読み込む</button>
           </div>
-          <p class="settings-note">保存したファイルには会社名・業界・メモ・暗号化済み保護データが含まれます。人に送らず、自分だけで保管してください。</p>
+          <p class="settings-note">保存したファイルには会社名・業界・メモ・ログインURL・暗号化済み保護データが含まれます。人に送らず、自分だけで保管してください。</p>
         </section>
         <div class="settings-status" id="settingsStatus" aria-live="polite"></div>
         <input id="importFile" type="file" accept="application/json,.json" hidden>
@@ -2304,11 +2325,11 @@
         </section>
         <section class="privacy-item">
           <strong>保護データ</strong>
-          <p>ログインURL・ID・パスワード、ESアーカイブの入力は任意です。入力した場合は、保護パスワードで暗号化して端末内に保存されます。保護パスワードを忘れた場合、保存済みの保護データは表示できません。</p>
+          <p>ログインURL、ID・パスワード、ESアーカイブの入力は任意です。ログインURLはカードから開けるよう端末内に保存されます。ID・パスワードとESアーカイブは、保護パスワードで暗号化して端末内に保存されます。</p>
         </section>
         <section class="privacy-item">
           <strong>バックアップ</strong>
-          <p>データ保存機能で作成したファイルには、会社名・業界・選考状況・メモ・暗号化済み保護データなどが含まれます。人に送らず、自分だけの場所に保管してください。</p>
+          <p>データ保存機能で作成したファイルには、会社名・業界・選考状況・メモ・ログインURL・暗号化済み保護データなどが含まれます。人に送らず、自分だけの場所に保管してください。</p>
         </section>
         <section class="privacy-item">
           <strong>GitHub Pagesでの公開</strong>
@@ -2728,6 +2749,7 @@
         flow: getFlowFromForm(),
         interviewCount: form.elements.interviewCount.value,
         selectionTags: getSelectionTagsFromForm(),
+        portalUrl: data.clearCredential === "1" ? "" : normalizePortalUrl(data.portalUrl),
         credentialVault,
         esArchiveVault: existingEntry?.esArchiveVault || null,
         stageHistory: addStageToHistory(existingEntry?.stageHistory, data.stage)
@@ -2785,6 +2807,7 @@
         deadline,
         nextDate: "",
         nextPlan: "",
+        portalUrl: "",
         memo: line,
         flow,
         interviewCount: type === "本選考" ? "3" : "1",
@@ -2875,6 +2898,7 @@
         deadline: candidate.deadline,
         nextDate: candidate.nextDate,
         nextPlan: candidate.nextPlan,
+        portalUrl: candidate.portalUrl || "",
         internSchedule: "",
         internScheduleMode: "single",
         internSingleDate: "",
@@ -2904,6 +2928,7 @@
         deadline: item.querySelector(".import-deadline").value,
         nextDate: "",
         nextPlan: "",
+        portalUrl: "",
         memo: item.querySelector(".import-memo").value.trim(),
         flow: {
           es: item.querySelector(".import-flow-es").checked,
@@ -3076,6 +3101,7 @@
           esArchiveVault: null,
           ...entry,
           industry: normalizeIndustry(entry.industry),
+          portalUrl: normalizePortalUrl(entry.portalUrl),
           nextPlan: entry.nextPlan || "",
           interviewCount: normalizeInterviewCount(entry),
           selectionTags: normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther),
@@ -3241,6 +3267,7 @@
         internStartDate: entry.internStartDate || "",
         internEndDate: entry.internEndDate || "",
         memo: entry.memo || "",
+        portalUrl: normalizePortalUrl(entry.portalUrl),
         flow: normalizeFlow(entry.flow, entry.stageHistory, stage),
         interviewCount: normalizeInterviewCount(entry),
         selectionTags: normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther),
@@ -3263,6 +3290,17 @@
       const value = String(industry || "").trim();
       if (!value || value === "未選択") return "未設定";
       return industryOptions.includes(value) ? value : "その他";
+    }
+
+    function normalizePortalUrl(value = "") {
+      const url = String(value || "").trim();
+      if (!url) return "";
+      try {
+        const parsed = new URL(url);
+        return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : "";
+      } catch {
+        return "";
+      }
     }
 
     function normalizeSelectionTags(tags = [], other = "") {
@@ -3787,7 +3825,7 @@
         return;
       }
       vaultConfig = await createVaultConfig(password);
-      entries = entries.map(entry => ({ ...entry, credentialVault: null, esArchiveVault: null }));
+      entries = entries.map(entry => ({ ...entry, portalUrl: "", credentialVault: null, esArchiveVault: null }));
       saveVaultConfig();
       rememberProtectedPassword(password);
       save();
@@ -3799,11 +3837,10 @@
     async function buildCredentialVault(data, existingEntry) {
       if (data.clearCredential === "1") return null;
       const credential = {
-        url: (data.portalUrl || "").trim(),
         id: (data.portalId || "").trim(),
         password: data.portalPassword || ""
       };
-      if (!credential.url && !credential.id && !credential.password) {
+      if (!credential.id && !credential.password) {
         return existingEntry?.credentialVault || null;
       }
       const password = await getVaultPasswordForSave();
@@ -4291,6 +4328,7 @@
       const resultMode = entry.stage === "結果待ち";
       const actionMode = done ? "done-mode" : resultMode ? "result-mode" : "";
       const industry = normalizeIndustry(entry.industry);
+      const portalUrl = normalizePortalUrl(entry.portalUrl);
       card.style.setProperty("--stage-color", stageColor);
       card.innerHTML = `
         <div class="card-main">
@@ -4315,6 +4353,7 @@
           <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
           <div class="protected-actions">
             <button class="archive-open" data-action="esArchive" type="button">ESアーカイブ${entry.esArchiveVault ? "を開く" : "を作成"}</button>
+            ${portalUrl ? `<a class="portal-link" href="${escapeHtml(portalUrl)}" target="_blank" rel="noopener noreferrer">マイページを開く</a>` : ""}
             ${entry.credentialVault ? `<button class="secret-open" data-action="credential" type="button">マイページ情報を表示</button>` : ""}
           </div>
         </div>
@@ -4368,7 +4407,13 @@
         const password = credentialPassword.value || (isProtectedUnlocked() ? protectedSession.password : "");
         const credential = await decryptCredential(entry.credentialVault, password);
         rememberProtectedPassword(password);
-        document.querySelector("#credentialUrl").textContent = credential.url || "未設定";
+        const legacyUrl = normalizePortalUrl(credential.url);
+        if (!entry.portalUrl && legacyUrl) {
+          entries = entries.map(item => item.id === entry.id ? { ...item, portalUrl: legacyUrl } : item);
+          save();
+          render();
+        }
+        document.querySelector("#credentialUrl").textContent = entry.portalUrl || legacyUrl || "未設定";
         document.querySelector("#credentialId").textContent = credential.id || "未設定";
         document.querySelector("#credentialPass").textContent = credential.password || "未設定";
         credentialResult.hidden = false;
@@ -4540,14 +4585,14 @@
       setSelectionTagsForm(entry || {});
       setScheduleForm(form, "intern", entry || {});
       form.elements.memo.value = entry?.memo || "";
-      form.elements.portalUrl.value = "";
+      form.elements.portalUrl.value = entry?.portalUrl || "";
       form.elements.portalId.value = "";
       form.elements.portalPassword.value = "";
       form.elements.clearCredential.checked = false;
-      clearCredentialField.hidden = !entry?.credentialVault;
-      credentialFormNote.textContent = entry?.credentialVault
-        ? "保存済みです。変更する時だけ新しい情報を入力してください。"
-        : "入力した場合だけ、保護パスワードで暗号化して保存します。";
+      clearCredentialField.hidden = !(entry?.credentialVault || entry?.portalUrl);
+      credentialFormNote.textContent = entry?.credentialVault || entry?.portalUrl
+        ? "保存済みです。URLはカードから開けます。ID・パスワードを変更する時だけ新しく入力してください。"
+        : "URLはカードから開けるように保存します。ID・パスワードは保護パスワードで暗号化します。";
       updateInternScheduleVisibility();
       dialog.showModal();
     }
