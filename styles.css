@@ -1868,6 +1868,27 @@ textarea {
 
 @media (max-width: 520px) {
   .app { padding-inline: 12px; }
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+  .brand {
+    width: 100%;
+  }
+  .header-tools {
+    display: grid;
+    grid-template-columns: .9fr 1.08fr .9fr 1.16fr;
+    width: 100%;
+    gap: 6px;
+  }
+  .settings-btn,
+  .today {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+  }
   .stats { grid-template-columns: 1fr 1fr 1fr; }
   .stat { padding: 11px 9px; }
   .stat span { font-size: 11px; }
@@ -1923,16 +1944,14 @@ textarea {
     height: 18px;
   }
   .settings-actions { grid-template-columns: 1fr; }
-  .header-tools { gap: 5px; }
   .settings-btn {
-    min-width: 42px;
-    padding-inline: 7px;
+    padding-inline: 6px;
     font-size: 11px;
   }
   .today {
-    min-width: 68px;
-    padding-inline: 8px;
+    padding-inline: 7px;
   }
+  .today strong { font-size: 17px; }
   .calendar-body { padding-inline: 12px; }
   .calendar-weekdays,
   .calendar-grid {
