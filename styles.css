@@ -1265,28 +1265,31 @@ textarea {
 
 .privacy-list {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .privacy-item {
   display: grid;
-  gap: 5px;
+  gap: 7px;
   padding: 12px;
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 12px;
-  background: rgba(255,255,255,.045);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.035)),
+    rgba(255,255,255,.035);
 }
 
 .privacy-item strong {
-  color: #f3f7fb;
+  color: #f6fbff;
   font-size: 13px;
+  line-height: 1.35;
 }
 
 .privacy-item p {
   margin: 0;
-  color: #cbd4e0;
+  color: #d4deea;
   font-size: 12px;
-  line-height: 1.7;
+  line-height: 1.75;
   font-weight: 650;
 }
 
