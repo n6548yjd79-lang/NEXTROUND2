@@ -181,7 +181,9 @@
       .splash,
       .splash-mark,
       .splash-line,
-      .splash-sub {
+      .splash-sub,
+      .login-glow,
+      .login-glow::after {
         animation: none;
         transition: none;
       }
@@ -278,6 +280,52 @@
     .settings-btn:focus-visible {
       outline: 3px solid rgba(75,179,253,.34);
       outline-offset: 2px;
+    }
+
+    .login-glow {
+      position: relative;
+      min-width: 56px;
+      border-color: rgba(97,244,222,.5);
+      color: #ecfffb;
+      background:
+        linear-gradient(180deg, rgba(97,244,222,.18), rgba(75,179,253,.08)),
+        rgba(255,255,255,.055);
+      overflow: hidden;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 0 18px rgba(97,244,222,.12);
+      animation: loginGlow 2.6s ease-in-out infinite;
+    }
+
+    .login-glow::after {
+      content: "";
+      position: absolute;
+      inset: -42% auto -42% -70%;
+      width: 58%;
+      transform: rotate(22deg);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.42), transparent);
+      animation: loginSweep 3.2s ease-in-out infinite;
+    }
+
+    .login-glow.synced {
+      border-color: rgba(54,211,153,.5);
+      background:
+        linear-gradient(180deg, rgba(54,211,153,.18), rgba(97,244,222,.08)),
+        rgba(255,255,255,.055);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 0 18px rgba(54,211,153,.14);
+    }
+
+    @keyframes loginGlow {
+      0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 14px rgba(97,244,222,.1); }
+      50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 24px rgba(97,244,222,.24); }
+    }
+
+    @keyframes loginSweep {
+      0%, 58% { left: -70%; opacity: 0; }
+      68% { opacity: .55; }
+      100% { left: 130%; opacity: 0; }
     }
 
     .stats {
@@ -1941,6 +1989,7 @@
       </div>
       <div class="header-tools">
         <button class="settings-btn" type="button" id="settingsBtn">設定</button>
+        <button class="settings-btn login-glow" type="button" id="cloudBtn">ログイン</button>
         <button class="settings-btn" type="button" id="analyticsBtn">分析</button>
         <button class="today" type="button" id="calendarBtn" aria-label="カレンダーを開く"><span>今日</span><strong id="dateLabel"></strong><small id="weekdayLabel"></small></button>
       </div>
@@ -2261,6 +2310,34 @@
     </div>
   </dialog>
 
+  <dialog id="cloudDialog">
+    <div class="form-head settings-head">
+      <h2>ログイン</h2>
+      <button class="x" type="button" id="closeCloudDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="vault-body">
+      <p class="settings-note">Googleログインすると、ログイン中は選考データを復元キーで暗号化してFirebaseに自動保存します。</p>
+      <div class="settings-status" id="cloudStatus">未ログイン</div>
+      <div class="settings-actions">
+        <button class="soft-btn accent" type="button" id="cloudLoginBtn">Googleでログイン</button>
+        <button class="soft-btn" type="button" id="cloudLogoutBtn" hidden>ログアウト</button>
+      </div>
+      <section class="settings-section" id="cloudRestoreSection" hidden>
+        <h4 id="cloudRestoreTitle">復元キー</h4>
+        <p class="settings-note" id="cloudRestoreNote">復元キーは、別端末でクラウドデータを開く時に必要です。忘れるとクラウドの中身は復元できません。</p>
+        <label>復元キー
+          <input id="cloudRestoreKey" type="password" autocomplete="new-password">
+        </label>
+        <label id="cloudRestoreConfirmField" hidden>もう一度入力
+          <input id="cloudRestoreConfirm" type="password" autocomplete="new-password">
+        </label>
+        <button class="save" type="button" id="cloudRestoreSubmitBtn">復元キーを設定</button>
+        <div class="vault-error" id="cloudRestoreError" aria-live="polite"></div>
+      </section>
+      <p class="settings-note">ログイン後、クラウドに保存データがあれば自動で確認します。端末にデータがある場合だけ、置き換える前に確認します。</p>
+    </div>
+  </dialog>
+
   <dialog id="settingsDialog">
     <div class="form-head settings-head">
       <h2>設定</h2>
@@ -2276,20 +2353,6 @@
             <button class="soft-btn accent" type="button" id="createSyncCodeBtn">同期コードを作る</button>
             <button class="soft-btn" type="button" id="readSyncCodeBtn">同期コードを読み込む</button>
           </div>
-        </section>
-        <section class="settings-section">
-          <h4>クラウド同期（任意）</h4>
-          <p class="settings-note">Googleログインして、この端末のデータをFirebaseに保存できます。使わなければ今まで通り端末内保存です。</p>
-          <div class="settings-status" id="cloudStatus">未ログイン</div>
-          <div class="settings-actions">
-            <button class="soft-btn accent" type="button" id="cloudLoginBtn">Googleでログイン</button>
-            <button class="soft-btn" type="button" id="cloudLogoutBtn" hidden>ログアウト</button>
-          </div>
-          <div class="settings-actions">
-            <button class="soft-btn accent" type="button" id="cloudSaveBtn" disabled>クラウドへ保存</button>
-            <button class="soft-btn" type="button" id="cloudLoadBtn" disabled>クラウドから読み込み</button>
-          </div>
-          <p class="settings-note">クラウドへ保存を押した時だけ送信します。読み込みは、この端末の一覧をクラウド側の内容に入れ替えます。</p>
         </section>
         <section class="settings-section">
           <h4>バックアップ</h4>
@@ -2343,8 +2406,8 @@
         </section>
         <section class="privacy-item">
           <strong>クラウド同期</strong>
-          <p>Googleログインして「クラウドへ保存」を押した場合だけ、選考データがFirebaseに保存されます。使わない場合は、今まで通り端末内保存です。</p>
-          <p>クラウド同期では、会社名・業界・選考状況・メモ・ログインURLなども保存対象になります。ID・パスワードとESアーカイブは暗号化済みの状態で保存されます。</p>
+          <p>Googleログインしてクラウド同期を有効にした場合、ログイン中は選考データを復元キーで暗号化してFirebaseに自動保存します。使わない場合は、今まで通り端末内保存です。</p>
+          <p>クラウド上の選考データは暗号化された状態で保存されます。復元キーを忘れると、クラウド上のデータは復元できません。Firebase Authentication上では、管理者がログインユーザーのメールアドレスを確認できる場合があります。</p>
         </section>
         <section class="privacy-item">
           <strong>バックアップ</strong>
@@ -2471,6 +2534,9 @@
     };
     const storageKey = "senkou-deck-v1";
     const vaultStorageKey = "nextround-vault-v1";
+    const cloudAutoSaveKey = "nextround-cloud-autosave-v1";
+    const cloudAutoSavePendingKey = "nextround-cloud-autosave-pending-v1";
+    const cloudRestoreKeyPrefix = "nextround-cloud-restore-key-v1:";
     const firebaseConfig = {
       apiKey: "AIzaSyAgOSNkun1DDVS7Npnv67Yg1iv1sFBk8y4",
       authDomain: "next-round-936c6.firebaseapp.com",
@@ -2566,6 +2632,13 @@
     let cloudDb = null;
     let cloudUser = null;
     let cloudReady = false;
+    let cloudAutoSaveEnabled = localStorage.getItem(cloudAutoSaveKey) === "1";
+    let cloudSaveTimer = null;
+    let cloudSaving = false;
+    let cloudAutoLoadCheckedUid = "";
+    let cloudRestoreMode = "create";
+    let cloudSnapshotPending = null;
+    let cloudEncryptionConfig = null;
 
     const cards = document.querySelector("#cards");
     const chips = document.querySelector("#chips");
@@ -2585,11 +2658,19 @@
     const resultScheduleField = document.querySelector("#resultScheduleField");
     const settingsDialog = document.querySelector("#settingsDialog");
     const settingsStatus = document.querySelector("#settingsStatus");
+    const cloudDialog = document.querySelector("#cloudDialog");
+    const cloudBtn = document.querySelector("#cloudBtn");
     const cloudStatus = document.querySelector("#cloudStatus");
     const cloudLoginBtn = document.querySelector("#cloudLoginBtn");
     const cloudLogoutBtn = document.querySelector("#cloudLogoutBtn");
-    const cloudSaveBtn = document.querySelector("#cloudSaveBtn");
-    const cloudLoadBtn = document.querySelector("#cloudLoadBtn");
+    const cloudRestoreSection = document.querySelector("#cloudRestoreSection");
+    const cloudRestoreTitle = document.querySelector("#cloudRestoreTitle");
+    const cloudRestoreNote = document.querySelector("#cloudRestoreNote");
+    const cloudRestoreKey = document.querySelector("#cloudRestoreKey");
+    const cloudRestoreConfirmField = document.querySelector("#cloudRestoreConfirmField");
+    const cloudRestoreConfirm = document.querySelector("#cloudRestoreConfirm");
+    const cloudRestoreSubmitBtn = document.querySelector("#cloudRestoreSubmitBtn");
+    const cloudRestoreError = document.querySelector("#cloudRestoreError");
     const vaultSettingsStatus = document.querySelector("#vaultSettingsStatus");
     const privacyDialog = document.querySelector("#privacyDialog");
     const importFile = document.querySelector("#importFile");
@@ -2692,10 +2773,17 @@
     document.querySelector("#closeSyncImportDialog").addEventListener("click", () => syncImportDialog.close());
     document.querySelector("#copySyncCodeBtn").addEventListener("click", copySyncCode);
     document.querySelector("#applySyncCodeBtn").addEventListener("click", applySyncCode);
+    document.querySelector("#cloudBtn").addEventListener("click", openCloudDialog);
+    document.querySelector("#closeCloudDialog").addEventListener("click", () => cloudDialog.close());
     cloudLoginBtn.addEventListener("click", cloudLogin);
     cloudLogoutBtn.addEventListener("click", cloudLogout);
-    cloudSaveBtn.addEventListener("click", saveCloudData);
-    cloudLoadBtn.addEventListener("click", loadCloudData);
+    cloudRestoreSubmitBtn.addEventListener("click", submitCloudRestoreKey);
+    cloudRestoreKey.addEventListener("keydown", event => {
+      if (event.key === "Enter") submitCloudRestoreKey();
+    });
+    cloudRestoreConfirm.addEventListener("keydown", event => {
+      if (event.key === "Enter") submitCloudRestoreKey();
+    });
     document.querySelector("#exportBtn").addEventListener("click", exportData);
     document.querySelector("#importBtn").addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", importData);
@@ -3161,8 +3249,9 @@
       }
     }
 
-    function save() {
+    function save({ cloud = true } = {}) {
       localStorage.setItem(storageKey, JSON.stringify(entries));
+      if (cloud) scheduleCloudAutoSave();
     }
 
     function initCloudSync() {
@@ -3178,7 +3267,15 @@
         cloudReady = true;
         cloudAuth.onAuthStateChanged(user => {
           cloudUser = user;
+          const shouldStartCloudSync = user && localStorage.getItem(cloudAutoSavePendingKey) === "1";
+          if (shouldStartCloudSync) {
+            localStorage.removeItem(cloudAutoSavePendingKey);
+            setCloudAutoSave(true);
+          }
           updateCloudUi();
+          if (shouldStartCloudSync) {
+            autoLoadCloudDataAfterLogin();
+          }
         });
         cloudAuth.getRedirectResult?.().catch(() => {
           cloudStatus.textContent = "ログイン処理を完了できませんでした。もう一度試してください。";
@@ -3196,16 +3293,95 @@
       }
       const signedIn = Boolean(cloudUser);
       cloudStatus.textContent = signedIn
-        ? `ログイン中: ${cloudUser.email || "Googleアカウント"}`
+        ? `ログイン中: ${cloudUser.email || "Googleアカウント"} / 自動保存${cloudAutoSaveEnabled ? "ON" : "OFF"}`
         : "未ログイン";
-      cloudLoginBtn.hidden = signedIn;
+      cloudLoginBtn.textContent = signedIn ? "自動保存を有効にする" : "Googleでログイン";
+      cloudLoginBtn.hidden = signedIn && cloudAutoSaveEnabled;
       cloudLogoutBtn.hidden = !signedIn;
+      cloudBtn.textContent = signedIn && cloudAutoSaveEnabled ? "同期中" : "ログイン";
+      cloudBtn.classList.toggle("synced", signedIn && cloudAutoSaveEnabled);
       setCloudButtons(signedIn);
     }
 
     function setCloudButtons(enabled) {
-      cloudSaveBtn.disabled = !enabled;
-      cloudLoadBtn.disabled = !enabled;
+      return enabled;
+    }
+
+    function openCloudDialog() {
+      updateCloudUi();
+      cloudDialog.showModal();
+    }
+
+    function setCloudAutoSave(enabled) {
+      cloudAutoSaveEnabled = enabled;
+      if (enabled) localStorage.setItem(cloudAutoSaveKey, "1");
+      else localStorage.removeItem(cloudAutoSaveKey);
+      updateCloudUi();
+    }
+
+    function cloudRestoreStorageKey() {
+      return cloudUser ? `${cloudRestoreKeyPrefix}${cloudUser.uid}` : "";
+    }
+
+    function getStoredCloudRestoreKey() {
+      const key = cloudRestoreStorageKey();
+      return key ? localStorage.getItem(key) || "" : "";
+    }
+
+    function rememberCloudRestoreKey(value) {
+      const key = cloudRestoreStorageKey();
+      if (key && value) localStorage.setItem(key, value);
+    }
+
+    function clearCloudRestoreKey() {
+      const key = cloudRestoreStorageKey();
+      if (key) localStorage.removeItem(key);
+    }
+
+    function showCloudRestoreKey(mode, snapshot = null) {
+      cloudRestoreMode = mode;
+      cloudSnapshotPending = snapshot;
+      cloudRestoreSection.hidden = false;
+      cloudRestoreError.textContent = "";
+      cloudRestoreKey.value = "";
+      cloudRestoreConfirm.value = "";
+      cloudRestoreConfirmField.hidden = mode !== "create";
+      cloudRestoreTitle.textContent = mode === "create" ? "復元キーを設定" : "復元キーを入力";
+      cloudRestoreSubmitBtn.textContent = mode === "create" ? "復元キーを設定" : "復元して読み込む";
+      cloudRestoreNote.textContent = mode === "create"
+        ? "復元キーでクラウドデータを暗号化します。別端末で開く時に必要です。忘れるとクラウドの中身は復元できません。"
+        : "このクラウドデータは暗号化されています。設定した復元キーを入力してください。";
+      setTimeout(() => cloudRestoreKey.focus(), 0);
+    }
+
+    function hideCloudRestoreKey() {
+      cloudRestoreSection.hidden = true;
+      cloudSnapshotPending = null;
+      cloudRestoreError.textContent = "";
+      cloudRestoreKey.value = "";
+      cloudRestoreConfirm.value = "";
+    }
+
+    async function submitCloudRestoreKey() {
+      const value = cloudRestoreKey.value.trim();
+      if (value.length < 4) {
+        cloudRestoreError.textContent = "4文字以上で入力してください。";
+        return;
+      }
+      if (cloudRestoreMode === "create" && value !== cloudRestoreConfirm.value.trim()) {
+        cloudRestoreError.textContent = "確認用の入力が一致していません。";
+        return;
+      }
+      const pendingSnapshot = cloudSnapshotPending;
+      const mode = cloudRestoreMode;
+      rememberCloudRestoreKey(value);
+      hideCloudRestoreKey();
+      if (mode === "unlock" && pendingSnapshot) {
+        await applyCloudSnapshot(pendingSnapshot, { auto: false });
+      } else {
+        setCloudAutoSave(true);
+        scheduleCloudAutoSave(120);
+      }
     }
 
     async function cloudLogin() {
@@ -3213,6 +3389,16 @@
         cloudStatus.textContent = "Firebaseの準備ができていません。少し待ってから試してください。";
         return;
       }
+      if (cloudUser) {
+        if (!confirm("クラウド自動保存を有効にしますか？ログイン中は選考データを復元キーで暗号化してFirebaseに自動保存します。")) return;
+        setCloudAutoSave(true);
+        autoLoadCloudDataAfterLogin();
+        return;
+      }
+      if (!confirm("Googleログインすると、ログイン中は選考データを復元キーで暗号化してFirebaseに自動保存します。クラウド同期を有効にしますか？")) {
+        return;
+      }
+      localStorage.setItem(cloudAutoSavePendingKey, "1");
       const provider = new firebase.auth.GoogleAuthProvider();
       cloudStatus.textContent = "Googleログインを開いています...";
       try {
@@ -3254,6 +3440,10 @@
     async function cloudLogout() {
       if (!cloudAuth) return;
       await cloudAuth.signOut();
+      setCloudAutoSave(false);
+      cloudEncryptionConfig = null;
+      cloudAutoLoadCheckedUid = "";
+      hideCloudRestoreKey();
       cloudStatus.textContent = "ログアウトしました。";
     }
 
@@ -3262,64 +3452,141 @@
       return cloudDb.collection("users").doc(cloudUser.uid).collection("appData").doc("main");
     }
 
-    function cloudPayload() {
-      return {
-        version: 1,
+    async function getCloudEncryptionKey() {
+      const restoreKey = getStoredCloudRestoreKey();
+      if (!restoreKey) {
+        showCloudRestoreKey("create");
+        throw new Error("restore-key-required");
+      }
+      if (!cloudEncryptionConfig) {
+        cloudEncryptionConfig = await createVaultConfig(restoreKey);
+      }
+      const key = await deriveVaultKey(restoreKey, cloudEncryptionConfig.salt);
+      await decryptPayload(key, cloudEncryptionConfig.verifier);
+      return key;
+    }
+
+    async function cloudPayload() {
+      const key = await getCloudEncryptionKey();
+      const encryptedData = await encryptPayload(key, {
         entries,
-        vault: vaultConfig,
+        vault: vaultConfig
+      });
+      return {
+        version: 2,
+        encryptedData,
+        cloudKey: cloudEncryptionConfig,
         savedAt: new Date().toISOString(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
     }
 
+    function scheduleCloudAutoSave(delay = 700) {
+      if (!cloudAutoSaveEnabled || !cloudUser || !cloudReady) return;
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = setTimeout(() => saveCloudData(), delay);
+    }
+
     async function saveCloudData() {
       const ref = cloudDocRef();
-      if (!ref) {
-        cloudStatus.textContent = "先にGoogleログインしてください。";
-        return;
-      }
-      cloudSaveBtn.disabled = true;
-      cloudStatus.textContent = "クラウドへ保存中...";
+      if (!ref || cloudSaving) return;
+      cloudSaving = true;
+      cloudStatus.textContent = "クラウドへ自動保存中...";
       try {
-        await ref.set(cloudPayload());
-        cloudStatus.textContent = `クラウドへ保存しました: ${new Date().toLocaleString("ja-JP")}`;
-      } catch {
-        cloudStatus.textContent = "クラウド保存に失敗しました。Firestoreのルールや設定を確認してください。";
+        await ref.set(await cloudPayload());
+        cloudStatus.textContent = `自動保存済み: ${new Date().toLocaleString("ja-JP")}`;
+      } catch (error) {
+        cloudStatus.textContent = error.message === "restore-key-required"
+          ? "復元キーを設定すると、クラウドへ暗号化して自動保存します。"
+          : "クラウド自動保存に失敗しました。Firestoreのルールや設定を確認してください。";
       } finally {
-        cloudSaveBtn.disabled = false;
+        cloudSaving = false;
       }
     }
 
-    async function loadCloudData() {
+    async function autoLoadCloudDataAfterLogin() {
+      if (!cloudUser || cloudAutoLoadCheckedUid === cloudUser.uid) return;
+      cloudAutoLoadCheckedUid = cloudUser.uid;
+      await loadCloudData({ auto: true });
+    }
+
+    function hasLocalUserData() {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.length > 0 : Array.isArray(parsed?.entries) && parsed.entries.length > 0;
+      } catch {
+        return entries.length > 0;
+      }
+    }
+
+    async function loadCloudData({ auto = false } = {}) {
       const ref = cloudDocRef();
       if (!ref) {
         cloudStatus.textContent = "先にGoogleログインしてください。";
         return;
       }
-      if (entries.length && !confirm("この端末の一覧を、クラウド側の保存データで置き換えます。よろしいですか？")) {
-        return;
-      }
-      cloudLoadBtn.disabled = true;
       cloudStatus.textContent = "クラウドから読み込み中...";
       try {
         const snapshot = await ref.get();
         if (!snapshot.exists) {
-          cloudStatus.textContent = "クラウド側に保存データがありません。先にクラウドへ保存してください。";
+          cloudStatus.textContent = "クラウド側に保存データがありません。復元キーを設定すると、この端末のデータを初回保存します。";
+          if (getStoredCloudRestoreKey()) scheduleCloudAutoSave(120);
+          else showCloudRestoreKey("create");
           return;
         }
-        const data = snapshot.data();
-        if (!Array.isArray(data.entries)) throw new Error("invalid");
-        entries = data.entries.map(normalizeEntry);
-        vaultConfig = data.vault || null;
-        saveVaultConfig();
-        save();
-        render();
-        cloudStatus.textContent = "クラウドから読み込みました。保護データを見るには、保存時の保護パスワードが必要です。";
+        const shouldConfirm = auto ? hasLocalUserData() : entries.length > 0;
+        if (shouldConfirm && !confirm("クラウドの保存データをこの端末に読み込みます。この端末の一覧は置き換わります。よろしいですか？")) {
+          setCloudAutoSave(false);
+          cloudStatus.textContent = "クラウド読み込みをキャンセルしました。自動保存はOFFにしました。";
+          return;
+        }
+        await applyCloudSnapshot(snapshot, { auto });
       } catch {
         cloudStatus.textContent = "クラウド読み込みに失敗しました。Firestoreのルールや設定を確認してください。";
-      } finally {
-        cloudLoadBtn.disabled = false;
       }
+    }
+
+    async function applyCloudSnapshot(snapshot, { auto = false } = {}) {
+      const data = snapshot.data();
+      if (data.encryptedData && data.cloudKey) {
+        cloudEncryptionConfig = data.cloudKey;
+        const restoreKey = getStoredCloudRestoreKey();
+        if (!restoreKey) {
+          showCloudRestoreKey("unlock", snapshot);
+          cloudStatus.textContent = "クラウドデータを開くには復元キーが必要です。";
+          return;
+        }
+        try {
+          const key = await deriveVaultKey(restoreKey, cloudEncryptionConfig.salt);
+          await decryptPayload(key, cloudEncryptionConfig.verifier);
+          const payload = await decryptPayload(key, data.encryptedData);
+          if (!Array.isArray(payload.entries)) throw new Error("invalid");
+          entries = payload.entries.map(normalizeEntry);
+          vaultConfig = payload.vault || null;
+          saveVaultConfig();
+          save({ cloud: false });
+          render();
+          cloudStatus.textContent = "暗号化されたクラウドデータを読み込みました。";
+          return;
+        } catch {
+          clearCloudRestoreKey();
+          showCloudRestoreKey("unlock", snapshot);
+          cloudStatus.textContent = "復元キーが違います。もう一度入力してください。";
+          return;
+        }
+      }
+      if (!Array.isArray(data.entries)) throw new Error("invalid");
+      entries = data.entries.map(normalizeEntry);
+      vaultConfig = data.vault || null;
+      saveVaultConfig();
+      save({ cloud: false });
+      render();
+      cloudStatus.textContent = "旧形式のクラウドデータを読み込みました。復元キーで暗号化し直します。";
+      cloudEncryptionConfig = null;
+      if (getStoredCloudRestoreKey()) scheduleCloudAutoSave(120);
+      else showCloudRestoreKey("create");
     }
 
     function loadVaultConfig() {
