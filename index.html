@@ -2278,6 +2278,20 @@
           </div>
         </section>
         <section class="settings-section">
+          <h4>クラウド同期（任意）</h4>
+          <p class="settings-note">Googleログインして、この端末のデータをFirebaseに保存できます。使わなければ今まで通り端末内保存です。</p>
+          <div class="settings-status" id="cloudStatus">未ログイン</div>
+          <div class="settings-actions">
+            <button class="soft-btn accent" type="button" id="cloudLoginBtn">Googleでログイン</button>
+            <button class="soft-btn" type="button" id="cloudLogoutBtn" hidden>ログアウト</button>
+          </div>
+          <div class="settings-actions">
+            <button class="soft-btn accent" type="button" id="cloudSaveBtn" disabled>クラウドへ保存</button>
+            <button class="soft-btn" type="button" id="cloudLoadBtn" disabled>クラウドから読み込み</button>
+          </div>
+          <p class="settings-note">クラウドへ保存を押した時だけ送信します。読み込みは、この端末の一覧をクラウド側の内容に入れ替えます。</p>
+        </section>
+        <section class="settings-section">
           <h4>バックアップ</h4>
           <p class="settings-note">消えた時に戻せるよう保存ファイルを残します。</p>
           <div class="settings-actions">
@@ -2326,6 +2340,11 @@
         <section class="privacy-item">
           <strong>保護データ</strong>
           <p>ログインURL、ID・パスワード、ESアーカイブの入力は任意です。ログインURLはカードから開けるよう端末内に保存されます。ID・パスワードとESアーカイブは、保護パスワードで暗号化して端末内に保存されます。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>クラウド同期</strong>
+          <p>Googleログインして「クラウドへ保存」を押した場合だけ、選考データがFirebaseに保存されます。使わない場合は、今まで通り端末内保存です。</p>
+          <p>クラウド同期では、会社名・業界・選考状況・メモ・ログインURLなども保存対象になります。ID・パスワードとESアーカイブは暗号化済みの状態で保存されます。</p>
         </section>
         <section class="privacy-item">
           <strong>バックアップ</strong>
@@ -2397,6 +2416,9 @@
     </div>
   </dialog>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script>
     const stages = [
       "気になる",
@@ -2449,6 +2471,15 @@
     };
     const storageKey = "senkou-deck-v1";
     const vaultStorageKey = "nextround-vault-v1";
+    const firebaseConfig = {
+      apiKey: "AIzaSyAgOSNkun1DDVS7Npnv67Yg1iv1sFBk8y4",
+      authDomain: "next-round-936c6.firebaseapp.com",
+      projectId: "next-round-936c6",
+      storageBucket: "next-round-936c6.firebasestorage.app",
+      messagingSenderId: "56935391489",
+      appId: "1:56935391489:web:40e1cd53f78bbbfc997b00",
+      measurementId: "G-8M43T90SXQ"
+    };
     const protectedUnlockMs = 30 * 60 * 1000;
     const esArchiveLabels = ["ガクチカ", "自己PR", "志望動機", "研究内容", "長所・短所", "挫折経験", "将来像", "企業理解", "その他"];
     const selectionTagOptions = ["ES+Webテスト同時提出", "動画選考", "AI面接", "適性検査", "ケース面接", "面談", "その他"];
@@ -2531,6 +2562,10 @@
     let protectedSession = { password: "", until: 0 };
     let protectedLockTimer = null;
     let esArchiveDraft = [];
+    let cloudAuth = null;
+    let cloudDb = null;
+    let cloudUser = null;
+    let cloudReady = false;
 
     const cards = document.querySelector("#cards");
     const chips = document.querySelector("#chips");
@@ -2550,6 +2585,11 @@
     const resultScheduleField = document.querySelector("#resultScheduleField");
     const settingsDialog = document.querySelector("#settingsDialog");
     const settingsStatus = document.querySelector("#settingsStatus");
+    const cloudStatus = document.querySelector("#cloudStatus");
+    const cloudLoginBtn = document.querySelector("#cloudLoginBtn");
+    const cloudLogoutBtn = document.querySelector("#cloudLogoutBtn");
+    const cloudSaveBtn = document.querySelector("#cloudSaveBtn");
+    const cloudLoadBtn = document.querySelector("#cloudLoadBtn");
     const vaultSettingsStatus = document.querySelector("#vaultSettingsStatus");
     const privacyDialog = document.querySelector("#privacyDialog");
     const importFile = document.querySelector("#importFile");
@@ -2652,6 +2692,10 @@
     document.querySelector("#closeSyncImportDialog").addEventListener("click", () => syncImportDialog.close());
     document.querySelector("#copySyncCodeBtn").addEventListener("click", copySyncCode);
     document.querySelector("#applySyncCodeBtn").addEventListener("click", applySyncCode);
+    cloudLoginBtn.addEventListener("click", cloudLogin);
+    cloudLogoutBtn.addEventListener("click", cloudLogout);
+    cloudSaveBtn.addEventListener("click", saveCloudData);
+    cloudLoadBtn.addEventListener("click", loadCloudData);
     document.querySelector("#exportBtn").addEventListener("click", exportData);
     document.querySelector("#importBtn").addEventListener("click", () => importFile.click());
     importFile.addEventListener("change", importData);
@@ -3119,6 +3163,163 @@
 
     function save() {
       localStorage.setItem(storageKey, JSON.stringify(entries));
+    }
+
+    function initCloudSync() {
+      if (!window.firebase?.initializeApp) {
+        cloudStatus.textContent = "Firebaseを読み込めませんでした。通信環境を確認してください。";
+        setCloudButtons(false);
+        return;
+      }
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        cloudAuth = firebase.auth();
+        cloudDb = firebase.firestore();
+        cloudReady = true;
+        cloudAuth.onAuthStateChanged(user => {
+          cloudUser = user;
+          updateCloudUi();
+        });
+        cloudAuth.getRedirectResult?.().catch(() => {
+          cloudStatus.textContent = "ログイン処理を完了できませんでした。もう一度試してください。";
+        });
+      } catch {
+        cloudStatus.textContent = "Firebaseの初期化に失敗しました。設定を確認してください。";
+        setCloudButtons(false);
+      }
+    }
+
+    function updateCloudUi() {
+      if (!cloudReady) {
+        setCloudButtons(false);
+        return;
+      }
+      const signedIn = Boolean(cloudUser);
+      cloudStatus.textContent = signedIn
+        ? `ログイン中: ${cloudUser.email || "Googleアカウント"}`
+        : "未ログイン";
+      cloudLoginBtn.hidden = signedIn;
+      cloudLogoutBtn.hidden = !signedIn;
+      setCloudButtons(signedIn);
+    }
+
+    function setCloudButtons(enabled) {
+      cloudSaveBtn.disabled = !enabled;
+      cloudLoadBtn.disabled = !enabled;
+    }
+
+    async function cloudLogin() {
+      if (!cloudReady || !cloudAuth) {
+        cloudStatus.textContent = "Firebaseの準備ができていません。少し待ってから試してください。";
+        return;
+      }
+      const provider = new firebase.auth.GoogleAuthProvider();
+      cloudStatus.textContent = "Googleログインを開いています...";
+      try {
+        if (isStandaloneApp()) {
+          await cloudAuth.signInWithRedirect(provider);
+          return;
+        }
+        await cloudAuth.signInWithPopup(provider);
+      } catch (error) {
+        if (["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(error.code)) {
+          try {
+            await cloudAuth.signInWithRedirect(provider);
+          } catch (redirectError) {
+            cloudStatus.textContent = cloudAuthErrorMessage(redirectError);
+          }
+        } else {
+          cloudStatus.textContent = cloudAuthErrorMessage(error);
+        }
+      }
+    }
+
+    function isStandaloneApp() {
+      return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    }
+
+    function cloudAuthErrorMessage(error = {}) {
+      const code = error.code || "unknown";
+      const messages = {
+        "auth/operation-not-allowed": "GoogleログインがFirebase側で有効になっていません。Authentication > Sign-in methodでGoogleを有効にしてください。",
+        "auth/unauthorized-domain": "このURLがFirebaseの承認済みドメインに入っていません。Authorized domainsにn6548yjd79-lang.github.ioを追加してください。",
+        "auth/operation-not-supported-in-this-environment": "この開き方ではGoogleログインに対応していません。Safariの通常タブで公開URLを開いてログインしてください。ホーム画面版やプレビュー画面では失敗する場合があります。",
+        "auth/popup-blocked": "ログイン画面がブロックされました。もう一度押すか、Safariで開いて試してください。",
+        "auth/popup-closed-by-user": "ログイン画面が閉じられました。もう一度試してください。",
+        "auth/cancelled-popup-request": "ログイン処理が中断されました。もう一度試してください。"
+      };
+      return messages[code] || `ログインできませんでした。Firebase設定を確認してください。エラー: ${code}`;
+    }
+
+    async function cloudLogout() {
+      if (!cloudAuth) return;
+      await cloudAuth.signOut();
+      cloudStatus.textContent = "ログアウトしました。";
+    }
+
+    function cloudDocRef() {
+      if (!cloudDb || !cloudUser) return null;
+      return cloudDb.collection("users").doc(cloudUser.uid).collection("appData").doc("main");
+    }
+
+    function cloudPayload() {
+      return {
+        version: 1,
+        entries,
+        vault: vaultConfig,
+        savedAt: new Date().toISOString(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+    }
+
+    async function saveCloudData() {
+      const ref = cloudDocRef();
+      if (!ref) {
+        cloudStatus.textContent = "先にGoogleログインしてください。";
+        return;
+      }
+      cloudSaveBtn.disabled = true;
+      cloudStatus.textContent = "クラウドへ保存中...";
+      try {
+        await ref.set(cloudPayload());
+        cloudStatus.textContent = `クラウドへ保存しました: ${new Date().toLocaleString("ja-JP")}`;
+      } catch {
+        cloudStatus.textContent = "クラウド保存に失敗しました。Firestoreのルールや設定を確認してください。";
+      } finally {
+        cloudSaveBtn.disabled = false;
+      }
+    }
+
+    async function loadCloudData() {
+      const ref = cloudDocRef();
+      if (!ref) {
+        cloudStatus.textContent = "先にGoogleログインしてください。";
+        return;
+      }
+      if (entries.length && !confirm("この端末の一覧を、クラウド側の保存データで置き換えます。よろしいですか？")) {
+        return;
+      }
+      cloudLoadBtn.disabled = true;
+      cloudStatus.textContent = "クラウドから読み込み中...";
+      try {
+        const snapshot = await ref.get();
+        if (!snapshot.exists) {
+          cloudStatus.textContent = "クラウド側に保存データがありません。先にクラウドへ保存してください。";
+          return;
+        }
+        const data = snapshot.data();
+        if (!Array.isArray(data.entries)) throw new Error("invalid");
+        entries = data.entries.map(normalizeEntry);
+        vaultConfig = data.vault || null;
+        saveVaultConfig();
+        save();
+        render();
+        cloudStatus.textContent = "クラウドから読み込みました。保護データを見るには、保存時の保護パスワードが必要です。";
+      } catch {
+        cloudStatus.textContent = "クラウド読み込みに失敗しました。Firestoreのルールや設定を確認してください。";
+      } finally {
+        cloudLoadBtn.disabled = false;
+      }
     }
 
     function loadVaultConfig() {
@@ -4627,6 +4828,7 @@
     }
 
     render();
+    initCloudSync();
   </script>
 </body>
 </html>
