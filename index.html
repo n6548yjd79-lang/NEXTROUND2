@@ -352,12 +352,27 @@
       <button class="x" type="button" id="closeCloudDialog" aria-label="閉じる">×</button>
     </div>
     <div class="vault-body">
-      <p class="settings-note">Googleログインすると、ログイン中は選考データを復元キーで暗号化してFirebaseに自動保存します。</p>
+      <p class="settings-note">メールログインすると、ホーム画面版でも選考データを復元キーで暗号化してFirebaseに自動保存できます。</p>
       <div class="settings-status" id="cloudStatus">未ログイン</div>
+      <section class="mail-login-panel">
+        <label>メールアドレス
+          <input id="cloudEmail" type="email" inputmode="email" autocomplete="email" placeholder="example@gmail.com">
+        </label>
+        <label>パスワード
+          <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="6文字以上">
+        </label>
+        <div class="settings-actions">
+          <button class="soft-btn accent" type="button" id="cloudEmailLoginBtn">メールでログイン</button>
+          <button class="soft-btn" type="button" id="cloudEmailRegisterBtn">新規登録</button>
+        </div>
+        <button class="text-btn" type="button" id="cloudPasswordResetBtn">パスワードを忘れた場合</button>
+        <div class="vault-error" id="cloudEmailError" aria-live="polite"></div>
+      </section>
       <div class="settings-actions">
-        <button class="soft-btn accent" type="button" id="cloudLoginBtn">Googleでログイン</button>
+        <button class="soft-btn" type="button" id="cloudLoginBtn">Googleでログイン</button>
         <button class="soft-btn" type="button" id="cloudLogoutBtn" hidden>ログアウト</button>
       </div>
+      <p class="settings-note">GoogleログインはSafari通常タブ向けです。iPhoneのホーム画面版ではメールログインを使ってください。</p>
       <section class="settings-section" id="cloudRestoreSection" hidden>
         <h4 id="cloudRestoreTitle">復元キー</h4>
         <p class="settings-note" id="cloudRestoreNote">復元キーは、別端末でクラウドデータを開く時に必要です。忘れるとクラウドの中身は復元できません。</p>

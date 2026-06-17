@@ -154,6 +154,7 @@ let cloudAutoLoadCheckedUid = "";
 let cloudRestoreMode = "create";
 let cloudSnapshotPending = null;
 let cloudEncryptionConfig = null;
+let cloudAuthNotice = "";
 
 const cards = document.querySelector("#cards");
 const chips = document.querySelector("#chips");
@@ -178,6 +179,12 @@ const cloudBtn = document.querySelector("#cloudBtn");
 const cloudStatus = document.querySelector("#cloudStatus");
 const cloudLoginBtn = document.querySelector("#cloudLoginBtn");
 const cloudLogoutBtn = document.querySelector("#cloudLogoutBtn");
+const cloudEmail = document.querySelector("#cloudEmail");
+const cloudPassword = document.querySelector("#cloudPassword");
+const cloudEmailLoginBtn = document.querySelector("#cloudEmailLoginBtn");
+const cloudEmailRegisterBtn = document.querySelector("#cloudEmailRegisterBtn");
+const cloudPasswordResetBtn = document.querySelector("#cloudPasswordResetBtn");
+const cloudEmailError = document.querySelector("#cloudEmailError");
 const cloudRestoreSection = document.querySelector("#cloudRestoreSection");
 const cloudRestoreTitle = document.querySelector("#cloudRestoreTitle");
 const cloudRestoreNote = document.querySelector("#cloudRestoreNote");
@@ -292,7 +299,13 @@ document.querySelector("#cloudBtn").addEventListener("click", openCloudDialog);
 document.querySelector("#closeCloudDialog").addEventListener("click", () => cloudDialog.close());
 cloudLoginBtn.addEventListener("click", cloudLogin);
 cloudLogoutBtn.addEventListener("click", cloudLogout);
+cloudEmailLoginBtn.addEventListener("click", cloudEmailLogin);
+cloudEmailRegisterBtn.addEventListener("click", cloudEmailRegister);
+cloudPasswordResetBtn.addEventListener("click", cloudPasswordReset);
 cloudRestoreSubmitBtn.addEventListener("click", submitCloudRestoreKey);
+cloudPassword.addEventListener("keydown", event => {
+  if (event.key === "Enter") cloudEmailLogin();
+});
 cloudRestoreKey.addEventListener("keydown", event => {
   if (event.key === "Enter") submitCloudRestoreKey();
 });
@@ -778,26 +791,41 @@ function initCloudSync() {
   try {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     cloudAuth = firebase.auth();
+    cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
     cloudDb = firebase.firestore();
     cloudReady = true;
     cloudAuth.onAuthStateChanged(user => {
-      cloudUser = user;
-      const shouldStartCloudSync = user && localStorage.getItem(cloudAutoSavePendingKey) === "1";
-      if (shouldStartCloudSync) {
-        localStorage.removeItem(cloudAutoSavePendingKey);
-        setCloudAutoSave(true);
-      }
-      updateCloudUi();
-      if (shouldStartCloudSync) {
-        autoLoadCloudDataAfterLogin();
-      }
+      handleCloudAuthUser(user);
     });
-    cloudAuth.getRedirectResult?.().catch(() => {
-      cloudStatus.textContent = "ログイン処理を完了できませんでした。もう一度試してください。";
+    cloudAuth.getRedirectResult?.().then(result => {
+      if (result?.user) handleCloudAuthUser(result.user, { forceAutoLoad: true });
+    }).catch(error => {
+      cloudAuthNotice = cloudAuthErrorMessage(error);
+      localStorage.removeItem(cloudAutoSavePendingKey);
+      updateCloudUi();
     });
   } catch {
     cloudStatus.textContent = "Firebaseの初期化に失敗しました。設定を確認してください。";
     setCloudButtons(false);
+  }
+}
+
+function handleCloudAuthUser(user, { forceAutoLoad = false } = {}) {
+  cloudUser = user;
+  if (!user) {
+    updateCloudUi();
+    return;
+  }
+  cloudAuthNotice = "";
+  const shouldStartCloudSync = localStorage.getItem(cloudAutoSavePendingKey) === "1";
+  if (shouldStartCloudSync) {
+    localStorage.removeItem(cloudAutoSavePendingKey);
+    setCloudAutoSave(true);
+  } else {
+    updateCloudUi();
+  }
+  if (shouldStartCloudSync || forceAutoLoad || cloudAutoSaveEnabled) {
+    autoLoadCloudDataAfterLogin();
   }
 }
 
@@ -809,7 +837,7 @@ function updateCloudUi() {
   const signedIn = Boolean(cloudUser);
   cloudStatus.textContent = signedIn
     ? `ログイン中: ${cloudUser.email || "Googleアカウント"} / 自動保存${cloudAutoSaveEnabled ? "ON" : "OFF"}`
-    : "未ログイン";
+    : cloudAuthNotice || "未ログイン";
   cloudLoginBtn.textContent = signedIn ? "自動保存を有効にする" : "Googleでログイン";
   cloudLoginBtn.hidden = signedIn && cloudAutoSaveEnabled;
   cloudLogoutBtn.hidden = !signedIn;
@@ -832,6 +860,109 @@ function setCloudAutoSave(enabled) {
   if (enabled) localStorage.setItem(cloudAutoSaveKey, "1");
   else localStorage.removeItem(cloudAutoSaveKey);
   updateCloudUi();
+}
+
+function cloudEmailValue() {
+  return cloudEmail.value.trim();
+}
+
+function cloudPasswordValue() {
+  return cloudPassword.value;
+}
+
+function setCloudEmailBusy(isBusy) {
+  cloudEmailLoginBtn.disabled = isBusy;
+  cloudEmailRegisterBtn.disabled = isBusy;
+  cloudPasswordResetBtn.disabled = isBusy;
+}
+
+async function finishCloudEmailAuth(user) {
+  cloudUser = user;
+  cloudAuthNotice = "";
+  cloudEmailError.textContent = "";
+  setCloudAutoSave(true);
+  await autoLoadCloudDataAfterLogin();
+  updateCloudUi();
+}
+
+async function cloudEmailLogin() {
+  if (!cloudReady || !cloudAuth) {
+    cloudEmailError.textContent = "Firebaseの準備ができていません。少し待ってから試してください。";
+    return;
+  }
+  const email = cloudEmailValue();
+  const password = cloudPasswordValue();
+  if (!email || !password) {
+    cloudEmailError.textContent = "メールアドレスとパスワードを入力してください。";
+    return;
+  }
+  setCloudEmailBusy(true);
+  cloudEmailError.textContent = "";
+  cloudStatus.textContent = "メールでログイン中...";
+  try {
+    await cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL);
+    const result = await cloudAuth.signInWithEmailAndPassword(email, password);
+    await finishCloudEmailAuth(result.user);
+  } catch (error) {
+    cloudEmailError.textContent = cloudEmailAuthErrorMessage(error);
+    cloudAuthNotice = cloudEmailError.textContent;
+    updateCloudUi();
+  } finally {
+    setCloudEmailBusy(false);
+  }
+}
+
+async function cloudEmailRegister() {
+  if (!cloudReady || !cloudAuth) {
+    cloudEmailError.textContent = "Firebaseの準備ができていません。少し待ってから試してください。";
+    return;
+  }
+  const email = cloudEmailValue();
+  const password = cloudPasswordValue();
+  if (!email || !password) {
+    cloudEmailError.textContent = "メールアドレスとパスワードを入力してください。";
+    return;
+  }
+  if (password.length < 6) {
+    cloudEmailError.textContent = "パスワードは6文字以上で設定してください。";
+    return;
+  }
+  setCloudEmailBusy(true);
+  cloudEmailError.textContent = "";
+  cloudStatus.textContent = "アカウント作成中...";
+  try {
+    await cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL);
+    const result = await cloudAuth.createUserWithEmailAndPassword(email, password);
+    await finishCloudEmailAuth(result.user);
+  } catch (error) {
+    cloudEmailError.textContent = cloudEmailAuthErrorMessage(error);
+    cloudAuthNotice = cloudEmailError.textContent;
+    updateCloudUi();
+  } finally {
+    setCloudEmailBusy(false);
+  }
+}
+
+async function cloudPasswordReset() {
+  if (!cloudReady || !cloudAuth) {
+    cloudEmailError.textContent = "Firebaseの準備ができていません。少し待ってから試してください。";
+    return;
+  }
+  const email = cloudEmailValue();
+  if (!email) {
+    cloudEmailError.textContent = "再設定メールを送るメールアドレスを入力してください。";
+    return;
+  }
+  setCloudEmailBusy(true);
+  cloudEmailError.textContent = "";
+  try {
+    await cloudAuth.sendPasswordResetEmail(email);
+    cloudEmailError.textContent = "パスワード再設定メールを送信しました。メールを確認してください。";
+  } catch (error) {
+    cloudEmailError.textContent = cloudEmailAuthErrorMessage(error);
+  } finally {
+    setCloudEmailBusy(false);
+  }
 }
 
 function cloudRestoreStorageKey() {
@@ -913,24 +1044,32 @@ async function cloudLogin() {
   if (!confirm("Googleログインすると、ログイン中は選考データを復元キーで暗号化してFirebaseに自動保存します。クラウド同期を有効にしますか？")) {
     return;
   }
+  if (isStandaloneApp()) {
+    cloudAuthNotice = "ホーム画面版ではGoogleログインが失敗する場合があります。Safariの通常タブで公開URLを開いてログインしてください。";
+    localStorage.removeItem(cloudAutoSavePendingKey);
+    updateCloudUi();
+    return;
+  }
   localStorage.setItem(cloudAutoSavePendingKey, "1");
   const provider = new firebase.auth.GoogleAuthProvider();
   cloudStatus.textContent = "Googleログインを開いています...";
   try {
-    if (isStandaloneApp()) {
-      await cloudAuth.signInWithRedirect(provider);
-      return;
-    }
-    await cloudAuth.signInWithPopup(provider);
+    await cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL);
+    const result = await cloudAuth.signInWithPopup(provider);
+    if (result?.user) handleCloudAuthUser(result.user, { forceAutoLoad: true });
   } catch (error) {
     if (["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(error.code)) {
       try {
         await cloudAuth.signInWithRedirect(provider);
       } catch (redirectError) {
-        cloudStatus.textContent = cloudAuthErrorMessage(redirectError);
+        cloudAuthNotice = cloudAuthErrorMessage(redirectError);
+        localStorage.removeItem(cloudAutoSavePendingKey);
+        updateCloudUi();
       }
     } else {
-      cloudStatus.textContent = cloudAuthErrorMessage(error);
+      cloudAuthNotice = cloudAuthErrorMessage(error);
+      localStorage.removeItem(cloudAutoSavePendingKey);
+      updateCloudUi();
     }
   }
 }
@@ -952,9 +1091,27 @@ function cloudAuthErrorMessage(error = {}) {
   return messages[code] || `ログインできませんでした。Firebase設定を確認してください。エラー: ${code}`;
 }
 
+function cloudEmailAuthErrorMessage(error = {}) {
+  const code = error.code || "unknown";
+  const messages = {
+    "auth/email-already-in-use": "このメールアドレスはすでに登録されています。メールでログインしてください。",
+    "auth/invalid-email": "メールアドレスの形式を確認してください。",
+    "auth/missing-password": "パスワードを入力してください。",
+    "auth/weak-password": "パスワードは6文字以上で設定してください。",
+    "auth/user-not-found": "このメールアドレスのアカウントが見つかりません。新規登録してください。",
+    "auth/wrong-password": "パスワードが違います。",
+    "auth/invalid-credential": "メールアドレスまたはパスワードが違います。",
+    "auth/operation-not-allowed": "メールログインがFirebase側で有効になっていません。Authentication > Sign-in methodでメール/パスワードを有効にしてください。",
+    "auth/too-many-requests": "試行回数が多すぎます。少し時間を置いてから試してください。",
+    "auth/network-request-failed": "通信に失敗しました。ネット接続を確認してください。"
+  };
+  return messages[code] || `ログインできませんでした。エラー: ${code}`;
+}
+
 async function cloudLogout() {
   if (!cloudAuth) return;
   await cloudAuth.signOut();
+  cloudAuthNotice = "";
   setCloudAutoSave(false);
   cloudEncryptionConfig = null;
   cloudAutoLoadCheckedUid = "";
