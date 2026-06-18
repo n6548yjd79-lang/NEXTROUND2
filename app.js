@@ -791,6 +791,7 @@ function initCloudSync() {
   try {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     cloudAuth = firebase.auth();
+    cloudAuth.languageCode = "ja";
     cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
     cloudDb = firebase.firestore();
     cloudReady = true;
@@ -870,6 +871,15 @@ function cloudPasswordValue() {
   return cloudPassword.value;
 }
 
+function validateNewCloudPassword(password) {
+  if (/\s/.test(password)) return "パスワードに空白は使えません。";
+  if (password.length < 8) return "パスワードは8文字以上で設定してください。";
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    return "パスワードには英字と数字を両方入れてください。";
+  }
+  return "";
+}
+
 function setCloudEmailBusy(isBusy) {
   cloudEmailLoginBtn.disabled = isBusy;
   cloudEmailRegisterBtn.disabled = isBusy;
@@ -923,14 +933,16 @@ async function cloudEmailRegister() {
     cloudEmailError.textContent = "メールアドレスとパスワードを入力してください。";
     return;
   }
-  if (password.length < 6) {
-    cloudEmailError.textContent = "パスワードは6文字以上で設定してください。";
+  const passwordError = validateNewCloudPassword(password);
+  if (passwordError) {
+    cloudEmailError.textContent = passwordError;
     return;
   }
   setCloudEmailBusy(true);
   cloudEmailError.textContent = "";
   cloudStatus.textContent = "アカウント作成中...";
   try {
+    cloudAuth.languageCode = "ja";
     await cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL);
     const result = await cloudAuth.createUserWithEmailAndPassword(email, password);
     await finishCloudEmailAuth(result.user);
@@ -956,6 +968,7 @@ async function cloudPasswordReset() {
   setCloudEmailBusy(true);
   cloudEmailError.textContent = "";
   try {
+    cloudAuth.languageCode = "ja";
     await cloudAuth.sendPasswordResetEmail(email);
     cloudEmailError.textContent = "パスワード再設定メールを送信しました。メールを確認してください。";
   } catch (error) {
@@ -1097,7 +1110,7 @@ function cloudEmailAuthErrorMessage(error = {}) {
     "auth/email-already-in-use": "このメールアドレスはすでに登録されています。メールでログインしてください。",
     "auth/invalid-email": "メールアドレスの形式を確認してください。",
     "auth/missing-password": "パスワードを入力してください。",
-    "auth/weak-password": "パスワードは6文字以上で設定してください。",
+    "auth/weak-password": "パスワードは8文字以上で、英字と数字を含めてください。",
     "auth/user-not-found": "このメールアドレスのアカウントが見つかりません。新規登録してください。",
     "auth/wrong-password": "パスワードが違います。",
     "auth/invalid-credential": "メールアドレスまたはパスワードが違います。",
