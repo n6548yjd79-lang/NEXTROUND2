@@ -276,15 +276,15 @@ h1 {
 .login-glow {
   position: relative;
   min-width: 56px;
-  border-color: rgba(97,244,222,.5);
-  color: #ecfffb;
+  border-color: rgba(75,179,253,.55);
+  color: #edf8ff;
   background:
-    linear-gradient(180deg, rgba(97,244,222,.18), rgba(75,179,253,.08)),
+    linear-gradient(180deg, rgba(75,179,253,.22), rgba(183,156,255,.09)),
     rgba(255,255,255,.055);
   overflow: hidden;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.12),
-    0 0 18px rgba(97,244,222,.12);
+    0 0 18px rgba(75,179,253,.14);
   animation: loginGlow 2.6s ease-in-out infinite;
 }
 
@@ -299,18 +299,19 @@ h1 {
 }
 
 .login-glow.synced {
-  border-color: rgba(54,211,153,.5);
+  border-color: rgba(255,207,90,.58);
+  color: #fff6dc;
   background:
-    linear-gradient(180deg, rgba(54,211,153,.18), rgba(97,244,222,.08)),
+    linear-gradient(180deg, rgba(255,207,90,.22), rgba(255,255,255,.065)),
     rgba(255,255,255,.055);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.12),
-    0 0 18px rgba(54,211,153,.14);
+    0 0 18px rgba(255,207,90,.16);
 }
 
 @keyframes loginGlow {
-  0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 14px rgba(97,244,222,.1); }
-  50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 24px rgba(97,244,222,.24); }
+  0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 14px rgba(75,179,253,.11); }
+  50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 24px rgba(75,179,253,.26); }
 }
 
 @keyframes loginSweep {

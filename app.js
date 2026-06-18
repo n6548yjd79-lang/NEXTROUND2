@@ -841,7 +841,7 @@ function updateCloudUi() {
   cloudLoginBtn.textContent = signedIn ? "自動保存を有効にする" : "Googleでログイン";
   cloudLoginBtn.hidden = signedIn && cloudAutoSaveEnabled;
   cloudLogoutBtn.hidden = !signedIn;
-  cloudBtn.textContent = signedIn && cloudAutoSaveEnabled ? "同期中" : "ログイン";
+  cloudBtn.textContent = signedIn && cloudAutoSaveEnabled ? "同期済" : "ログイン";
   cloudBtn.classList.toggle("synced", signedIn && cloudAutoSaveEnabled);
   setCloudButtons(signedIn);
 }
