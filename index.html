@@ -135,7 +135,8 @@
         </label>
       </section>
       <div id="internScheduleField" class="schedule-picker" hidden>
-        <label>インターン日程</label>
+        <label id="internScheduleLabel">インターン候補日程</label>
+        <p class="schedule-note" id="internScheduleNote">選考中は候補としてカレンダーに表示し、合格すると自動で確定します。</p>
         <div class="segment">
           <label><input type="radio" name="internScheduleMode" value="single" checked><span>1日</span></label>
           <label><input type="radio" name="internScheduleMode" value="range"><span>複数日</span></label>
@@ -533,7 +534,7 @@
       <button class="x" type="button" id="closeAnalyticsDialog" aria-label="閉じる">×</button>
     </div>
     <div class="analytics-body">
-      <p class="settings-note">ES・Webテスト・GD・面接と、業界別の通過率を集計します。不合格フェーズを記録するほど分析が正確になります。</p>
+      <p class="settings-note">ES・Webテスト・GD・面接は各フェーズの通過率、業界別は最終的な合格・内定率を集計します。</p>
       <div class="analytics-grid" id="analyticsContent"></div>
     </div>
   </dialog>
@@ -557,7 +558,8 @@
         <span class="legend-item"><i class="legend-dot" style="--dot:#ff6678;"></i>締切</span>
         <span class="legend-item"><i class="legend-dot" style="--dot:#ffbd72;"></i>締切間近</span>
         <span class="legend-item"><i class="legend-dot" style="--dot:#61f4de;"></i>次の予定</span>
-        <span class="legend-item"><i class="legend-dot" style="--dot:#ffdf72;"></i>インターン</span>
+        <span class="legend-item"><i class="legend-dot" style="--dot:#7ad7ff;"></i>候補日程</span>
+        <span class="legend-item"><i class="legend-dot" style="--dot:#ffdf72;"></i>確定日程</span>
       </div>
       <div class="calendar-events">
         <h3 id="calendarSelectedLabel"></h3>

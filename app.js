@@ -25,6 +25,7 @@ const entryTypes = ["インターン", "本選考", "説明会", "OB/OG訪問"];
 const industryOptions = ["未設定", "IT・通信", "金融", "メーカー", "商社", "コンサル", "広告・メディア", "人材", "不動産・建設", "インフラ", "小売・サービス", "官公庁・団体", "医療・ヘルスケア", "教育", "その他"];
 const doneStages = new Set(["ES不合格", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "辞退", "不採用"]);
 const winStages = new Set(["インターン合格", "内定"]);
+const failStages = new Set(["ES不合格", "Webテスト不合格", "GD不合格", "面接不合格", "インターン不合格", "不採用"]);
 const stageColors = {
   "気になる": "#95a3b5",
   "応募予定": "#4bb3fd",
@@ -168,6 +169,8 @@ const selectionTagOptionsEl = document.querySelector("#selectionTagOptions");
 const selectionTagOtherField = document.querySelector("#selectionTagOtherField");
 const deleteBtn = document.querySelector("#deleteBtn");
 const internScheduleField = document.querySelector("#internScheduleField");
+const internScheduleLabel = document.querySelector("#internScheduleLabel");
+const internScheduleNote = document.querySelector("#internScheduleNote");
 const resultDialog = document.querySelector("#resultDialog");
 const resultForm = document.querySelector("#resultForm");
 const resultTitle = document.querySelector("#resultTitle");
@@ -255,11 +258,11 @@ selectionTagOptionsEl.innerHTML = selectionTagOptions.map(tag => `
   <label><input class="selection-tag" type="checkbox" value="${escapeHtml(tag)}"><span>${escapeHtml(tag)}</span></label>
 `).join("");
 
-const filters = ["all", "インターン", "本選考", "書類選考中", "GD", "結果待ち", "面接", "合格"];
+const filters = ["all", "インターン", "本選考", "書類選考中", "GD", "結果待ち", "面接", "合格", "不合格"];
 const names = { all: "すべて", 面接: "面接中", 合格: "合格/内定" };
 filters.forEach(filter => {
   const button = document.createElement("button");
-  button.className = "chip" + (filter === activeFilter ? " active" : "");
+  button.className = "chip" + (filter === "不合格" ? " fail-filter" : "") + (filter === activeFilter ? " active" : "");
   button.textContent = names[filter] || filter;
   button.addEventListener("click", () => {
     activeFilter = filter;
@@ -390,6 +393,7 @@ form.addEventListener("submit", async event => {
     if (error.message) credentialFormNote.textContent = error.message;
     return;
   }
+  const scheduleData = scheduleDataFromForm(form, "intern", existingEntry?.internSchedule || "");
   const item = {
     id: editingId || crypto.randomUUID(),
     company: data.company.trim(),
@@ -400,15 +404,18 @@ form.addEventListener("submit", async event => {
     deadline: data.deadline,
     nextDate: data.nextDate,
     nextPlan: data.nextPlan.trim(),
-    internSchedule: buildScheduleFromForm(form, "intern", existingEntry?.internSchedule || ""),
-    internScheduleMode: form.elements.internScheduleMode.value,
-    internSingleDate: data.internSingleDate || "",
-    internStartDate: data.internStartDate || "",
-    internEndDate: data.internEndDate || "",
+    ...scheduleData,
+    internScheduleStatus: getInternScheduleStatus({
+      ...existingEntry,
+      type: data.type,
+      stage: data.stage,
+      ...scheduleData
+    }),
     memo: data.memo.trim(),
     flow: getFlowFromForm(),
     interviewCount: form.elements.interviewCount.value,
     selectionTags: getSelectionTagsFromForm(),
+    declinedAfterWin: winStages.has(data.stage) && Boolean(existingEntry?.declinedAfterWin),
     portalUrl: data.clearCredential === "1" ? "" : normalizePortalUrl(data.portalUrl),
     credentialVault,
     esArchiveVault: existingEntry?.esArchiveVault || null,
@@ -757,6 +764,7 @@ function load() {
       internSingleDate: "",
       internStartDate: "",
       internEndDate: "",
+      internScheduleStatus: "",
       credentialVault: null,
       esArchiveVault: null,
       ...entry,
@@ -766,7 +774,9 @@ function load() {
       interviewCount: normalizeInterviewCount(entry),
       selectionTags: normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther),
       flow: normalizeFlow(entry.flow, entry.stageHistory, entry.stage),
-      stageHistory: normalizeStageHistory(entry.stageHistory, entry.stage)
+      stageHistory: normalizeStageHistory(entry.stageHistory, entry.stage),
+      internScheduleStatus: getInternScheduleStatus(entry),
+      declinedAfterWin: winStages.has(entry.stage) && Boolean(entry.declinedAfterWin)
     }));
   } catch {
     return seed.map(entry => ({
@@ -1419,6 +1429,8 @@ function normalizeEntry(entry) {
     internSingleDate: entry.internSingleDate || "",
     internStartDate: entry.internStartDate || "",
     internEndDate: entry.internEndDate || "",
+    internScheduleStatus: getInternScheduleStatus({ ...entry, stage }),
+    declinedAfterWin: winStages.has(stage) && Boolean(entry.declinedAfterWin),
     memo: entry.memo || "",
     portalUrl: normalizePortalUrl(entry.portalUrl),
     flow: normalizeFlow(entry.flow, entry.stageHistory, stage),
@@ -2043,21 +2055,21 @@ function renderAnalytics() {
   analyticsContent.innerHTML = `
     <h3 class="analysis-section-title">フェーズ別</h3>
     ${stats.map(item => analysisCardMarkup(item, "対象")).join("")}
-    <h3 class="analysis-section-title">業界別 通過率</h3>
-    ${industryStats.length ? industryStats.map((item, index) => analysisCardMarkup({ ...item, color: industryColors[index % industryColors.length] }, "判定")).join("") : `
+    <h3 class="analysis-section-title">業界別 最終合格率</h3>
+    ${industryStats.length ? industryStats.map((item, index) => analysisCardMarkup({ ...item, color: industryColors[index % industryColors.length] }, "判定", "合格")).join("") : `
       <section class="analysis-card" style="--accent:#61f4de;">
         <div class="analysis-top">
           <strong>業界データなし</strong>
           <span class="analysis-rate">0%</span>
         </div>
         <div class="analysis-bar"><div class="analysis-fill" style="--rate:0%"></div></div>
-        <div class="analysis-detail">企業の業界を入れると、ここに業界別の通過率が表示されます。</div>
+        <div class="analysis-detail">企業の業界と最終結果を入れると、ここに合格・内定率が表示されます。</div>
       </section>
     `}
   `;
 }
 
-function analysisCardMarkup(item, totalLabel = "対象") {
+function analysisCardMarkup(item, totalLabel = "対象", passedLabel = "通過") {
   const rate = item.total ? Math.round((item.passed / item.total) * 100) : 0;
   const note = item.total < 3 ? "まだデータ少なめ" : "集計中";
   return `
@@ -2067,7 +2079,7 @@ function analysisCardMarkup(item, totalLabel = "対象") {
         <span class="analysis-rate">${rate}%</span>
       </div>
       <div class="analysis-bar"><div class="analysis-fill" style="--rate:${rate}%"></div></div>
-      <div class="analysis-detail">通過 ${item.passed} / ${totalLabel} ${item.total} ・ ${note}</div>
+      <div class="analysis-detail">${passedLabel} ${item.passed} / ${totalLabel} ${item.total} ・ ${note}</div>
     </section>
   `;
 }
@@ -2185,15 +2197,19 @@ function getCalendarEvents() {
         priority: 3
       });
     }
-    if (entry.stage === "インターン合格") {
+    const scheduleStatus = getInternScheduleStatus(entry);
+    if (scheduleStatus === "confirmed" || scheduleStatus === "tentative") {
       internshipDateKeys(entry).forEach(date => {
+        const confirmed = scheduleStatus === "confirmed";
         result.push({
           entryId: entry.id,
           company: entry.company,
           date,
-          label: "インターン日程",
-          detail: entry.internSchedule || `${formatDate(date)} 実施`,
-          color: "#ffdf72",
+          label: confirmed ? "インターン確定日程" : "インターン候補日程",
+          detail: confirmed
+            ? (entry.internSchedule || `${formatDate(date)} 実施`)
+            : `${entry.internSchedule || formatDate(date)} ・ 合格で確定`,
+          color: confirmed ? "#ffdf72" : "#7ad7ff",
           priority: 4
         });
       });
@@ -2299,15 +2315,13 @@ function buildIndustryPassRates() {
   entries.forEach(entry => {
     const industry = normalizeIndustry(entry.industry);
     if (industry === "未設定") return;
-    const outcomes = [
-      ...analysisPhaseDefinitions.map(definition => phaseOutcome(entry, definition)).filter(Boolean).map(outcome => outcome.passed),
-      ...interviewOutcomes(entry)
-    ];
-    if (!outcomes.length) return;
+    const passed = winStages.has(entry.stage);
+    const failed = failStages.has(entry.stage);
+    if (!passed && !failed) return;
     if (!map.has(industry)) map.set(industry, { label: industry, total: 0, passed: 0 });
     const stat = map.get(industry);
-    stat.total += outcomes.length;
-    stat.passed += outcomes.filter(Boolean).length;
+    stat.total += 1;
+    if (passed) stat.passed += 1;
   });
   return [...map.values()].sort((a, b) => b.total - a.total || b.passed - a.passed || a.label.localeCompare(b.label, "ja"));
 }
@@ -2347,6 +2361,28 @@ function buildScheduleFromForm(targetForm, prefix, fallback = "") {
   const end = formatScheduleDate(targetForm.elements[`${prefix}EndDate`].value);
   if (start && end) return `${start}〜${end}`;
   return start || end || fallback;
+}
+
+function scheduleDataFromForm(targetForm, prefix, fallback = "") {
+  return {
+    internSchedule: buildScheduleFromForm(targetForm, prefix, fallback),
+    internScheduleMode: targetForm.elements[`${prefix}ScheduleMode`].value,
+    internSingleDate: targetForm.elements[`${prefix}SingleDate`].value || "",
+    internStartDate: targetForm.elements[`${prefix}StartDate`].value || "",
+    internEndDate: targetForm.elements[`${prefix}EndDate`].value || ""
+  };
+}
+
+function getInternScheduleStatus(entry = {}) {
+  if (entry.type !== "インターン") return "";
+  if (isPostWinDeclined(entry)) return "declined";
+  if (entry.stage === "インターン合格") return "confirmed";
+  if (failStages.has(entry.stage)) return "cancelled";
+  return internshipDateKeys(entry).length ? "tentative" : "";
+}
+
+function isPostWinDeclined(entry = {}) {
+  return winStages.has(entry.stage) && Boolean(entry.declinedAfterWin);
 }
 
 function setScheduleForm(targetForm, prefix, entry = {}) {
@@ -2424,6 +2460,7 @@ function filteredEntries() {
       if (activeFilter === "all") return true;
       if (activeFilter === "面接") return entry.stage.includes("面接");
       if (activeFilter === "合格") return winStages.has(entry.stage);
+      if (activeFilter === "不合格") return failStages.has(entry.stage);
       if (["書類選考中", "GD", "結果待ち"].includes(activeFilter)) return entry.stage === activeFilter;
       return entry.type === activeFilter;
     })
@@ -2472,7 +2509,8 @@ function render() {
 
 function createCard(entry) {
   const card = document.createElement("article");
-  card.className = `card${winStages.has(entry.stage) ? " win" : ""}${deadlineClassName(entry) ? ` ${deadlineClassName(entry)}` : ""}`;
+  const postWinDeclined = isPostWinDeclined(entry);
+  card.className = `card${winStages.has(entry.stage) ? " win" : ""}${postWinDeclined ? " post-win-declined" : ""}${deadlineClassName(entry) ? ` ${deadlineClassName(entry)}` : ""}`;
   const progress = stageProgress(entry.stage);
   const stageColor = stageColors[entry.stage] || stageColors["応募予定"];
   const deadlineClass = deadlineMetaClass(entry);
@@ -2482,6 +2520,7 @@ function createCard(entry) {
   const actionMode = done ? "done-mode" : resultMode ? "result-mode" : "";
   const industry = normalizeIndustry(entry.industry);
   const portalUrl = normalizePortalUrl(entry.portalUrl);
+  const internScheduleStatus = getInternScheduleStatus(entry);
   card.style.setProperty("--stage-color", stageColor);
   card.innerHTML = `
     <div class="card-main">
@@ -2500,9 +2539,11 @@ function createCard(entry) {
         <div class="stage-label"><strong>${escapeHtml(statusHint(entry))}</strong><span>${progress}%</span></div>
         <div class="track"><div class="bar" style="width:${progress}%"></div></div>
       </div>
+      ${postWinDeclined ? `<div class="post-win-declined-badge">${escapeHtml(entry.type === "インターン" ? "合格後辞退" : "内定辞退")}<span>分析では合格として集計</span></div>` : ""}
       ${selectionTagsMarkup(entry)}
+      ${["tentative", "confirmed", "declined"].includes(internScheduleStatus) ? internshipScheduleMarkup(entry, internScheduleStatus) : ""}
       ${done ? "" : deadlineMetaMarkup(entry, deadlineClass)}
-      ${entry.stage === "インターン合格" ? internshipScheduleMarkup(entry) : ""}
+      ${winStages.has(entry.stage) ? `<button class="post-win-decline-btn${postWinDeclined ? " active" : ""}" data-action="togglePostWinDecline" type="button">${escapeHtml(postWinDeclined ? "辞退の記録を取り消す" : (entry.type === "インターン" ? "合格後辞退として記録" : "内定辞退として記録"))}</button>` : ""}
       <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
       <div class="protected-actions">
         <button class="archive-open" data-action="esArchive" type="button">ESアーカイブ${entry.esArchiveVault ? "を開く" : "を作成"}</button>
@@ -2531,6 +2572,8 @@ function createCard(entry) {
   if (backButton) backButton.addEventListener("click", () => advance(entry.id, -1));
   const editButton = card.querySelector('[data-action="edit"]');
   if (editButton) editButton.addEventListener("click", () => openForm(entry));
+  const postWinDeclineButton = card.querySelector('[data-action="togglePostWinDecline"]');
+  if (postWinDeclineButton) postWinDeclineButton.addEventListener("click", () => togglePostWinDecline(entry.id));
   return card;
 }
 
@@ -2592,8 +2635,16 @@ function nextScheduleMarkup(entry) {
   return `<b>${escapeHtml(entry.nextPlan || "未設定")}</b>`;
 }
 
-function internshipScheduleMarkup(entry) {
-  return `<div class="meta-box schedule-box"><span>インターン日程</span><b>${escapeHtml(entry.internSchedule || "未設定（編集から追加）")}</b></div>`;
+function internshipScheduleMarkup(entry, status = getInternScheduleStatus(entry)) {
+  const tentative = status === "tentative";
+  const declined = status === "declined";
+  const label = tentative ? "インターン候補日程" : declined ? "辞退したインターン日程" : "インターン確定日程";
+  const note = tentative
+    ? '<em class="schedule-state">合格で確定</em>'
+    : declined
+      ? '<em class="schedule-state declined">カレンダーから除外</em>'
+      : "";
+  return `<div class="meta-box schedule-box${tentative ? " tentative" : ""}${declined ? " declined" : ""}"><span>${label}</span><b>${escapeHtml(entry.internSchedule || "未設定（編集から追加）")}</b>${note}</div>`;
 }
 
 function selectionTagsMarkup(entry) {
@@ -2641,6 +2692,7 @@ function failLabel(entry) {
 
 function statusHint(entry) {
   if (entry.stage === "結果待ち") return "返事が来たら結果入力";
+  if (isPostWinDeclined(entry)) return entry.type === "インターン" ? "合格後辞退として記録済み" : "内定辞退として記録済み";
   if (winStages.has(entry.stage)) return "おめでとう、通過";
   if (doneStages.has(entry.stage)) return "記録済み";
   return "次のステップへ";
@@ -2657,7 +2709,13 @@ function advance(id, direction) {
     const baseHistory = direction < 0
       ? removeStageFromHistory(entry.stageHistory, entry.stage)
       : entry.stageHistory;
-    return { ...entry, stage: nextStage, stageHistory: addStageToHistory(baseHistory, nextStage) };
+    const nextEntry = {
+      ...entry,
+      stage: nextStage,
+      declinedAfterWin: winStages.has(nextStage) && Boolean(entry.declinedAfterWin),
+      stageHistory: addStageToHistory(baseHistory, nextStage)
+    };
+    return { ...nextEntry, internScheduleStatus: getInternScheduleStatus(nextEntry) };
   });
   save();
   render();
@@ -2687,7 +2745,31 @@ function lastInterviewStage(entry) {
 }
 
 function setStage(id, stage, extras = {}) {
-  entries = entries.map(entry => entry.id === id ? { ...entry, stage, stageHistory: addStageToHistory(entry.stageHistory, stage), ...extras } : entry);
+  entries = entries.map(entry => {
+    if (entry.id !== id) return entry;
+    const nextEntry = {
+      ...entry,
+      stage,
+      declinedAfterWin: winStages.has(stage) && Boolean(entry.declinedAfterWin),
+      stageHistory: addStageToHistory(entry.stageHistory, stage),
+      ...extras
+    };
+    return { ...nextEntry, internScheduleStatus: getInternScheduleStatus(nextEntry) };
+  });
+  save();
+  render();
+}
+
+function togglePostWinDecline(id) {
+  const entry = entries.find(item => item.id === id);
+  if (!entry || !winStages.has(entry.stage)) return;
+  const willDecline = !isPostWinDeclined(entry);
+  if (willDecline) {
+    const label = entry.type === "インターン" ? "合格後辞退" : "内定辞退";
+    const confirmed = confirm(`${entry.company}を「${label}」として記録しますか？\n\n合格・内定の記録は残り、分析でも合格として集計されます。`);
+    if (!confirmed) return;
+  }
+  entries = entries.map(item => item.id === id ? { ...item, declinedAfterWin: willDecline } : item);
   save();
   render();
 }
@@ -2709,13 +2791,9 @@ function applyResult(passed) {
   const stage = passed
     ? (entry.type === "インターン" ? "インターン合格" : "内定")
     : (entry.type === "インターン" ? "インターン不合格" : "不採用");
-  const extras = {};
+  const extras = { declinedAfterWin: false };
   if (stage === "インターン合格") {
-    extras.internSchedule = buildScheduleFromForm(resultForm, "result", entry.internSchedule || "");
-    extras.internScheduleMode = resultForm.elements.resultScheduleMode.value;
-    extras.internSingleDate = resultForm.elements.resultSingleDate.value;
-    extras.internStartDate = resultForm.elements.resultStartDate.value;
-    extras.internEndDate = resultForm.elements.resultEndDate.value;
+    Object.assign(extras, scheduleDataFromForm(resultForm, "result", entry.internSchedule || ""));
   }
   setStage(entry.id, stage, extras);
   resultDialog.close();
@@ -2751,7 +2829,14 @@ function openForm(entry) {
 }
 
 function updateInternScheduleVisibility() {
-  internScheduleField.hidden = !(form.elements.type.value === "インターン" && form.elements.stage.value === "インターン合格");
+  const isIntern = form.elements.type.value === "インターン";
+  const isFailed = failStages.has(form.elements.stage.value);
+  const confirmed = form.elements.stage.value === "インターン合格";
+  internScheduleField.hidden = !isIntern || isFailed;
+  internScheduleLabel.textContent = confirmed ? "インターン確定日程" : "インターン候補日程";
+  internScheduleNote.textContent = confirmed
+    ? "合格後に日程が分かった場合も、ここから登録・変更できます。"
+    : "選考中は候補としてカレンダーに表示し、合格すると自動で確定します。";
 }
 
 function paintFilters() {

@@ -439,6 +439,13 @@ h1 {
   box-shadow: 0 8px 24px rgba(75,179,253,.2);
 }
 
+.chip.fail-filter.active {
+  color: #fff3f5;
+  background: #9f1f2f;
+  border-color: rgba(255,102,120,.66);
+  box-shadow: 0 8px 24px rgba(159,31,47,.28);
+}
+
 .deadline-strip {
   display: grid;
   gap: 8px;
@@ -530,6 +537,10 @@ h1 {
 .card.win::before {
   height: 4px;
   background: linear-gradient(90deg, #ffdf72, #c9982c, #ffdf72);
+}
+
+.card.post-win-declined {
+  border-color: rgba(255,207,90,.5);
 }
 
 .card.deadline-critical {
@@ -751,6 +762,96 @@ h1 {
 .schedule-box b {
   color: #ffe6a6;
   white-space: pre-wrap;
+}
+
+.schedule-box.tentative {
+  border-color: rgba(122,215,255,.32);
+  background:
+    linear-gradient(180deg, rgba(122,215,255,.11), rgba(255,255,255,.03)),
+    rgba(255,255,255,.045);
+}
+
+.schedule-box.tentative b {
+  color: #bdeaff;
+}
+
+.schedule-box.declined {
+  border-color: rgba(190,199,211,.28);
+  background:
+    linear-gradient(180deg, rgba(190,199,211,.09), rgba(255,255,255,.025)),
+    rgba(255,255,255,.035);
+}
+
+.schedule-box.declined b {
+  color: #d6dde6;
+}
+
+.schedule-state {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 7px;
+  padding: 4px 8px;
+  border: 1px solid rgba(122,215,255,.28);
+  border-radius: 999px;
+  background: rgba(122,215,255,.1);
+  color: #9cdefc;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.schedule-state.declined {
+  border-color: rgba(190,199,211,.24);
+  background: rgba(190,199,211,.08);
+  color: #c6d0dc;
+}
+
+.post-win-declined-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,207,90,.34);
+  border-radius: 10px;
+  background: rgba(255,207,90,.09);
+  color: #ffe29a;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.post-win-declined-badge span {
+  color: #cbd4e0;
+  font-size: 10px;
+  font-weight: 750;
+  text-align: right;
+}
+
+.post-win-decline-btn {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(255,207,90,.24);
+  border-radius: 10px;
+  background: rgba(255,207,90,.08);
+  color: #ffe29a;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.post-win-decline-btn.active {
+  border-color: rgba(190,199,211,.24);
+  background: rgba(190,199,211,.07);
+  color: #d6dde6;
+}
+
+.schedule-note {
+  margin: -3px 0 0;
+  color: #bfcbd8;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.65;
 }
 
 .status-pill {
