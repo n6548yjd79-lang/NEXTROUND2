@@ -451,18 +451,19 @@
         </section>
         <section class="privacy-item">
           <strong>取得・保存される情報</strong>
-          <p>利用者が入力した場合、会社名、業界、職種・コース、選考種別、選考状況、締切日、次の予定日・内容、インターン日程、選考タグ、通常メモ、ESアーカイブ、マイページURL、マイページID・パスワードが保存対象になります。</p>
+          <p>利用者が入力した場合、会社名、業界、職種・コース、選考種別、選考状況、締切日、次の予定日・内容、インターン日程、選考タグ、通常メモ、ESアーカイブ、マイページURL、マイページID・パスワード、企業フィット診断の回答・貼り付け文章・診断結果が保存対象になります。</p>
           <p>メールログインまたはGoogleログインを使う場合、ログイン用のメールアドレスがFirebase Authenticationに保存されます。ログイン用パスワードそのものをNEXTROUND内に保存することはありません。</p>
         </section>
         <section class="privacy-item">
           <strong>利用目的</strong>
-          <p>保存された情報は、選考状況の管理、締切・予定の表示、カレンダー表示、選考分析、別端末との同期、データ保存・復元、問い合わせ対応のために利用されます。</p>
+          <p>保存された情報は、選考状況の管理、締切・予定の表示、カレンダー表示、選考分析、企業フィット診断、別端末との同期、データ保存・復元、問い合わせ対応のために利用されます。</p>
           <p>入力内容を広告配信、第三者への販売、利用者の選考状況を外部に公開する目的で利用することはありません。</p>
         </section>
         <section class="privacy-item">
           <strong>端末内保存</strong>
           <p>クラウド同期を使わない場合、入力データは利用者のブラウザ内に保存されます。管理者が会社名、選考状況、メモ、ES内容、マイページ情報を取得・閲覧することはありません。</p>
-          <p>ブラウザやOSの仕様、端末の初期化、キャッシュ削除、長期間未使用などにより、端末内の保存データが消える可能性があります。大切なデータは設定画面から保存・バックアップしてください。</p>
+          <p>企業フィット診断の回答、企業文章、診断結果は端末内だけに保存され、Firebaseクラウド同期の対象には含まれません。貼り付けた文章を外部AIへ送信する処理も行いません。</p>
+          <p>ブラウザやOSの仕様、端末の初期化、キャッシュ削除、長期間未使用などにより、端末内の保存データが消える可能性があります。選考管理データは設定画面から保存できますが、企業フィット診断データは現在バックアップ対象外です。</p>
         </section>
         <section class="privacy-item">
           <strong>クラウド同期</strong>
@@ -522,7 +523,7 @@
         </section>
         <section class="privacy-item">
           <strong>更新日</strong>
-          <p>2026年6月18日</p>
+          <p>2026年7月11日</p>
         </section>
       </div>
     </div>
@@ -534,8 +535,97 @@
       <button class="x" type="button" id="closeAnalyticsDialog" aria-label="閉じる">×</button>
     </div>
     <div class="analytics-body">
+      <button class="fit-launch" type="button" id="fitOpenBtn">
+        <span class="fit-launch-copy"><small>NEW ANALYSIS</small><strong>企業フィット診断</strong><em>42問＋企業別5問で、人物像との相性を分析</em></span>
+        <span class="fit-launch-arrow" aria-hidden="true">›</span>
+      </button>
       <p class="settings-note">ES・Webテスト・GD・面接は各フェーズの通過率、業界別は最終的な合格・内定率を集計します。</p>
       <div class="analytics-grid" id="analyticsContent"></div>
+    </div>
+  </dialog>
+
+  <dialog id="fitDialog" class="fit-dialog">
+    <div class="form-head settings-head fit-head">
+      <button class="fit-back" type="button" id="fitBackBtn" hidden>戻る</button>
+      <h2 id="fitDialogTitle">企業フィット診断</h2>
+      <button class="x" type="button" id="closeFitDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="fit-shell">
+      <section class="fit-view" id="fitHomeView">
+        <div class="fit-intro">
+          <span class="fit-kicker">PERSONALITY × COMPANY</span>
+          <h3>企業との相性を、感覚ではなく言葉にする。</h3>
+          <p>基本診断は最初の1回だけ。企業の求める人物像を貼ると、その企業向けの5問とマッチ分析を作ります。</p>
+        </div>
+
+        <section class="fit-profile-status" id="fitProfileStatus"></section>
+        <button class="save fit-primary" type="button" id="fitProfileBtn">基本診断を始める</button>
+
+        <section class="fit-company-form">
+          <div class="fit-section-heading">
+            <div><small>COMPANY MATCH</small><h3>企業を分析</h3></div>
+            <span id="fitCompanyReady">基本診断が必要</span>
+          </div>
+          <label>企業名
+            <input id="fitCompanyName" placeholder="例: SCSK">
+          </label>
+          <label>求める人物像・価値観
+            <textarea id="fitCompanyText" class="fit-company-text" placeholder="採用ページの「求める人物像」「大切にする価値観」などを貼り付け"></textarea>
+          </label>
+          <div class="fit-text-meta"><span id="fitTextCount">0文字</span><span>文章は端末内だけで解析</span></div>
+          <button class="save fit-primary" type="button" id="fitCompanyStartBtn">企業別診断を始める</button>
+          <p class="fit-error" id="fitCompanyError" aria-live="polite"></p>
+        </section>
+
+        <section class="fit-ranking-section">
+          <div class="fit-section-heading"><div><small>RANKING</small><h3>企業マッチランキング</h3></div></div>
+          <div class="fit-ranking" id="fitRanking"></div>
+        </section>
+        <button class="soft-btn fit-reset" type="button" id="fitResetBtn">診断データを削除</button>
+      </section>
+
+      <section class="fit-view fit-quiz-view" id="fitQuizView" hidden>
+        <div class="fit-progress-head"><span id="fitQuizSection">基本診断</span><strong id="fitQuizProgressText">1 / 42</strong></div>
+        <div class="fit-progress"><i id="fitQuizProgressBar"></i></div>
+        <div class="fit-question-card">
+          <span class="fit-question-axis" id="fitQuestionAxis"></span>
+          <h3 id="fitQuestionText"></h3>
+          <div class="fit-scale-labels"><span id="fitQuestionLeft"></span><span id="fitQuestionRight"></span></div>
+          <div class="fit-scale" id="fitAnswerScale" aria-label="5段階で回答">
+            <button type="button" data-fit-answer="1">1</button>
+            <button type="button" data-fit-answer="2">2</button>
+            <button type="button" data-fit-answer="3">3</button>
+            <button type="button" data-fit-answer="4">4</button>
+            <button type="button" data-fit-answer="5">5</button>
+          </div>
+          <div class="fit-scale-help"><span>左に近い</span><span>どちらでもない</span><span>右に近い</span></div>
+        </div>
+        <div class="fit-quiz-actions">
+          <button class="soft-btn" type="button" id="fitPrevQuestionBtn">前の質問</button>
+          <button class="soft-btn accent" type="button" id="fitNextQuestionBtn">次へ</button>
+        </div>
+        <p class="fit-save-note">回答はこの端末に自動保存されます。</p>
+      </section>
+
+      <section class="fit-view fit-result-view" id="fitResultView" hidden>
+        <div class="fit-result-hero">
+          <span class="fit-kicker">COMPANY FIT RESULT</span>
+          <h3 id="fitResultCompany"></h3>
+          <div class="fit-score-ring" id="fitScoreRing"><div><strong id="fitScoreValue">0%</strong><span>総合マッチ度</span></div></div>
+          <div class="fit-confidence" id="fitConfidence"></div>
+          <p>公開されている人物像と回答傾向の近さです。合格率を示すものではありません。</p>
+        </div>
+        <section class="fit-radar-section">
+          <h3>7つの相性</h3>
+          <div class="fit-radar" id="fitRadar"></div>
+          <div class="fit-axis-bars" id="fitAxisBars"></div>
+        </section>
+        <section class="fit-insight-section"><h3>特に合う3点</h3><div id="fitStrengths"></div></section>
+        <section class="fit-insight-section"><h3>少し違いがある点</h3><div id="fitDifferences"></div></section>
+        <section class="fit-insight-section fit-interview"><h3>面接で伝えたい強み</h3><div id="fitInterviewTips"></div></section>
+        <section class="fit-insight-section fit-gap"><h3>入社後のギャップ候補</h3><div id="fitGapNotes"></div></section>
+        <button class="save fit-primary" type="button" id="fitAnotherCompanyBtn">別の企業を診断</button>
+      </section>
     </div>
   </dialog>
 
@@ -572,6 +662,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="fit.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
