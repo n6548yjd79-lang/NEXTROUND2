@@ -534,16 +534,21 @@
       const y = centerY + Math.sin(angle) * 105;
       return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle">${axes[axis].label}</text>`;
     }).join("");
-    const companyPoints = axisOrder.map((axis, index) => point(index, report.companyAnalysis.targets[axis])).join(" ");
-    const userPoints = axisOrder.map((axis, index) => point(index, report.profileScores[axis])).join(" ");
+    const maxKeywordCount = Math.max(1, ...axisOrder.map(axis => report.companyAnalysis.counts?.[axis] || 0));
+    const companyPoints = axisOrder.map((axis, index) => {
+      const keywordCount = report.companyAnalysis.counts?.[axis] || 0;
+      const importance = report.companyAnalysis.totalHits ? 40 + (keywordCount / maxKeywordCount) * 60 : 50;
+      return point(index, importance);
+    }).join(" ");
+    const matchPoints = axisOrder.map((axis, index) => point(index, report.similarities[axis])).join(" ");
     return `
-      <svg class="fit-radar-svg" viewBox="0 0 320 270" role="img" aria-label="あなたと企業の傾向を比較するレーダーチャート">
+      <svg class="fit-radar-svg" viewBox="0 0 320 270" role="img" aria-label="企業の重視度と項目別相性を比較するレーダーチャート">
         <g class="fit-radar-grid">${grid}${spokes}</g>
         <polygon class="fit-radar-company" points="${companyPoints}" />
-        <polygon class="fit-radar-user" points="${userPoints}" />
+        <polygon class="fit-radar-user" points="${matchPoints}" />
         <g class="fit-radar-labels">${labels}</g>
       </svg>
-      <div class="fit-radar-legend"><span><i class="company"></i>企業が重視</span><span><i class="user"></i>あなた</span></div>
+      <div class="fit-radar-legend"><span><i class="company"></i>企業の重視度</span><span><i class="user"></i>あなたとの相性</span></div>
     `;
   }
 
