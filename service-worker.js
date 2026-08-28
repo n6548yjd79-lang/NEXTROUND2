@@ -1,5 +1,5 @@
 const cachePrefix = "nextround-shell-";
-const cacheName = `${cachePrefix}v28-20260828-security-center`;
+const cacheName = `${cachePrefix}v29-20260828-public-release`;
 const appShell = ["./", "./index.html", "./theme-init.js?v=2.8.1", "./styles.css?v=2.8.1", "./notification-config.js?v=2.8.1", "./app.js?v=2.8.1", "./notion-import.js?v=2.8.1", "./notifications.js?v=2.8.1", "./inbox.js?v=2.8.1", "./ai-review.js?v=2.8.1", "./fit.js?v=2.8.1", "./refresh.js?v=2.8.1", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
