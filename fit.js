@@ -1,5 +1,8 @@
 (() => {
-  const fitStorageKey = "nextround-fit-v1";
+  const baseFitStorageKey = "nextround-fit-v1";
+  let fitStorageKey = typeof activeLocalUid !== "undefined" && activeLocalUid
+    ? `${baseFitStorageKey}:${activeLocalUid}`
+    : baseFitStorageKey;
   const axisOrder = ["initiative", "collaboration", "challenge", "logic", "execution", "adaptability", "growth"];
   const axes = {
     initiative: {
@@ -185,6 +188,18 @@
   document.querySelector("#fitAnswerScale").addEventListener("click", handleFitAnswer);
   document.querySelector("#fitAnotherCompanyBtn").addEventListener("click", showFitHome);
   document.querySelector("#fitResetBtn").addEventListener("click", resetFitData);
+  window.addEventListener("nextround:local-user-changed", event => {
+    const uid = String(event.detail?.uid || "");
+    fitStorageKey = uid ? `${baseFitStorageKey}:${uid}` : baseFitStorageKey;
+    state = uid ? loadFitState() : emptyState();
+    quizMode = "";
+    quizQuestions = [];
+    quizAnswers = [];
+    companyDraft = null;
+    fitCompanyName.value = "";
+    fitCompanyText.value = "";
+    if (fitDialog.open) closeFitDialog();
+  });
 
   function loadFitState() {
     try {
@@ -438,7 +453,7 @@
     const rankedSimilarity = [...axisOrder].sort((a, b) => similarities[b] - similarities[a]);
     const rankedImportance = [...axisOrder].sort((a, b) => draft.analysis.weights[b] - draft.analysis.weights[a]);
     return {
-      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      id: crypto.randomUUID ? crypto.randomUUID() : secureFallbackId(),
       company: draft.name,
       sourceText: draft.sourceText,
       createdAt: new Date().toISOString(),
@@ -485,8 +500,9 @@
   function renderFitResult(report) {
     setFitView("result");
     document.querySelector("#fitResultCompany").textContent = report.company;
-    document.querySelector("#fitConfidence").className = `fit-confidence ${report.confidence.className}`;
-    document.querySelector("#fitConfidence").innerHTML = `<strong>分析精度：${report.confidence.level}</strong><span>${escapeFitHtml(report.confidence.detail)}</span>`;
+    const confidenceClass = ["high", "medium", "low"].includes(report.confidence.className) ? report.confidence.className : "low";
+    document.querySelector("#fitConfidence").className = `fit-confidence ${confidenceClass}`;
+    document.querySelector("#fitConfidence").innerHTML = `<strong>分析精度：${escapeFitHtml(report.confidence.level)}</strong><span>${escapeFitHtml(report.confidence.detail)}</span>`;
     document.querySelector("#fitRadar").innerHTML = radarMarkup(report);
     document.querySelector("#fitAxisBars").innerHTML = axisOrder.map(axis => `
       <div class="fit-axis-row" style="--axis-color:${axes[axis].color};--axis-rate:${report.similarities[axis]}%;">
@@ -606,6 +622,11 @@
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  function secureFallbackId() {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    return [...bytes].map(value => value.toString(16).padStart(2, "0")).join("");
   }
 
   function escapeFitHtml(value) {

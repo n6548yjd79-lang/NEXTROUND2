@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="NEXTROUND">
+  <rect width="512" height="512" rx="72" fill="#070b11"/>
+  <rect x="88" y="72" width="336" height="8" fill="#61f4de"/>
+  <path d="M116 392V120h66l148 166V120h66v272h-62L182 220v172h-66Z" fill="#f3f7fb"/>
+  <rect x="88" y="432" width="214" height="8" fill="#4bb3fd"/>
+</svg>

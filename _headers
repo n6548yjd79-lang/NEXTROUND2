@@ -1,0 +1,17 @@
+/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cross-Origin-Resource-Policy: same-origin
+  X-Permitted-Cross-Domain-Policies: none
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://nextround-notifications.nextround-app.workers.dev https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com; frame-src https://next-round-936c6.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/service-worker.js
+  Cache-Control: no-cache, no-store, must-revalidate

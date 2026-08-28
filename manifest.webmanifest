@@ -1,0 +1,17 @@
+{
+  "name": "NEXTROUND",
+  "short_name": "NEXTROUND",
+  "description": "就活の選考・締切・予定を管理するWebアプリ",
+  "lang": "ja",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#080b0f",
+  "theme_color": "#080b0f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

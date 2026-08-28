@@ -22,6 +22,7 @@ const stages = [
 ];
 
 const entryTypes = ["インターン", "本選考", "説明会", "OB/OG訪問"];
+const internSeasonOptions = ["未設定", "サマー", "秋", "冬"];
 const industryOptions = ["未設定", "IT・通信", "金融", "メーカー", "商社", "コンサル", "広告・メディア", "人材", "不動産・建設", "インフラ", "小売・サービス", "官公庁・団体", "医療・ヘルスケア", "教育", "その他"];
 const doneStages = new Set(["ES不合格", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "辞退", "不採用"]);
 const winStages = new Set(["インターン合格", "内定"]);
@@ -48,11 +49,28 @@ const stageColors = {
   "辞退": "#95a3b5",
   "不採用": "#ff6678"
 };
-const storageKey = "senkou-deck-v1";
-const vaultStorageKey = "nextround-vault-v1";
+const baseStorageKey = "senkou-deck-v1";
+const baseVaultStorageKey = "nextround-vault-v1";
+const baseMigrationSnapshotKey = "nextround-migration-snapshot-v2";
+const baseMigrationStateKey = "nextround-migration-state-v2";
+const baseMigrationAckKey = "nextround-migration-ack-v2";
+const baseFitStorageKey = "nextround-fit-v1";
+const localDataOwnerKey = "nextround-local-owner-v1";
+let storageKey = baseStorageKey;
+let vaultStorageKey = baseVaultStorageKey;
+let migrationSnapshotKey = baseMigrationSnapshotKey;
+let migrationStateKey = baseMigrationStateKey;
+let migrationAckKey = baseMigrationAckKey;
+let activeLocalUid = "";
+const appSchemaVersion = 5;
+const analysisScopeKey = "nextround-analysis-scope-v1";
 const cloudAutoSaveKey = "nextround-cloud-autosave-v1";
 const cloudAutoSavePendingKey = "nextround-cloud-autosave-pending-v1";
 const cloudRestoreKeyPrefix = "nextround-cloud-restore-key-v1:";
+const maxPortableEntries = 2000;
+const maxPortableFileBytes = 5 * 1024 * 1024;
+const maxSyncCodeLength = 7 * 1024 * 1024;
+const appBootTimestamp = new Date().toISOString();
 const firebaseConfig = {
   apiKey: "AIzaSyAgOSNkun1DDVS7Npnv67Yg1iv1sFBk8y4",
   authDomain: "next-round-936c6.firebaseapp.com",
@@ -64,7 +82,10 @@ const firebaseConfig = {
 };
 const protectedUnlockMs = 30 * 60 * 1000;
 const esArchiveLabels = ["ガクチカ", "自己PR", "志望動機", "研究内容", "長所・短所", "挫折経験", "将来像", "企業理解", "その他"];
-const selectionTagOptions = ["ES+Webテスト同時提出", "動画選考", "AI面接", "適性検査", "ケース面接", "面談", "その他"];
+const combinedDocumentTag = "ES+Webテスト同時提出";
+const selectionTagOptions = [combinedDocumentTag, "動画選考", "AI面接", "適性検査", "ケース面接", "面談", "その他"];
+const visibleSelectionTagOptions = selectionTagOptions.filter(tag => tag !== combinedDocumentTag);
+const managedInterviewStages = ["面接", "一次面接", "二次面接", "最終面接"];
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 const phaseStages = {
@@ -135,6 +156,7 @@ let vaultConfig = loadVaultConfig();
 let activeFilter = "all";
 let editingId = null;
 let resultTargetId = null;
+let timelineTargetId = null;
 let credentialTargetId = null;
 let esArchiveTargetId = null;
 let vaultResolver = null;
@@ -156,6 +178,12 @@ let cloudRestoreMode = "create";
 let cloudSnapshotPending = null;
 let cloudEncryptionConfig = null;
 let cloudAuthNotice = "";
+let flowBuilderSteps = [];
+let flowBuilderDirty = false;
+let scheduleCustomDates = { intern: [], result: [] };
+let offerTargetId = null;
+let analysisSelectionType = localStorage.getItem(analysisScopeKey) === "本選考" ? "本選考" : "インターン";
+let analysisRateAnimationFrame = null;
 
 const cards = document.querySelector("#cards");
 const chips = document.querySelector("#chips");
@@ -167,25 +195,37 @@ const stageSelect = form.elements.stage;
 const industrySelect = form.elements.industry;
 const selectionTagOptionsEl = document.querySelector("#selectionTagOptions");
 const selectionTagOtherField = document.querySelector("#selectionTagOtherField");
+const flowStepList = document.querySelector("#flowStepList");
+const flowStepInput = document.querySelector("#flowStepInput");
 const deleteBtn = document.querySelector("#deleteBtn");
 const internScheduleField = document.querySelector("#internScheduleField");
+const internSeasonField = document.querySelector("#internSeasonField");
 const internScheduleLabel = document.querySelector("#internScheduleLabel");
 const internScheduleNote = document.querySelector("#internScheduleNote");
+const documentFlowControl = document.querySelector("#documentFlowControl");
 const resultDialog = document.querySelector("#resultDialog");
 const resultForm = document.querySelector("#resultForm");
 const resultTitle = document.querySelector("#resultTitle");
 const resultScheduleField = document.querySelector("#resultScheduleField");
+const timelineDialog = document.querySelector("#timelineDialog");
+const timelineTitle = document.querySelector("#timelineTitle");
+const timelineSummary = document.querySelector("#timelineSummary");
+const timelineList = document.querySelector("#timelineList");
+const timelineNote = document.querySelector("#timelineNote");
+const offerDialog = document.querySelector("#offerDialog");
+const offerForm = document.querySelector("#offerForm");
+const offerDialogTitle = document.querySelector("#offerDialogTitle");
 const settingsDialog = document.querySelector("#settingsDialog");
 const settingsStatus = document.querySelector("#settingsStatus");
 const cloudDialog = document.querySelector("#cloudDialog");
 const cloudBtn = document.querySelector("#cloudBtn");
 const cloudStatus = document.querySelector("#cloudStatus");
-const cloudLoginBtn = document.querySelector("#cloudLoginBtn");
 const cloudLogoutBtn = document.querySelector("#cloudLogoutBtn");
 const cloudEmail = document.querySelector("#cloudEmail");
 const cloudPassword = document.querySelector("#cloudPassword");
 const cloudEmailLoginBtn = document.querySelector("#cloudEmailLoginBtn");
 const cloudEmailRegisterBtn = document.querySelector("#cloudEmailRegisterBtn");
+const cloudGoogleLoginBtn = document.querySelector("#cloudGoogleLoginBtn");
 const cloudPasswordResetBtn = document.querySelector("#cloudPasswordResetBtn");
 const cloudEmailError = document.querySelector("#cloudEmailError");
 const cloudRestoreSection = document.querySelector("#cloudRestoreSection");
@@ -207,6 +247,8 @@ const syncCodeInput = document.querySelector("#syncCodeInput");
 const syncImportStatus = document.querySelector("#syncImportStatus");
 const analyticsDialog = document.querySelector("#analyticsDialog");
 const analyticsContent = document.querySelector("#analyticsContent");
+const analysisTypeSwitch = document.querySelector("#analysisTypeSwitch");
+const analysisScopeSummary = document.querySelector("#analysisScopeSummary");
 const calendarDialog = document.querySelector("#calendarDialog");
 const calendarGrid = document.querySelector("#calendarGrid");
 const calendarMonthLabel = document.querySelector("#calendarMonthLabel");
@@ -245,7 +287,7 @@ const splash = document.querySelector("#splash");
 
 setTimeout(() => {
   splash?.classList.add("hide");
-}, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 1250);
+}, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 1750);
 
 const now = new Date();
 calendarCursor = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -254,7 +296,7 @@ document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.
 document.querySelector("#weekdayLabel").textContent = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(now);
 stages.forEach(stage => stageSelect.add(new Option(stage, stage)));
 industryOptions.forEach(industry => industrySelect.add(new Option(industry, industry)));
-selectionTagOptionsEl.innerHTML = selectionTagOptions.map(tag => `
+selectionTagOptionsEl.innerHTML = visibleSelectionTagOptions.map(tag => `
   <label><input class="selection-tag" type="checkbox" value="${escapeHtml(tag)}"><span>${escapeHtml(tag)}</span></label>
 `).join("");
 
@@ -273,6 +315,7 @@ filters.forEach(filter => {
 });
 
 document.querySelector("#search").addEventListener("input", render);
+document.querySelector("#sortOrder").addEventListener("change", render);
 document.querySelector("#addBtn").addEventListener("click", () => addChoiceDialog.showModal());
 document.querySelector("#closeAddChoiceDialog").addEventListener("click", () => addChoiceDialog.close());
 document.querySelector("#singleAddBtn").addEventListener("click", () => {
@@ -281,7 +324,11 @@ document.querySelector("#singleAddBtn").addEventListener("click", () => {
 });
 document.querySelector("#memoImportBtn").addEventListener("click", () => {
   addChoiceDialog.close();
-  openImportDialog();
+  openImportDialog("memo");
+});
+document.querySelector("#notionImportBtn").addEventListener("click", () => {
+  addChoiceDialog.close();
+  openImportDialog("notion");
 });
 document.querySelector("#closeDialog").addEventListener("click", () => dialog.close());
 document.querySelector("#closeImportDialog").addEventListener("click", () => importDialog.close());
@@ -290,6 +337,9 @@ confirmImportBtn.addEventListener("click", confirmImportCandidates);
 document.querySelector("#closeResultDialog").addEventListener("click", () => resultDialog.close());
 document.querySelector("#passResultBtn").addEventListener("click", () => applyResult(true));
 document.querySelector("#failResultBtn").addEventListener("click", () => applyResult(false));
+document.querySelector("#closeTimelineDialog").addEventListener("click", () => timelineDialog.close());
+document.querySelector("#closeOfferDialog").addEventListener("click", () => offerDialog.close());
+offerForm.addEventListener("submit", saveOfferDetails);
 document.querySelector("#settingsBtn").addEventListener("click", openSettings);
 document.querySelector("#closeSettingsDialog").addEventListener("click", () => settingsDialog.close());
 document.querySelector("#createSyncCodeBtn").addEventListener("click", openSyncCodeDialog);
@@ -299,11 +349,15 @@ document.querySelector("#closeSyncImportDialog").addEventListener("click", () =>
 document.querySelector("#copySyncCodeBtn").addEventListener("click", copySyncCode);
 document.querySelector("#applySyncCodeBtn").addEventListener("click", applySyncCode);
 document.querySelector("#cloudBtn").addEventListener("click", openCloudDialog);
-document.querySelector("#closeCloudDialog").addEventListener("click", () => cloudDialog.close());
-cloudLoginBtn.addEventListener("click", cloudLogin);
+document.querySelector("#closeCloudDialog").addEventListener("click", () => {
+  cloudPassword.value = "";
+  hideCloudRestoreKey();
+  cloudDialog.close();
+});
 cloudLogoutBtn.addEventListener("click", cloudLogout);
 cloudEmailLoginBtn.addEventListener("click", cloudEmailLogin);
 cloudEmailRegisterBtn.addEventListener("click", cloudEmailRegister);
+cloudGoogleLoginBtn.addEventListener("click", cloudGoogleLogin);
 cloudPasswordResetBtn.addEventListener("click", cloudPasswordReset);
 cloudRestoreSubmitBtn.addEventListener("click", submitCloudRestoreKey);
 cloudPassword.addEventListener("keydown", event => {
@@ -320,12 +374,19 @@ document.querySelector("#importBtn").addEventListener("click", () => importFile.
 importFile.addEventListener("change", importData);
 document.querySelector("#changeVaultBtn").addEventListener("click", changeVaultPassword);
 document.querySelector("#forgotVaultBtn").addEventListener("click", openForgotVaultDialog);
-document.querySelector("#closeForgotVaultDialog").addEventListener("click", () => forgotVaultDialog.close());
+document.querySelector("#closeForgotVaultDialog").addEventListener("click", () => {
+  forgotVaultPassword.value = "";
+  forgotVaultConfirmPassword.value = "";
+  forgotVaultDialog.close();
+});
 document.querySelector("#forgotVaultSubmitBtn").addEventListener("click", resetForgottenVaultPassword);
 document.querySelector("#privacyBtn").addEventListener("click", () => privacyDialog.showModal());
 document.querySelector("#closePrivacyDialog").addEventListener("click", () => privacyDialog.close());
 document.querySelector("#analyticsBtn").addEventListener("click", openAnalytics);
 document.querySelector("#closeAnalyticsDialog").addEventListener("click", () => analyticsDialog.close());
+analysisTypeSwitch.querySelectorAll("[data-analysis-type]").forEach(button => {
+  button.addEventListener("click", () => setAnalysisSelectionType(button.dataset.analysisType));
+});
 document.querySelector("#calendarBtn").addEventListener("click", openCalendar);
 document.querySelector("#closeCalendarDialog").addEventListener("click", () => calendarDialog.close());
 document.querySelector("#calendarPrevBtn").addEventListener("click", () => moveCalendarMonth(-1));
@@ -359,21 +420,45 @@ forgotVaultConfirmPassword.addEventListener("keydown", event => {
 credentialPassword.addEventListener("keydown", event => {
   if (event.key === "Enter") unlockCredential();
 });
+credentialDialog.addEventListener("close", clearCredentialPlaintext);
+esArchiveDialog.addEventListener("close", clearEsArchivePlaintext);
+window.addEventListener("pagehide", lockProtectedSession);
 vaultDialog.addEventListener("cancel", event => {
   event.preventDefault();
   closeVaultRequest(null);
 });
 form.elements.type.addEventListener("change", updateInternScheduleVisibility);
-form.elements.type.addEventListener("change", updateInterviewCountState);
+form.elements.type.addEventListener("change", updateInternSeasonVisibility);
+form.elements.type.addEventListener("change", () => {
+  if (!editingId && !flowBuilderDirty) setFlowBuilder({ type: form.elements.type.value });
+});
 form.elements.stage.addEventListener("change", updateInternScheduleVisibility);
-form.elements.flowInterview.addEventListener("change", updateInterviewCountState);
+document.querySelector("#addFlowStepBtn").addEventListener("click", addFlowBuilderStep);
+document.querySelector("#resetFlowBtn").addEventListener("click", () => {
+  flowBuilderDirty = false;
+  setFlowBuilder({ type: form.elements.type.value });
+});
+document.querySelectorAll("[data-interview-count]").forEach(button => {
+  button.addEventListener("click", () => setInterviewCount(Number(button.dataset.interviewCount)));
+});
+flowStepInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    addFlowBuilderStep();
+  }
+});
 selectionTagOptionsEl.addEventListener("change", updateSelectionTagOtherVisibility);
+Array.from(form.elements.documentFlowMode).forEach(input => {
+  input.addEventListener("change", updateDocumentFlowVisibility);
+});
 Array.from(form.elements.internScheduleMode).forEach(input => {
   input.addEventListener("change", () => updateScheduleMode(form, "intern"));
 });
 Array.from(resultForm.elements.resultScheduleMode).forEach(input => {
   input.addEventListener("change", () => updateScheduleMode(resultForm, "result"));
 });
+document.querySelector("#internAddCustomDateBtn").addEventListener("click", () => addCustomScheduleDate("intern"));
+document.querySelector("#resultAddCustomDateBtn").addEventListener("click", () => addCustomScheduleDate("result"));
 document.querySelectorAll(".nav-btn[data-filter]").forEach(button => {
   button.addEventListener("click", () => {
     activeFilter = button.dataset.filter;
@@ -394,10 +479,14 @@ form.addEventListener("submit", async event => {
     return;
   }
   const scheduleData = scheduleDataFromForm(form, "intern", existingEntry?.internSchedule || "");
-  const item = {
-    id: editingId || crypto.randomUUID(),
+  const entryId = editingId || crypto.randomUUID();
+  const item = touchEntry({
+    ...existingEntry,
+    id: entryId,
+    trackId: existingEntry?.trackId || entryId,
     company: data.company.trim(),
     type: data.type,
+    internSeason: data.type === "インターン" ? normalizeInternSeason(data.internSeason) : "未設定",
     industry: normalizeIndustry(data.industry),
     role: data.role.trim(),
     stage: data.stage,
@@ -413,14 +502,25 @@ form.addEventListener("submit", async event => {
     }),
     memo: data.memo.trim(),
     flow: getFlowFromForm(),
-    interviewCount: form.elements.interviewCount.value,
+    flowSteps: normalizeFlowSteps(flowBuilderSteps, { type: data.type }),
+    interviewCount: interviewCountFromSteps(flowBuilderSteps),
     selectionTags: getSelectionTagsFromForm(),
     declinedAfterWin: winStages.has(data.stage) && Boolean(existingEntry?.declinedAfterWin),
     portalUrl: data.clearCredential === "1" ? "" : normalizePortalUrl(data.portalUrl),
     credentialVault,
     esArchiveVault: existingEntry?.esArchiveVault || null,
-    stageHistory: addStageToHistory(existingEntry?.stageHistory, data.stage)
-  };
+    offerResponseDeadline: existingEntry?.offerResponseDeadline || "",
+    offerDecision: normalizeOfferDecision(existingEntry?.offerDecision),
+    offerRole: existingEntry?.offerRole || "",
+    offerMemo: existingEntry?.offerMemo || "",
+    stageHistory: addStageToHistory(existingEntry?.stageHistory, data.stage),
+    stageTimeline: recordStageTransition(
+      existingEntry?.stageTimeline,
+      existingEntry?.stage || "",
+      data.stage,
+      existingEntry ? "edit" : "start"
+    )
+  });
   entries = editingId
     ? entries.map(entry => entry.id === editingId ? item : entry)
     : [item, ...entries];
@@ -437,15 +537,17 @@ deleteBtn.addEventListener("click", () => {
   render();
 });
 
-function openImportDialog() {
+
+function openImportDialog(mode = "memo") {
   importCandidates = [];
   importText.value = "";
   importPreview.innerHTML = "";
   importStatus.textContent = "";
   confirmImportBtn.hidden = true;
   confirmImportBtn.textContent = "候補をまとめて追加";
+  window.NEXTROUND_NOTION_IMPORT?.reset?.(mode);
   importDialog.showModal();
-  setTimeout(() => importText.focus(), 0);
+  if (mode === "memo") setTimeout(() => importText.focus(), 0);
 }
 
 function parseImportText() {
@@ -460,6 +562,8 @@ function parseImportText() {
 function parseMemoLine(line) {
   const stage = guessStage(line);
   const type = guessType(line);
+  const internSeason = guessInternSeason(line);
+  const documentFlowMode = guessDocumentFlowMode(line);
   const deadline = guessDeadline(line);
   const company = guessCompany(line);
   const role = guessRole(line);
@@ -468,6 +572,7 @@ function parseMemoLine(line) {
   return {
     company,
     type,
+    internSeason,
     industry,
     role,
     stage,
@@ -478,7 +583,8 @@ function parseMemoLine(line) {
     memo: line,
     flow,
     interviewCount: type === "本選考" ? "3" : "1",
-    selectionTags: []
+    documentFlowMode,
+    selectionTags: documentFlowMode === "combined" ? [combinedDocumentTag] : []
   };
 }
 
@@ -506,6 +612,17 @@ function renderImportPreview() {
           <select class="import-stage">${optionsHtml(stages, candidate.stage)}</select>
         </label>
       </div>
+      <div class="form-grid import-structure-grid">
+        <label class="import-season-field">インターン時期
+          <select class="import-season">${optionsHtml(internSeasonOptions, candidate.internSeason || "未設定")}</select>
+        </label>
+        <label>書類選考の形式
+          <select class="import-document-mode">
+            <option value="separate" ${candidate.documentFlowMode !== "combined" ? "selected" : ""}>ESの後にWebテスト</option>
+            <option value="combined" ${candidate.documentFlowMode === "combined" ? "selected" : ""}>ES＋Webテスト同時</option>
+          </select>
+        </label>
+      </div>
       <label>業界
         <select class="import-industry">${optionsHtml(industryOptions, candidate.industry)}</select>
       </label>
@@ -517,6 +634,17 @@ function renderImportPreview() {
           <input class="import-deadline" type="date" value="${escapeHtml(candidate.deadline)}">
         </label>
       </div>
+      <div class="form-grid">
+        <label>次の予定日
+          <input class="import-next-date" type="date" value="${escapeHtml(candidate.nextDate || "")}">
+        </label>
+        <label>次の予定内容
+          <input class="import-next-plan" value="${escapeHtml(candidate.nextPlan || "")}" placeholder="空欄でもOK">
+        </label>
+      </div>
+      ${candidate.portalUrl ? `<label>マイページURL
+        <input class="import-portal-url" type="url" value="${escapeHtml(candidate.portalUrl)}">
+      </label>` : `<input class="import-portal-url" type="hidden" value="">`}
       <section class="schedule-picker">
         <label>この選考であるフェーズ</label>
         <div class="flow-options">
@@ -537,6 +665,14 @@ function renderImportPreview() {
       updateImportConfirmState();
     });
   });
+  importPreview.querySelectorAll(".import-type").forEach(select => {
+    const syncSeason = () => {
+      const field = select.closest(".import-item").querySelector(".import-season-field");
+      field.hidden = select.value !== "インターン";
+    };
+    select.addEventListener("change", syncSeason);
+    syncSeason();
+  });
   importStatus.textContent = `${importCandidates.length}件の候補を作りました。内容を確認してから追加できます。`;
   updateImportConfirmState();
 }
@@ -555,10 +691,14 @@ function confirmImportCandidates() {
     importStatus.textContent = "会社名が空欄の候補があります。会社名だけ入れてから追加してください。";
     return;
   }
-  const imported = candidates.map(candidate => ({
-    id: crypto.randomUUID(),
+  const imported = candidates.map(candidate => {
+    const id = crypto.randomUUID();
+    return normalizeEntry(touchEntry({
+    id,
+    trackId: id,
     company: candidate.company,
     type: candidate.type,
+    internSeason: candidate.type === "インターン" ? normalizeInternSeason(candidate.internSeason) : "未設定",
     industry: candidate.industry,
     role: candidate.role,
     stage: candidate.stage,
@@ -571,14 +711,21 @@ function confirmImportCandidates() {
     internSingleDate: "",
     internStartDate: "",
     internEndDate: "",
+    internCustomDates: [],
     memo: candidate.memo,
     flow: candidate.flow,
+    flowSteps: standardFlowSteps({ type: candidate.type, flow: candidate.flow, interviewCount: candidate.interviewCount }),
     interviewCount: candidate.interviewCount,
     selectionTags: candidate.selectionTags,
     credentialVault: null,
     esArchiveVault: null,
+    offerResponseDeadline: "",
+    offerDecision: "検討中",
+    offerRole: "",
+    offerMemo: "",
     stageHistory: buildImportStageHistory(candidate.stage, candidate.flow)
   }));
+  });
   entries = [...imported, ...entries];
   save();
   render();
@@ -589,13 +736,14 @@ function readImportCandidate(item) {
   return {
     company: item.querySelector(".import-company").value.trim(),
     type: item.querySelector(".import-type").value,
+    internSeason: normalizeInternSeason(item.querySelector(".import-season").value),
     industry: normalizeIndustry(item.querySelector(".import-industry").value),
     role: item.querySelector(".import-role").value.trim(),
     stage: item.querySelector(".import-stage").value,
     deadline: item.querySelector(".import-deadline").value,
-    nextDate: "",
-    nextPlan: "",
-    portalUrl: "",
+    nextDate: item.querySelector(".import-next-date").value,
+    nextPlan: item.querySelector(".import-next-plan").value.trim(),
+    portalUrl: normalizePortalUrl(item.querySelector(".import-portal-url").value),
     memo: item.querySelector(".import-memo").value.trim(),
     flow: {
       es: item.querySelector(".import-flow-es").checked,
@@ -604,7 +752,12 @@ function readImportCandidate(item) {
       interview: item.querySelector(".import-flow-interview").checked
     },
     interviewCount: item.querySelector(".import-type").value === "本選考" ? "3" : "1",
-    selectionTags: []
+    documentFlowMode: item.querySelector(".import-document-mode").value,
+    selectionTags: item.querySelector(".import-document-mode").value === "combined"
+      && item.querySelector(".import-flow-es").checked
+      && item.querySelector(".import-flow-webTest").checked
+      ? [combinedDocumentTag]
+      : []
   };
 }
 
@@ -618,6 +771,24 @@ function guessType(line) {
   if (/本選考|本選/.test(line)) return "本選考";
   if (/インターン|intern/i.test(line)) return "インターン";
   return "インターン";
+}
+
+function normalizeInternSeason(value) {
+  const text = String(value || "").trim();
+  if (/summer|サマー|夏/i.test(text)) return "サマー";
+  if (/autumn|fall|秋/i.test(text)) return "秋";
+  if (/winter|冬/i.test(text)) return "冬";
+  return internSeasonOptions.includes(text) ? text : "未設定";
+}
+
+function guessInternSeason(text) {
+  return normalizeInternSeason(text);
+}
+
+function guessDocumentFlowMode(text) {
+  return /(ES|書類|エントリーシート).{0,12}(Web|WEB|ウェブ|テスト).{0,8}(同時|一緒|セット|一括)|同時.{0,8}(ES|書類).{0,8}(Web|WEB|ウェブ|テスト)/i.test(String(text || ""))
+    ? "combined"
+    : "separate";
 }
 
 function guessStage(line) {
@@ -758,38 +929,167 @@ function sequenceFromFlow(flow) {
 
 function load() {
   try {
-    return (JSON.parse(localStorage.getItem(storageKey)) || seed).map(entry => ({
-      internSchedule: "",
-      internScheduleMode: "single",
-      internSingleDate: "",
-      internStartDate: "",
-      internEndDate: "",
-      internScheduleStatus: "",
-      credentialVault: null,
-      esArchiveVault: null,
-      ...entry,
-      industry: normalizeIndustry(entry.industry),
-      portalUrl: normalizePortalUrl(entry.portalUrl),
-      nextPlan: entry.nextPlan || "",
-      interviewCount: normalizeInterviewCount(entry),
-      selectionTags: normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther),
-      flow: normalizeFlow(entry.flow, entry.stageHistory, entry.stage),
-      stageHistory: normalizeStageHistory(entry.stageHistory, entry.stage),
-      internScheduleStatus: getInternScheduleStatus(entry),
-      declinedAfterWin: winStages.has(entry.stage) && Boolean(entry.declinedAfterWin)
-    }));
+    const raw = localStorage.getItem(storageKey);
+    const parsed = raw ? JSON.parse(raw) : seed;
+    const list = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.entries) ? parsed.entries : seed;
+    return list.map(entry => normalizeEntry(entry));
   } catch {
-    return seed.map(entry => ({
-      ...entry,
-      flow: normalizeFlow(entry.flow, entry.stageHistory, entry.stage),
-      stageHistory: normalizeStageHistory(entry.stageHistory, entry.stage)
-    }));
+    return seed.map(entry => normalizeEntry(entry));
   }
 }
 
 function save({ cloud = true } = {}) {
+  ensureMigrationSnapshot();
   localStorage.setItem(storageKey, JSON.stringify(entries));
   if (cloud) scheduleCloudAutoSave();
+}
+
+function scopedLocalKey(base, uid) {
+  return `${base}:${uid}`;
+}
+
+function activateLocalUser(uid) {
+  if (!uid || activeLocalUid === uid) return;
+  lockProtectedSession();
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = null;
+
+  const owner = localStorage.getItem(localDataOwnerKey) || "";
+  const scopedEntriesKey = scopedLocalKey(baseStorageKey, uid);
+  const canAdoptLegacy = !owner || owner === uid;
+  const legacyEntries = localStorage.getItem(baseStorageKey);
+  if (!localStorage.getItem(scopedEntriesKey) && legacyEntries && canAdoptLegacy) {
+    const legacyKeys = [
+      baseStorageKey,
+      baseVaultStorageKey,
+      baseMigrationSnapshotKey,
+      baseMigrationStateKey,
+      baseMigrationAckKey,
+      baseFitStorageKey
+    ];
+    legacyKeys.forEach(base => {
+      const value = localStorage.getItem(base);
+      if (value !== null) localStorage.setItem(scopedLocalKey(base, uid), value);
+    });
+    legacyKeys.forEach(base => localStorage.removeItem(base));
+  }
+
+  localStorage.setItem(localDataOwnerKey, uid);
+  storageKey = scopedEntriesKey;
+  vaultStorageKey = scopedLocalKey(baseVaultStorageKey, uid);
+  migrationSnapshotKey = scopedLocalKey(baseMigrationSnapshotKey, uid);
+  migrationStateKey = scopedLocalKey(baseMigrationStateKey, uid);
+  migrationAckKey = scopedLocalKey(baseMigrationAckKey, uid);
+  activeLocalUid = uid;
+  entries = load();
+  vaultConfig = loadVaultConfig();
+  cloudEncryptionConfig = null;
+  if (cards) render();
+  window.dispatchEvent(new CustomEvent("nextround:local-user-changed", { detail: { uid } }));
+}
+
+function deactivateLocalUser() {
+  if (!activeLocalUid) return;
+  lockProtectedSession();
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = null;
+  activeLocalUid = "";
+  storageKey = baseStorageKey;
+  vaultStorageKey = baseVaultStorageKey;
+  migrationSnapshotKey = baseMigrationSnapshotKey;
+  migrationStateKey = baseMigrationStateKey;
+  migrationAckKey = baseMigrationAckKey;
+  entries = [];
+  vaultConfig = null;
+  cloudEncryptionConfig = null;
+  if (cards) render();
+  window.dispatchEvent(new CustomEvent("nextround:local-user-changed", { detail: { uid: "" } }));
+}
+
+function isValidTimestamp(value) {
+  return typeof value === "string" && !Number.isNaN(Date.parse(value));
+}
+
+function touchEntry(entry, changes = {}) {
+  const now = new Date().toISOString();
+  const id = changes.id || entry.id || crypto.randomUUID();
+  return {
+    ...entry,
+    ...changes,
+    id,
+    trackId: changes.trackId || entry.trackId || id,
+    schemaVersion: appSchemaVersion,
+    createdAt: isValidTimestamp(entry.createdAt) ? entry.createdAt : now,
+    updatedAt: now
+  };
+}
+
+function isUntouchedSeedEntries(list) {
+  if (!Array.isArray(list) || list.length !== seed.length) return false;
+  const signatures = new Set(seed.map(entry => `${entry.company}|${entry.role}|${entry.stage}|${entry.memo}`));
+  return list.every(entry => signatures.has(`${entry.company}|${entry.role}|${normalizeStageName(entry.stage)}|${entry.memo}`)
+    && !entry.portalUrl && !entry.credentialVault && !entry.esArchiveVault);
+}
+
+function hasMeaningfulEntries(list) {
+  return Array.isArray(list) && list.length > 0 && !isUntouchedSeedEntries(list);
+}
+
+function ensureMigrationSnapshot() {
+  if (localStorage.getItem(migrationSnapshotKey)) return true;
+  const rawEntries = localStorage.getItem(storageKey);
+  if (!rawEntries) return true;
+  try {
+    const parsed = JSON.parse(rawEntries);
+    const list = Array.isArray(parsed) ? parsed : parsed?.entries;
+    if (!hasMeaningfulEntries(list)) return true;
+    const fitStorageKey = activeLocalUid ? scopedLocalKey(baseFitStorageKey, activeLocalUid) : baseFitStorageKey;
+    localStorage.setItem(migrationSnapshotKey, JSON.stringify({
+      version: 1,
+      capturedAt: new Date().toISOString(),
+      sourceSchemaVersion: Math.max(1, ...list.map(entry => Number(entry.schemaVersion) || 1)),
+      recordIds: list.map(entry => entry.id).filter(Boolean),
+      storage: {
+        [storageKey]: rawEntries,
+        [vaultStorageKey]: localStorage.getItem(vaultStorageKey),
+        [fitStorageKey]: localStorage.getItem(fitStorageKey)
+      }
+    }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function rebuildMigrationSnapshot() {
+  localStorage.removeItem(migrationSnapshotKey);
+  localStorage.removeItem(migrationStateKey);
+  localStorage.removeItem(migrationAckKey);
+  ensureMigrationSnapshot();
+}
+
+function prepareLocalDataForRefresh() {
+  const raw = localStorage.getItem(storageKey);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    const list = Array.isArray(parsed) ? parsed : parsed?.entries;
+    if (!hasMeaningfulEntries(list)) return;
+    const needsMigration = list.some(entry => Number(entry.schemaVersion) < appSchemaVersion
+      || !isValidTimestamp(entry.createdAt) || !isValidTimestamp(entry.updatedAt) || !entry.trackId);
+    if (!needsMigration || !ensureMigrationSnapshot()) return;
+    entries = list.map(entry => normalizeEntry(entry));
+    localStorage.setItem(storageKey, JSON.stringify(entries));
+    localStorage.setItem(migrationStateKey, JSON.stringify({
+      version: appSchemaVersion,
+      migratedAt: new Date().toISOString(),
+      entryCount: entries.length,
+      recordIds: entries.map(entry => entry.id),
+      snapshotKey: migrationSnapshotKey
+    }));
+  } catch {
+    // 元データを変更せず、従来どおり起動する。
+  }
 }
 
 function initCloudSync() {
@@ -811,8 +1111,9 @@ function initCloudSync() {
     cloudAuth.getRedirectResult?.().then(result => {
       if (result?.user) handleCloudAuthUser(result.user, { forceAutoLoad: true });
     }).catch(error => {
-      cloudAuthNotice = cloudAuthErrorMessage(error);
       localStorage.removeItem(cloudAutoSavePendingKey);
+      cloudAuthNotice = cloudGoogleAuthErrorMessage(error);
+      cloudEmailError.textContent = cloudAuthNotice;
       updateCloudUi();
     });
   } catch {
@@ -824,9 +1125,12 @@ function initCloudSync() {
 function handleCloudAuthUser(user, { forceAutoLoad = false } = {}) {
   cloudUser = user;
   if (!user) {
+    deactivateLocalUser();
     updateCloudUi();
+    window.dispatchEvent(new CustomEvent("nextround:auth-changed", { detail: { signedIn: false } }));
     return;
   }
+  activateLocalUser(user.uid);
   cloudAuthNotice = "";
   const shouldStartCloudSync = localStorage.getItem(cloudAutoSavePendingKey) === "1";
   if (shouldStartCloudSync) {
@@ -838,6 +1142,9 @@ function handleCloudAuthUser(user, { forceAutoLoad = false } = {}) {
   if (shouldStartCloudSync || forceAutoLoad || cloudAutoSaveEnabled) {
     autoLoadCloudDataAfterLogin();
   }
+  window.dispatchEvent(new CustomEvent("nextround:auth-changed", {
+    detail: { signedIn: true, email: user.email || "", photoURL: user.photoURL || "" }
+  }));
 }
 
 function updateCloudUi() {
@@ -847,10 +1154,8 @@ function updateCloudUi() {
   }
   const signedIn = Boolean(cloudUser);
   cloudStatus.textContent = signedIn
-    ? `ログイン中: ${cloudUser.email || "Googleアカウント"} / 自動保存${cloudAutoSaveEnabled ? "ON" : "OFF"}`
+    ? `ログイン中: ${cloudUser.email || "メールアカウント"} / 自動保存${cloudAutoSaveEnabled ? "ON" : "OFF"}`
     : cloudAuthNotice || "未ログイン";
-  cloudLoginBtn.textContent = signedIn ? "自動保存を有効にする" : "Googleでログイン";
-  cloudLoginBtn.hidden = signedIn && cloudAutoSaveEnabled;
   cloudLogoutBtn.hidden = !signedIn;
   cloudBtn.textContent = signedIn && cloudAutoSaveEnabled ? "同期済" : "ログイン";
   cloudBtn.classList.toggle("synced", signedIn && cloudAutoSaveEnabled);
@@ -890,19 +1195,42 @@ function validateNewCloudPassword(password) {
   return "";
 }
 
-function setCloudEmailBusy(isBusy) {
-  cloudEmailLoginBtn.disabled = isBusy;
-  cloudEmailRegisterBtn.disabled = isBusy;
-  cloudPasswordResetBtn.disabled = isBusy;
+function validateNewProtectionSecret(value, label) {
+  const length = [...String(value || "")].length;
+  if (length < 12) return `${label}は12文字以上で設定してください。`;
+  if (length > 128) return `${label}は128文字以内で設定してください。`;
+  if (new Set([...value]).size < 6) return `${label}は同じ文字だけにせず、6種類以上の文字を組み合わせてください。`;
+  return "";
 }
 
-async function finishCloudEmailAuth(user) {
+function validateNewRestoreKey(value) {
+  const length = [...String(value || "")].length;
+  if (length < 14) return "復元キーは14文字以上で設定してください。";
+  if (length > 128) return "復元キーは128文字以内で設定してください。";
+  if (new Set([...value]).size < 6) return "復元キーは6種類以上の文字を組み合わせてください。";
+  return "";
+}
+
+function setCloudAuthBusy(isBusy) {
+  cloudEmailLoginBtn.disabled = isBusy;
+  cloudEmailRegisterBtn.disabled = isBusy;
+  cloudGoogleLoginBtn.disabled = isBusy;
+  cloudPasswordResetBtn.disabled = isBusy;
+  const refreshGoogleLoginBtn = document.querySelector("#refreshGoogleLogin");
+  if (refreshGoogleLoginBtn) refreshGoogleLoginBtn.disabled = isBusy;
+}
+
+async function finishCloudAuth(user) {
   cloudUser = user;
+  activateLocalUser(user.uid);
   cloudAuthNotice = "";
   cloudEmailError.textContent = "";
   setCloudAutoSave(true);
   await autoLoadCloudDataAfterLogin();
   updateCloudUi();
+  window.dispatchEvent(new CustomEvent("nextround:auth-changed", {
+    detail: { signedIn: true, email: user.email || "", photoURL: user.photoURL || "" }
+  }));
 }
 
 async function cloudEmailLogin() {
@@ -916,19 +1244,20 @@ async function cloudEmailLogin() {
     cloudEmailError.textContent = "メールアドレスとパスワードを入力してください。";
     return;
   }
-  setCloudEmailBusy(true);
+  setCloudAuthBusy(true);
   cloudEmailError.textContent = "";
   cloudStatus.textContent = "メールでログイン中...";
   try {
     await cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL);
     const result = await cloudAuth.signInWithEmailAndPassword(email, password);
-    await finishCloudEmailAuth(result.user);
+    await finishCloudAuth(result.user);
   } catch (error) {
     cloudEmailError.textContent = cloudEmailAuthErrorMessage(error);
     cloudAuthNotice = cloudEmailError.textContent;
     updateCloudUi();
   } finally {
-    setCloudEmailBusy(false);
+    cloudPassword.value = "";
+    setCloudAuthBusy(false);
   }
 }
 
@@ -948,20 +1277,21 @@ async function cloudEmailRegister() {
     cloudEmailError.textContent = passwordError;
     return;
   }
-  setCloudEmailBusy(true);
+  setCloudAuthBusy(true);
   cloudEmailError.textContent = "";
   cloudStatus.textContent = "アカウント作成中...";
   try {
     cloudAuth.languageCode = "ja";
     await cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL);
     const result = await cloudAuth.createUserWithEmailAndPassword(email, password);
-    await finishCloudEmailAuth(result.user);
+    await finishCloudAuth(result.user);
   } catch (error) {
     cloudEmailError.textContent = cloudEmailAuthErrorMessage(error);
     cloudAuthNotice = cloudEmailError.textContent;
     updateCloudUi();
   } finally {
-    setCloudEmailBusy(false);
+    cloudPassword.value = "";
+    setCloudAuthBusy(false);
   }
 }
 
@@ -975,7 +1305,7 @@ async function cloudPasswordReset() {
     cloudEmailError.textContent = "再設定メールを送るメールアドレスを入力してください。";
     return;
   }
-  setCloudEmailBusy(true);
+  setCloudAuthBusy(true);
   cloudEmailError.textContent = "";
   try {
     cloudAuth.languageCode = "ja";
@@ -984,7 +1314,56 @@ async function cloudPasswordReset() {
   } catch (error) {
     cloudEmailError.textContent = cloudEmailAuthErrorMessage(error);
   } finally {
-    setCloudEmailBusy(false);
+    setCloudAuthBusy(false);
+  }
+}
+
+function isStandaloneApp() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+async function cloudGoogleLogin() {
+  if (!cloudReady || !cloudAuth) {
+    cloudEmailError.textContent = "Firebaseの準備ができていません。少し待ってから試してください。";
+    return false;
+  }
+  if (cloudUser) {
+    setCloudAutoSave(true);
+    await autoLoadCloudDataAfterLogin();
+    return true;
+  }
+
+  setCloudAuthBusy(true);
+  cloudEmailError.textContent = "";
+  cloudStatus.textContent = "Googleログインを開いています...";
+  localStorage.setItem(cloudAutoSavePendingKey, "1");
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+
+  try {
+    await cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL);
+    const result = await cloudAuth.signInWithPopup(provider);
+    if (result?.user) await finishCloudAuth(result.user);
+    return Boolean(result?.user);
+  } catch (error) {
+    const canUseRedirect = !isStandaloneApp()
+      && ["auth/popup-blocked", "auth/operation-not-supported-in-this-environment"].includes(error.code);
+    if (canUseRedirect) {
+      try {
+        cloudStatus.textContent = "Google認証ページへ移動しています...";
+        await cloudAuth.signInWithRedirect(provider);
+        return false;
+      } catch (redirectError) {
+        error = redirectError;
+      }
+    }
+    localStorage.removeItem(cloudAutoSavePendingKey);
+    cloudEmailError.textContent = cloudGoogleAuthErrorMessage(error);
+    cloudAuthNotice = cloudEmailError.textContent;
+    updateCloudUi();
+    return false;
+  } finally {
+    setCloudAuthBusy(false);
   }
 }
 
@@ -1018,9 +1397,12 @@ function showCloudRestoreKey(mode, snapshot = null) {
   cloudRestoreTitle.textContent = mode === "create" ? "復元キーを設定" : "復元キーを入力";
   cloudRestoreSubmitBtn.textContent = mode === "create" ? "復元キーを設定" : "復元して読み込む";
   cloudRestoreNote.textContent = mode === "create"
-    ? "復元キーでクラウドデータを暗号化します。別端末で開く時に必要です。忘れるとクラウドの中身は復元できません。"
+    ? "14文字以上の復元キーでクラウドデータを暗号化します。別端末で開く時に必要です。忘れるとクラウドの中身は復元できません。"
     : "このクラウドデータは暗号化されています。設定した復元キーを入力してください。";
-  setTimeout(() => cloudRestoreKey.focus(), 0);
+  setTimeout(() => {
+    if (!cloudDialog.open && !document.querySelector("dialog[open]")) cloudDialog.showModal();
+    cloudRestoreKey.focus();
+  }, 0);
 }
 
 function hideCloudRestoreKey() {
@@ -1033,8 +1415,13 @@ function hideCloudRestoreKey() {
 
 async function submitCloudRestoreKey() {
   const value = cloudRestoreKey.value.trim();
-  if (value.length < 4) {
-    cloudRestoreError.textContent = "4文字以上で入力してください。";
+  const creationError = cloudRestoreMode === "create" ? validateNewRestoreKey(value) : "";
+  if (creationError) {
+    cloudRestoreError.textContent = creationError;
+    return;
+  }
+  if (cloudRestoreMode !== "create" && value.length < 4) {
+    cloudRestoreError.textContent = "復元キーを入力してください。";
     return;
   }
   if (cloudRestoreMode === "create" && value !== cloudRestoreConfirm.value.trim()) {
@@ -1051,67 +1438,6 @@ async function submitCloudRestoreKey() {
     setCloudAutoSave(true);
     scheduleCloudAutoSave(120);
   }
-}
-
-async function cloudLogin() {
-  if (!cloudReady || !cloudAuth) {
-    cloudStatus.textContent = "Firebaseの準備ができていません。少し待ってから試してください。";
-    return;
-  }
-  if (cloudUser) {
-    if (!confirm("クラウド自動保存を有効にしますか？ログイン中は選考データを復元キーで暗号化してFirebaseに自動保存します。")) return;
-    setCloudAutoSave(true);
-    autoLoadCloudDataAfterLogin();
-    return;
-  }
-  if (!confirm("Googleログインすると、ログイン中は選考データを復元キーで暗号化してFirebaseに自動保存します。クラウド同期を有効にしますか？")) {
-    return;
-  }
-  if (isStandaloneApp()) {
-    cloudAuthNotice = "ホーム画面版ではGoogleログインが失敗する場合があります。Safariの通常タブで公開URLを開いてログインしてください。";
-    localStorage.removeItem(cloudAutoSavePendingKey);
-    updateCloudUi();
-    return;
-  }
-  localStorage.setItem(cloudAutoSavePendingKey, "1");
-  const provider = new firebase.auth.GoogleAuthProvider();
-  cloudStatus.textContent = "Googleログインを開いています...";
-  try {
-    await cloudAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL);
-    const result = await cloudAuth.signInWithPopup(provider);
-    if (result?.user) handleCloudAuthUser(result.user, { forceAutoLoad: true });
-  } catch (error) {
-    if (["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(error.code)) {
-      try {
-        await cloudAuth.signInWithRedirect(provider);
-      } catch (redirectError) {
-        cloudAuthNotice = cloudAuthErrorMessage(redirectError);
-        localStorage.removeItem(cloudAutoSavePendingKey);
-        updateCloudUi();
-      }
-    } else {
-      cloudAuthNotice = cloudAuthErrorMessage(error);
-      localStorage.removeItem(cloudAutoSavePendingKey);
-      updateCloudUi();
-    }
-  }
-}
-
-function isStandaloneApp() {
-  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-}
-
-function cloudAuthErrorMessage(error = {}) {
-  const code = error.code || "unknown";
-  const messages = {
-    "auth/operation-not-allowed": "GoogleログインがFirebase側で有効になっていません。Authentication > Sign-in methodでGoogleを有効にしてください。",
-    "auth/unauthorized-domain": "このURLがFirebaseの承認済みドメインに入っていません。Authorized domainsにn6548yjd79-lang.github.ioを追加してください。",
-    "auth/operation-not-supported-in-this-environment": "この開き方ではGoogleログインに対応していません。Safariの通常タブで公開URLを開いてログインしてください。ホーム画面版やプレビュー画面では失敗する場合があります。",
-    "auth/popup-blocked": "ログイン画面がブロックされました。もう一度押すか、Safariで開いて試してください。",
-    "auth/popup-closed-by-user": "ログイン画面が閉じられました。もう一度試してください。",
-    "auth/cancelled-popup-request": "ログイン処理が中断されました。もう一度試してください。"
-  };
-  return messages[code] || `ログインできませんでした。Firebase設定を確認してください。エラー: ${code}`;
 }
 
 function cloudEmailAuthErrorMessage(error = {}) {
@@ -1131,8 +1457,26 @@ function cloudEmailAuthErrorMessage(error = {}) {
   return messages[code] || `ログインできませんでした。エラー: ${code}`;
 }
 
+function cloudGoogleAuthErrorMessage(error = {}) {
+  const code = error.code || "unknown";
+  const messages = {
+    "auth/operation-not-allowed": "GoogleログインがFirebase側で有効になっていません。Authenticationのログイン方法でGoogleを有効にしてください。",
+    "auth/unauthorized-domain": "この公開URLがFirebaseの承認済みドメインに登録されていません。",
+    "auth/operation-not-supported-in-this-environment": isStandaloneApp()
+      ? "ホーム画面版ではGoogle認証を開けませんでした。この端末のデータを引き継ぐ場合はメールで登録してください。Googleを使う場合はSafariの通常タブで公開URLを開いてください。"
+      : "この開き方ではGoogle認証に対応していません。Safariの通常タブで公開URLを開いてください。",
+    "auth/popup-blocked": "Googleのログイン画面がブロックされました。Safariの設定を確認して、もう一度試してください。",
+    "auth/popup-closed-by-user": "Googleログインをキャンセルしました。",
+    "auth/cancelled-popup-request": "Googleログインが中断されました。もう一度試してください。",
+    "auth/network-request-failed": "通信に失敗しました。ネット接続を確認してください。"
+  };
+  return messages[code] || `Googleログインを完了できませんでした。エラー: ${code}`;
+}
+
 async function cloudLogout() {
+  lockProtectedSession();
   if (!cloudAuth) return;
+  await window.nextroundNotifications?.disableBeforeLogout?.();
   await cloudAuth.signOut();
   cloudAuthNotice = "";
   setCloudAutoSave(false);
@@ -1156,7 +1500,7 @@ async function getCloudEncryptionKey() {
   if (!cloudEncryptionConfig) {
     cloudEncryptionConfig = await createVaultConfig(restoreKey);
   }
-  const key = await deriveVaultKey(restoreKey, cloudEncryptionConfig.salt);
+  const key = await deriveVaultKey(restoreKey, cloudEncryptionConfig);
   await decryptPayload(key, cloudEncryptionConfig.verifier);
   return key;
 }
@@ -1169,6 +1513,7 @@ async function cloudPayload() {
   });
   return {
     version: 2,
+    schemaVersion: appSchemaVersion,
     encryptedData,
     cloudKey: cloudEncryptionConfig,
     savedAt: new Date().toISOString(),
@@ -1188,8 +1533,29 @@ async function saveCloudData() {
   cloudSaving = true;
   cloudStatus.textContent = "クラウドへ自動保存中...";
   try {
-    await ref.set(await cloudPayload());
-    cloudStatus.textContent = `自動保存済み: ${new Date().toLocaleString("ja-JP")}`;
+    const payload = await cloudPayload();
+    await ref.set(payload);
+    const verification = await ref.get();
+    if (!verification.exists || verification.data()?.encryptedData?.data !== payload.encryptedData.data) {
+      throw new Error("cloud-verification-failed");
+    }
+    let previousMigrationState = {};
+    try {
+      previousMigrationState = JSON.parse(localStorage.getItem(migrationStateKey) || "{}") || {};
+    } catch {
+      previousMigrationState = {};
+    }
+    if (localStorage.getItem(migrationSnapshotKey)) {
+      localStorage.setItem(migrationStateKey, JSON.stringify({
+        version: appSchemaVersion,
+        migratedAt: previousMigrationState.migratedAt || new Date().toISOString(),
+        verifiedAt: new Date().toISOString(),
+        entryCount: entries.length,
+        recordIds: entries.map(entry => entry.id),
+        snapshotKey: migrationSnapshotKey
+      }));
+    }
+    cloudStatus.textContent = `自動保存・確認済み: ${entries.length}件 / ${new Date().toLocaleString("ja-JP")}`;
   } catch (error) {
     cloudStatus.textContent = error.message === "restore-key-required"
       ? "復元キーを設定すると、クラウドへ暗号化して自動保存します。"
@@ -1210,16 +1576,17 @@ function hasLocalUserData() {
     const raw = localStorage.getItem(storageKey);
     if (!raw) return false;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.length > 0 : Array.isArray(parsed?.entries) && parsed.entries.length > 0;
+    const list = Array.isArray(parsed) ? parsed : parsed?.entries;
+    return hasMeaningfulEntries(list);
   } catch {
-    return entries.length > 0;
+    return hasMeaningfulEntries(entries);
   }
 }
 
 async function loadCloudData({ auto = false } = {}) {
   const ref = cloudDocRef();
   if (!ref) {
-    cloudStatus.textContent = "先にGoogleログインしてください。";
+    cloudStatus.textContent = "先にログインしてください。";
     return;
   }
   cloudStatus.textContent = "クラウドから読み込み中...";
@@ -1231,8 +1598,8 @@ async function loadCloudData({ auto = false } = {}) {
       else showCloudRestoreKey("create");
       return;
     }
-    const shouldConfirm = auto ? hasLocalUserData() : entries.length > 0;
-    if (shouldConfirm && !confirm("クラウドの保存データをこの端末に読み込みます。この端末の一覧は置き換わります。よろしいですか？")) {
+    const shouldConfirm = auto ? hasLocalUserData() : hasMeaningfulEntries(entries);
+    if (shouldConfirm && !confirm("クラウドの保存データと、この端末のデータを統合します。同じ選考は新しい更新を優先し、元データの退避も残します。よろしいですか？")) {
       setCloudAutoSave(false);
       cloudStatus.textContent = "クラウド読み込みをキャンセルしました。自動保存はOFFにしました。";
       return;
@@ -1246,7 +1613,8 @@ async function loadCloudData({ auto = false } = {}) {
 async function applyCloudSnapshot(snapshot, { auto = false } = {}) {
   const data = snapshot.data();
   if (data.encryptedData && data.cloudKey) {
-    cloudEncryptionConfig = data.cloudKey;
+    cloudEncryptionConfig = normalizeVaultConfig(data.cloudKey);
+    if (!cloudEncryptionConfig) throw new Error("invalid");
     const restoreKey = getStoredCloudRestoreKey();
     if (!restoreKey) {
       showCloudRestoreKey("unlock", snapshot);
@@ -1254,18 +1622,24 @@ async function applyCloudSnapshot(snapshot, { auto = false } = {}) {
       return;
     }
     try {
-      const key = await deriveVaultKey(restoreKey, cloudEncryptionConfig.salt);
+      const key = await deriveVaultKey(restoreKey, cloudEncryptionConfig);
       await decryptPayload(key, cloudEncryptionConfig.verifier);
       const payload = await decryptPayload(key, data.encryptedData);
       if (!Array.isArray(payload.entries)) throw new Error("invalid");
-      entries = payload.entries.map(normalizeEntry);
-      vaultConfig = payload.vault || null;
-      saveVaultConfig();
+      mergeCloudPayload(payload, data.savedAt);
+      if (cloudEncryptionConfig.version < 2) {
+        cloudEncryptionConfig = await createVaultConfig(restoreKey);
+      }
       save({ cloud: false });
       render();
-      cloudStatus.textContent = "暗号化されたクラウドデータを読み込みました。";
+      cloudStatus.textContent = "暗号化されたクラウドデータと端末データを統合しました。";
+      scheduleCloudAutoSave(150);
       return;
-    } catch {
+    } catch (error) {
+      if (error.message === "vault-conflict") {
+        cloudStatus.textContent = "端末とクラウドで保護パスワードの設定が異なるため、自動統合を止めました。端末のデータは変更されていません。";
+        return;
+      }
       clearCloudRestoreKey();
       showCloudRestoreKey("unlock", snapshot);
       cloudStatus.textContent = "復元キーが違います。もう一度入力してください。";
@@ -1273,9 +1647,7 @@ async function applyCloudSnapshot(snapshot, { auto = false } = {}) {
     }
   }
   if (!Array.isArray(data.entries)) throw new Error("invalid");
-  entries = data.entries.map(normalizeEntry);
-  vaultConfig = data.vault || null;
-  saveVaultConfig();
+  mergeCloudPayload({ entries: data.entries, vault: data.vault || null }, data.savedAt);
   save({ cloud: false });
   render();
   cloudStatus.textContent = "旧形式のクラウドデータを読み込みました。復元キーで暗号化し直します。";
@@ -1284,9 +1656,46 @@ async function applyCloudSnapshot(snapshot, { auto = false } = {}) {
   else showCloudRestoreKey("create");
 }
 
+function sameVaultConfig(first, second) {
+  if (!first && !second) return true;
+  if (!first || !second) return false;
+  return first.salt === second.salt
+    && first.verifier?.iv === second.verifier?.iv
+    && first.verifier?.data === second.verifier?.data;
+}
+
+function mergeEntryCollections(localEntries, remoteEntries, remoteFallbackTimestamp = appBootTimestamp) {
+  const local = localEntries.map(entry => normalizeEntry(entry));
+  const remote = remoteEntries.map(entry => normalizeEntry(entry, remoteFallbackTimestamp));
+  const merged = new Map(local.map(entry => [entry.id, entry]));
+  remote.forEach(remoteEntry => {
+    const localEntry = merged.get(remoteEntry.id);
+    if (!localEntry || Date.parse(remoteEntry.updatedAt) > Date.parse(localEntry.updatedAt)) {
+      merged.set(remoteEntry.id, remoteEntry);
+    }
+  });
+  return [...merged.values()].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+}
+
+function mergeCloudPayload(payload, savedAt) {
+  const remoteEntries = validatePortableEntries(payload.entries);
+  const remoteVault = normalizeVaultConfig(payload.vault);
+  if (payload.vault && !remoteVault) throw new Error("invalid");
+  const localEntries = hasMeaningfulEntries(entries) ? entries : [];
+  const hasLocal = hasMeaningfulEntries(localEntries);
+  const hasRemote = hasMeaningfulEntries(remoteEntries);
+  if (hasLocal && hasRemote && vaultConfig && remoteVault && !sameVaultConfig(vaultConfig, remoteVault)) {
+    throw new Error("vault-conflict");
+  }
+  ensureMigrationSnapshot();
+  entries = mergeEntryCollections(localEntries, remoteEntries, savedAt || appBootTimestamp);
+  vaultConfig = vaultConfig || remoteVault || null;
+  saveVaultConfig();
+}
+
 function loadVaultConfig() {
   try {
-    return JSON.parse(localStorage.getItem(vaultStorageKey)) || null;
+    return normalizeVaultConfig(JSON.parse(localStorage.getItem(vaultStorageKey))) || null;
   } catch {
     return null;
   }
@@ -1306,7 +1715,8 @@ function openSettings() {
 function buildPortableData() {
   return {
     app: "NEXTROUND",
-    version: 1,
+    version: 3,
+    schemaVersion: appSchemaVersion,
     exportedAt: new Date().toISOString(),
     entries,
     vault: vaultConfig
@@ -1319,8 +1729,14 @@ function encodeSyncCode(payload) {
 
 function decodeSyncCode(value) {
   const clean = value.trim().replace(/\s/g, "");
+  if (!clean || clean.length > maxSyncCodeLength) throw new Error("invalid");
   const code = clean.replace(/^NEXTROUND-SYNC:/i, "");
   return JSON.parse(textDecoder.decode(base64ToBytes(code)));
+}
+
+function validatePortableEntries(value) {
+  if (!Array.isArray(value) || value.length > maxPortableEntries || !value.every(isPlainRecord)) throw new Error("invalid");
+  return value;
 }
 
 function openSyncCodeDialog() {
@@ -1353,13 +1769,14 @@ function applySyncCode() {
   syncImportStatus.textContent = "";
   try {
     const parsed = decodeSyncCode(syncCodeInput.value);
-    const importedEntries = Array.isArray(parsed) ? parsed : parsed.entries;
-    if (!Array.isArray(importedEntries)) throw new Error("invalid");
+    const importedEntries = validatePortableEntries(Array.isArray(parsed) ? parsed : parsed.entries);
     if (entries.length && !confirm("この端末に入っている今の一覧は、同期コードの内容に入れ替わります。必要なら先にバックアップしてください。よろしいですか？")) {
       return;
     }
-    entries = importedEntries.map(normalizeEntry);
-    vaultConfig = parsed.vault || null;
+    ensureMigrationSnapshot();
+    entries = importedEntries.map(entry => normalizeEntry(entry, parsed.exportedAt || appBootTimestamp));
+    vaultConfig = normalizeVaultConfig(parsed.vault);
+    if (parsed.vault && !vaultConfig) throw new Error("invalid");
     saveVaultConfig();
     save();
     render();
@@ -1387,18 +1804,24 @@ function exportData() {
 function importData() {
   const file = importFile.files?.[0];
   if (!file) return;
+  if (file.size > maxPortableFileBytes) {
+    settingsStatus.textContent = "保存データが大きすぎます。5MB以内のNEXTROUND保存データを選んでください。";
+    importFile.value = "";
+    return;
+  }
   const reader = new FileReader();
   reader.addEventListener("load", () => {
     try {
       const parsed = JSON.parse(reader.result);
-      const importedEntries = Array.isArray(parsed) ? parsed : parsed.entries;
-      if (!Array.isArray(importedEntries)) throw new Error("invalid");
+      const importedEntries = validatePortableEntries(Array.isArray(parsed) ? parsed : parsed.entries);
       if (entries.length && !confirm("今のデータを、選んだ保存データで置き換えます。よろしいですか？")) {
         importFile.value = "";
         return;
       }
-      entries = importedEntries.map(normalizeEntry);
-      vaultConfig = parsed.vault || null;
+      ensureMigrationSnapshot();
+      entries = importedEntries.map(entry => normalizeEntry(entry, parsed.exportedAt || appBootTimestamp));
+      vaultConfig = normalizeVaultConfig(parsed.vault);
+      if (parsed.vault && !vaultConfig) throw new Error("invalid");
       saveVaultConfig();
       save();
       render();
@@ -1412,43 +1835,105 @@ function importData() {
   reader.readAsText(file);
 }
 
-function normalizeEntry(entry) {
-  const stage = normalizeStageName(entry.stage);
+function normalizeEntry(entry = {}, fallbackTimestamp = appBootTimestamp) {
+  entry = isPlainRecord(entry) ? entry : {};
+  fallbackTimestamp = isValidTimestamp(fallbackTimestamp) ? fallbackTimestamp : appBootTimestamp;
+  const rawStage = normalizeStageName(entry.stage);
+  const flowSteps = normalizeFlowSteps(entry.flowSteps, { ...entry, stage: rawStage });
+  const stage = stages.includes(rawStage) || flowSteps.includes(rawStage) ? rawStage : "応募予定";
+  const offerDecision = normalizeOfferDecision(entry.offerDecision || (entry.declinedAfterWin ? "辞退" : "検討中"));
+  const normalizedFlow = Array.isArray(entry.flowSteps) ? flowFromSteps(flowSteps) : normalizeFlow(entry.flow, entry.stageHistory, stage);
+  const id = safeIdentifier(entry.id) || crypto.randomUUID();
+  const createdAt = isValidTimestamp(entry.createdAt)
+    ? entry.createdAt
+    : (isValidTimestamp(entry.updatedAt) ? entry.updatedAt : fallbackTimestamp);
+  const updatedAt = isValidTimestamp(entry.updatedAt) ? entry.updatedAt : createdAt;
   return {
-    id: entry.id || crypto.randomUUID(),
-    company: entry.company || "",
-    type: entry.type || "インターン",
+    id,
+    trackId: safeIdentifier(entry.trackId) || id,
+    schemaVersion: appSchemaVersion,
+    createdAt,
+    updatedAt,
+    company: safeText(entry.company, 160),
+    type: entryTypes.includes(entry.type) ? entry.type : "インターン",
+    internSeason: entry.type === "インターン" ? normalizeInternSeason(entry.internSeason) : "未設定",
     industry: normalizeIndustry(entry.industry),
-    role: entry.role || "",
-    stage: stages.includes(stage) ? stage : "応募予定",
-    deadline: entry.deadline || "",
-    nextDate: entry.nextDate || "",
-    nextPlan: entry.nextPlan || "",
-    internSchedule: entry.internSchedule || "",
-    internScheduleMode: entry.internScheduleMode || "single",
-    internSingleDate: entry.internSingleDate || "",
-    internStartDate: entry.internStartDate || "",
-    internEndDate: entry.internEndDate || "",
+    role: safeText(entry.role, 160),
+    stage,
+    deadline: isDateKey(entry.deadline) ? entry.deadline : "",
+    nextDate: isDateKey(entry.nextDate) ? entry.nextDate : "",
+    nextPlan: safeText(entry.nextPlan, 160),
+    internSchedule: safeText(entry.internSchedule, 300),
+    internScheduleMode: ["single", "range", "custom"].includes(entry.internScheduleMode) ? entry.internScheduleMode : "single",
+    internSingleDate: isDateKey(entry.internSingleDate) ? entry.internSingleDate : "",
+    internStartDate: isDateKey(entry.internStartDate) ? entry.internStartDate : "",
+    internEndDate: isDateKey(entry.internEndDate) ? entry.internEndDate : "",
+    internCustomDates: normalizeCustomDates(entry.internCustomDates),
     internScheduleStatus: getInternScheduleStatus({ ...entry, stage }),
-    declinedAfterWin: winStages.has(stage) && Boolean(entry.declinedAfterWin),
-    memo: entry.memo || "",
+    declinedAfterWin: winStages.has(stage) && (Boolean(entry.declinedAfterWin) || offerDecision === "辞退"),
+    memo: safeText(entry.memo, 20000),
     portalUrl: normalizePortalUrl(entry.portalUrl),
-    flow: normalizeFlow(entry.flow, entry.stageHistory, stage),
-    interviewCount: normalizeInterviewCount(entry),
+    flow: normalizedFlow,
+    flowSteps,
+    interviewCount: Array.isArray(entry.flowSteps) ? interviewCountFromSteps(flowSteps) : normalizeInterviewCount(entry),
     selectionTags: normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther),
-    credentialVault: entry.credentialVault || null,
-    esArchiveVault: entry.esArchiveVault || null,
-    stageHistory: normalizeStageHistory(entry.stageHistory, stage)
+    selectionTagOther: safeText(entry.selectionTagOther, 40),
+    credentialVault: normalizeEncryptedVault(entry.credentialVault),
+    esArchiveVault: normalizeEncryptedVault(entry.esArchiveVault),
+    offerResponseDeadline: isDateKey(entry.offerResponseDeadline) ? entry.offerResponseDeadline : "",
+    offerDecision,
+    offerRole: String(entry.offerRole || "").slice(0, 80),
+    offerMemo: safeText(entry.offerMemo, 10000),
+    stageHistory: normalizeStageHistory(entry.stageHistory, stage),
+    stageTimeline: normalizeStageTimeline(entry.stageTimeline, stage, updatedAt)
   };
 }
 
+function isPlainRecord(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function safeText(value, maxLength) {
+  return typeof value === "string" ? value.slice(0, maxLength) : "";
+}
+
+function safeIdentifier(value) {
+  const id = safeText(value, 128);
+  return /^[A-Za-z0-9_-]+$/.test(id) ? id : "";
+}
+
+function normalizeEncryptedVault(value) {
+  if (!isPlainRecord(value) || value.version !== 1) return null;
+  const cipher = normalizeCipher(value, maxPortableFileBytes);
+  return cipher ? { version: 1, ...cipher } : null;
+}
+
+function normalizeCipher(value, maxDataLength) {
+  if (!isPlainRecord(value)) return null;
+  const iv = safeText(value.iv, 64);
+  const data = safeText(value.data, maxDataLength);
+  const base64 = /^[A-Za-z0-9+/]+=*$/;
+  return iv && data && base64.test(iv) && base64.test(data) ? { iv, data } : null;
+}
+
+function normalizeVaultConfig(value) {
+  if (!isPlainRecord(value) || ![1, 2].includes(value.version)) return null;
+  const salt = safeText(value.salt, 128);
+  const verifier = normalizeCipher(value.verifier, 2048);
+  if (!salt || !/^[A-Za-z0-9+/]+=*$/.test(salt) || !verifier) return null;
+  if (value.version === 1) return { version: 1, salt, verifier };
+  if (!Number.isInteger(value.iterations) || value.iterations < 300000 || value.iterations > 2000000) return null;
+  return { version: 2, salt, iterations: value.iterations, verifier };
+}
+
 function normalizeStageName(stage) {
+  const value = safeText(stage, 60);
   return ({
     "ES落ち": "ES不合格",
     "Webテスト落ち": "Webテスト不合格",
     "GD落ち": "GD不合格",
     "面接落ち": "面接不合格"
-  })[stage] || stage;
+  })[value] || value;
 }
 
 function normalizeIndustry(industry = "") {
@@ -1458,11 +1943,19 @@ function normalizeIndustry(industry = "") {
 }
 
 function normalizePortalUrl(value = "") {
-  const url = String(value || "").trim();
+  const url = safeText(value, 2048).trim();
   if (!url) return "";
   try {
     const parsed = new URL(url);
-    return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : "";
+    return parsed.protocol === "https:" ? parsed.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function portalHostname(value = "") {
+  try {
+    return new URL(value).hostname.slice(0, 120);
   } catch {
     return "";
   }
@@ -1470,7 +1963,7 @@ function normalizePortalUrl(value = "") {
 
 function normalizeSelectionTags(tags = [], other = "") {
   const values = Array.isArray(tags) ? tags : tags ? [tags] : [];
-  return [...new Set([...values, other].filter(Boolean))];
+  return [...new Set([...values, other].map(value => safeText(value, 40).trim()).filter(Boolean))].slice(0, 12);
 }
 
 function normalizeInterviewCount(entry = {}) {
@@ -1487,6 +1980,7 @@ function defaultFlow() {
 }
 
 function normalizeFlow(flow = {}, history = [], currentStage = "") {
+  flow = isPlainRecord(flow) ? flow : {};
   const normalized = { ...defaultFlow(), ...flow };
   const normalizedHistory = Array.isArray(history) ? history.map(normalizeStageName) : [];
   Object.entries(phaseStages).forEach(([key, values]) => {
@@ -1495,30 +1989,193 @@ function normalizeFlow(flow = {}, history = [], currentStage = "") {
       normalized[key] = true;
     }
   });
-  return normalized;
-}
-
-function getFlowFromForm() {
   return {
-    es: form.elements.flowEs.checked,
-    webTest: form.elements.flowWebTest.checked,
-    gd: form.elements.flowGd.checked,
-    interview: form.elements.flowInterview.checked
+    es: Boolean(normalized.es),
+    webTest: Boolean(normalized.webTest),
+    gd: Boolean(normalized.gd),
+    interview: Boolean(normalized.interview)
   };
 }
 
-function setFlowForm(entry = {}) {
+function normalizeFlowStepLabel(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 30);
+}
+
+function standardFlowSteps(entry = {}) {
   const flow = normalizeFlow(entry.flow, entry.stageHistory, entry.stage);
-  form.elements.flowEs.checked = flow.es;
-  form.elements.flowWebTest.checked = flow.webTest;
-  form.elements.flowGd.checked = flow.gd;
-  form.elements.flowInterview.checked = flow.interview;
-  form.elements.interviewCount.value = normalizeInterviewCount(entry);
-  updateInterviewCountState();
+  const count = normalizeInterviewCount(entry);
+  const interviews = !flow.interview || count === "0"
+    ? []
+    : count === "1" ? ["面接"]
+      : count === "2" ? ["一次面接", "最終面接"]
+        : ["一次面接", "二次面接", "最終面接"];
+  return [
+    "気になる",
+    "応募予定",
+    ...(flow.es ? ["書類選考中", "ES提出済"] : []),
+    ...(flow.webTest ? ["Webテスト"] : []),
+    ...(flow.gd ? ["GD"] : []),
+    ...interviews,
+    "結果待ち"
+  ];
+}
+
+function normalizeFlowSteps(value, entry = {}) {
+  const blocked = new Set([...failStages, ...winStages, "辞退", "不採用"]);
+  const supplied = Array.isArray(value)
+    ? value.slice(0, 40).map(normalizeFlowStepLabel).filter(step => step && !blocked.has(step))
+    : [];
+  const base = supplied.length ? supplied : standardFlowSteps(entry);
+  const current = normalizeFlowStepLabel(entry.stage);
+  const steps = [...new Set(base)].filter(step => step !== "結果待ち");
+  if (current && !stages.includes(current) && !steps.includes(current)) {
+    steps.push(current);
+  }
+  steps.push("結果待ち");
+  return steps;
+}
+
+function flowFromSteps(steps = []) {
+  const text = steps.join(" ");
+  return {
+    es: /(ES|エントリーシート|書類)/i.test(text),
+    webTest: /(Web|WEB|ウェブ|SPI|玉手箱|適性検査|テスト)/i.test(text),
+    gd: /(GD|グループディスカッション)/i.test(text),
+    interview: /(面接|面談)/i.test(text)
+  };
+}
+
+function getFlowFromForm() {
+  return flowFromSteps(flowBuilderSteps);
+}
+
+function interviewCountFromSteps(steps = []) {
+  const count = steps.filter(step => /(面接|面談)/.test(step)).length;
+  return String(Math.min(3, count));
+}
+
+function setFlowBuilder(entry = {}) {
+  flowBuilderSteps = normalizeFlowSteps(entry.flowSteps, entry);
+  renderFlowBuilder(entry.stage || stageSelect.value || "応募予定");
+}
+
+function renderFlowBuilder(preferredStage = stageSelect.value) {
+  flowStepList.innerHTML = flowBuilderSteps.map((step, index) => `
+    <div class="flow-step" data-flow-index="${index}">
+      <span>${String(index + 1).padStart(2, "0")}</span>
+      <input type="text" maxlength="30" value="${escapeHtml(step)}" aria-label="${index + 1}番目の選考フェーズ" ${step === "結果待ち" ? "readonly" : ""}>
+      <div class="flow-step-actions">
+        <button type="button" data-flow-action="up" aria-label="上へ移動" title="上へ移動" ${index === 0 || step === "結果待ち" ? "disabled" : ""}>↑</button>
+        <button type="button" data-flow-action="down" aria-label="下へ移動" title="下へ移動" ${index === flowBuilderSteps.length - 1 || flowBuilderSteps[index + 1] === "結果待ち" ? "disabled" : ""}>↓</button>
+        <button type="button" data-flow-action="remove" aria-label="削除" title="削除" ${step === "結果待ち" ? "disabled" : ""}>×</button>
+      </div>
+    </div>
+  `).join("");
+  flowStepList.querySelectorAll(".flow-step").forEach(row => {
+    const index = Number(row.dataset.flowIndex);
+    const input = row.querySelector("input");
+    input.addEventListener("change", () => {
+      const previous = flowBuilderSteps[index];
+      const next = normalizeFlowStepLabel(input.value);
+      const blocked = new Set([...failStages, ...winStages, "辞退", "不採用"]);
+      if (!next || blocked.has(next) || flowBuilderSteps.some((step, stepIndex) => step === next && stepIndex !== index)) {
+        input.value = previous;
+        return;
+      }
+      flowBuilderSteps[index] = next;
+      flowBuilderDirty = true;
+      renderFlowBuilder(preferredStage === previous ? next : preferredStage);
+    });
+    row.querySelectorAll("[data-flow-action]").forEach(button => {
+      button.addEventListener("click", () => changeFlowBuilderStep(index, button.dataset.flowAction));
+    });
+  });
+  paintInterviewCountControl();
+  syncStageOptions(preferredStage);
+  updateDocumentFlowVisibility();
+}
+
+function managedInterviewCount() {
+  return Math.min(3, flowBuilderSteps.filter(step => managedInterviewStages.includes(step)).length);
+}
+
+function paintInterviewCountControl() {
+  const count = managedInterviewCount();
+  document.querySelectorAll("[data-interview-count]").forEach(button => {
+    button.classList.toggle("active", Number(button.dataset.interviewCount) === count);
+  });
+}
+
+function setInterviewCount(count) {
+  const safeCount = Math.max(0, Math.min(3, Number(count) || 0));
+  const interviewSteps = safeCount === 1
+    ? ["面接"]
+    : safeCount === 2 ? ["一次面接", "最終面接"]
+      : safeCount === 3 ? ["一次面接", "二次面接", "最終面接"]
+        : [];
+  const previousStage = stageSelect.value;
+  const previousWasManaged = managedInterviewStages.includes(previousStage);
+  const currentSteps = flowBuilderSteps.filter(step => step !== "結果待ち");
+  const firstInterviewIndex = currentSteps.findIndex(step => managedInterviewStages.includes(step));
+  const remaining = currentSteps.filter(step => !managedInterviewStages.includes(step));
+  const insertAt = firstInterviewIndex >= 0 ? Math.min(firstInterviewIndex, remaining.length) : remaining.length;
+  remaining.splice(insertAt, 0, ...interviewSteps);
+  flowBuilderSteps = [...remaining, "結果待ち"];
+  let preferredStage = previousStage;
+  if (previousWasManaged) {
+    if (!interviewSteps.length) preferredStage = "結果待ち";
+    else if (previousStage === "最終面接") preferredStage = interviewSteps.at(-1);
+    else if (previousStage === "二次面接") preferredStage = interviewSteps.length >= 3 ? interviewSteps[1] : interviewSteps[0];
+    else preferredStage = interviewSteps[0];
+  }
+  flowBuilderDirty = true;
+  renderFlowBuilder(preferredStage);
+}
+
+function addFlowBuilderStep() {
+  const step = normalizeFlowStepLabel(flowStepInput.value);
+  const blocked = new Set([...failStages, ...winStages, "辞退", "不採用", "結果待ち"]);
+  if (!step || blocked.has(step) || flowBuilderSteps.includes(step)) {
+    flowStepInput.focus();
+    return;
+  }
+  const resultIndex = flowBuilderSteps.indexOf("結果待ち");
+  flowBuilderSteps.splice(resultIndex >= 0 ? resultIndex : flowBuilderSteps.length, 0, step);
+  flowStepInput.value = "";
+  flowBuilderDirty = true;
+  renderFlowBuilder();
+}
+
+function changeFlowBuilderStep(index, action) {
+  if (action === "remove") {
+    if (flowBuilderSteps[index] === "結果待ち") return;
+    flowBuilderSteps.splice(index, 1);
+  }
+  if (action === "up" && index > 0) {
+    [flowBuilderSteps[index - 1], flowBuilderSteps[index]] = [flowBuilderSteps[index], flowBuilderSteps[index - 1]];
+  }
+  if (action === "down" && index < flowBuilderSteps.length - 1) {
+    [flowBuilderSteps[index + 1], flowBuilderSteps[index]] = [flowBuilderSteps[index], flowBuilderSteps[index + 1]];
+  }
+  flowBuilderDirty = true;
+  renderFlowBuilder();
+}
+
+function syncStageOptions(preferredStage = stageSelect.value) {
+  const terminalOptions = ["ES不合格", "Webテスト不合格", "GD不合格", "面接不合格", "インターン合格", "インターン不合格", "内定", "辞退", "不採用"];
+  const options = [...new Set([...flowBuilderSteps, ...terminalOptions])];
+  const selected = options.includes(preferredStage) ? preferredStage : (flowBuilderSteps[0] || "応募予定");
+  stageSelect.replaceChildren(...options.map(stage => new Option(stage, stage)));
+  stageSelect.value = selected;
+  updateInternScheduleVisibility();
 }
 
 function getSelectionTagsFromForm() {
   const tags = [...form.querySelectorAll(".selection-tag:checked")].map(input => input.value);
+  const flow = flowFromSteps(flowBuilderSteps);
+  if (form.elements.documentFlowMode.value === "combined" && flow.es && flow.webTest) {
+    tags.push(combinedDocumentTag);
+  }
   const other = form.elements.selectionTagOther.value.trim();
   if (tags.includes("その他") && other) tags.push(other);
   return [...new Set(tags.filter(tag => tag !== "その他" || !other))];
@@ -1531,7 +2188,15 @@ function setSelectionTagsForm(entry = {}) {
   });
   const custom = tags.find(tag => !selectionTagOptions.includes(tag)) || "";
   form.elements.selectionTagOther.value = custom;
+  form.elements.documentFlowMode.value = tags.includes(combinedDocumentTag) ? "combined" : "separate";
   updateSelectionTagOtherVisibility();
+  updateDocumentFlowVisibility();
+}
+
+function updateDocumentFlowVisibility() {
+  const flow = flowFromSteps(flowBuilderSteps);
+  documentFlowControl.hidden = !(flow.es && flow.webTest);
+  documentFlowControl.classList.toggle("combined", form.elements.documentFlowMode.value === "combined");
 }
 
 function updateSelectionTagOtherVisibility() {
@@ -1539,39 +2204,19 @@ function updateSelectionTagOtherVisibility() {
   selectionTagOtherField.hidden = !otherChecked;
 }
 
-function updateInterviewCountState() {
-  form.elements.interviewCount.disabled = !form.elements.flowInterview.checked;
-  if (!form.elements.flowInterview.checked) form.elements.interviewCount.value = "0";
-  if (form.elements.flowInterview.checked && form.elements.interviewCount.value === "0") {
-    form.elements.interviewCount.value = form.elements.type.value === "本選考" ? "3" : "1";
-  }
-}
-
 function hasSelectionTag(entry, tag) {
   return normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther).includes(tag);
 }
 
 function interviewStagesFor(entry) {
-  if (!normalizeFlow(entry.flow, entry.stageHistory, entry.stage).interview) return [];
-  const count = normalizeInterviewCount(entry);
-  if (count === "0") return [];
-  if (count === "1") return ["面接"];
-  if (count === "2") return ["一次面接", "最終面接"];
-  return ["一次面接", "二次面接", "最終面接"];
+  return normalizeFlowSteps(entry.flowSteps, entry).filter(step => /(面接|面談)/.test(step));
 }
 
 function activeStageSequence(entry) {
-  const flow = normalizeFlow(entry.flow, entry.stageHistory, entry.stage);
-  const skipWebTest = hasSelectionTag(entry, "ES+Webテスト同時提出");
-  return [
-    "気になる",
-    "応募予定",
-    ...(flow.es ? ["書類選考中", "ES提出済"] : []),
-    ...(flow.webTest && !skipWebTest ? ["Webテスト"] : []),
-    ...(flow.gd ? ["GD"] : []),
-    ...interviewStagesFor(entry),
-    "結果待ち"
-  ];
+  const steps = normalizeFlowSteps(entry.flowSteps, entry);
+  return hasSelectionTag(entry, combinedDocumentTag)
+    ? steps.filter(step => step !== "Webテスト")
+    : steps;
 }
 
 function hasPhase(entry, phaseKey) {
@@ -1599,8 +2244,14 @@ function randomBase64(length) {
   return bytesToBase64(bytes);
 }
 
-async function deriveVaultKey(password, salt) {
+async function deriveVaultKey(password, configOrSalt) {
   if (!crypto.subtle) throw new Error("このブラウザでは保護保存を使えません。");
+  const config = typeof configOrSalt === "string"
+    ? { version: 1, salt: configOrSalt }
+    : (configOrSalt || {});
+  const iterations = Number.isInteger(config.iterations)
+    ? Math.min(2000000, Math.max(180000, config.iterations))
+    : 180000;
   const baseKey = await crypto.subtle.importKey(
     "raw",
     textEncoder.encode(password),
@@ -1609,7 +2260,7 @@ async function deriveVaultKey(password, salt) {
     ["deriveKey"]
   );
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: base64ToBytes(salt), iterations: 180000, hash: "SHA-256" },
+    { name: "PBKDF2", salt: base64ToBytes(config.salt), iterations, hash: "SHA-256" },
     baseKey,
     { name: "AES-GCM", length: 256 },
     false,
@@ -1638,15 +2289,16 @@ async function decryptPayload(key, encrypted) {
 
 async function createVaultConfig(password) {
   const salt = randomBase64(16);
-  const key = await deriveVaultKey(password, salt);
+  const config = { version: 2, salt, iterations: 600000 };
+  const key = await deriveVaultKey(password, config);
   const verifier = await encryptPayload(key, { app: "NEXTROUND", ok: true });
-  return { version: 1, salt, verifier };
+  return { ...config, verifier };
 }
 
 async function verifyVaultPassword(password) {
   if (!vaultConfig) return false;
   try {
-    const key = await deriveVaultKey(password, vaultConfig.salt);
+    const key = await deriveVaultKey(password, vaultConfig);
     const result = await decryptPayload(key, vaultConfig.verifier);
     return result?.ok === true;
   } catch {
@@ -1673,13 +2325,20 @@ function closeVaultRequest(value) {
   vaultDialog.close();
   const resolver = vaultResolver;
   vaultResolver = null;
+  vaultPassword.value = "";
+  vaultConfirmPassword.value = "";
   if (resolver) resolver(value);
 }
 
 function submitVaultPassword() {
   const password = vaultPassword.value;
-  if (password.length < 4) {
-    vaultError.textContent = "4文字以上で入力してください。";
+  const creationError = !vaultConfirmField.hidden ? validateNewProtectionSecret(password, "保護パスワード") : "";
+  if (creationError) {
+    vaultError.textContent = creationError;
+    return;
+  }
+  if (vaultConfirmField.hidden && password.length < 4) {
+    vaultError.textContent = "保護パスワードを入力してください。";
     return;
   }
   if (!vaultConfirmField.hidden && password !== vaultConfirmPassword.value) {
@@ -1750,8 +2409,28 @@ function lockProtectedSession() {
   protectedSession = { password: "", until: 0 };
   if (protectedLockTimer) clearTimeout(protectedLockTimer);
   protectedLockTimer = null;
+  clearCredentialPlaintext();
+  clearEsArchivePlaintext();
+  if (credentialDialog.open) credentialDialog.close();
+  if (esArchiveDialog.open) esArchiveDialog.close();
   updateArchiveLockNote();
-  if (esArchiveDialog.open) esArchiveError.textContent = "ロックしました。次に開く時は保護パスワードが必要です。";
+}
+
+function clearCredentialPlaintext() {
+  credentialPassword.value = "";
+  credentialError.textContent = "";
+  credentialResult.hidden = true;
+  document.querySelector("#credentialUrl").textContent = "";
+  document.querySelector("#credentialId").textContent = "";
+  document.querySelector("#credentialPass").textContent = "";
+  credentialTargetId = null;
+}
+
+function clearEsArchivePlaintext() {
+  esArchiveDraft = [];
+  esArchiveItems.replaceChildren();
+  esArchiveError.textContent = "";
+  esArchiveTargetId = null;
 }
 
 function updateArchiveLockNote() {
@@ -1883,10 +2562,10 @@ async function saveEsArchive() {
     let esArchiveVault = null;
     if (items.length) {
       const password = await getVaultPasswordForSave();
-      const key = await deriveVaultKey(password, vaultConfig.salt);
+      const key = await deriveVaultKey(password, vaultConfig);
       esArchiveVault = { version: 1, ...(await encryptPayload(key, items)) };
     }
-    entries = entries.map(item => item.id === entry.id ? { ...item, esArchiveVault } : item);
+    entries = entries.map(item => item.id === entry.id ? touchEntry(item, { esArchiveVault }) : item);
     save();
     render();
     esArchiveError.textContent = items.length ? "ESアーカイブを保存しました。" : "ESアーカイブを空にしました。";
@@ -1896,7 +2575,7 @@ async function saveEsArchive() {
 }
 
 async function decryptEsArchive(vault, password) {
-  const key = await deriveVaultKey(password, vaultConfig.salt);
+  const key = await deriveVaultKey(password, vaultConfig);
   const data = await decryptPayload(key, vault);
   return Array.isArray(data) ? data : [];
 }
@@ -1926,7 +2605,7 @@ async function changeVaultPassword() {
     return;
   }
   const oldConfig = vaultConfig;
-  const oldKey = await deriveVaultKey(currentPassword, oldConfig.salt);
+  const oldKey = await deriveVaultKey(currentPassword, oldConfig);
   let decryptedCredentials;
   let decryptedArchives;
   try {
@@ -1947,20 +2626,20 @@ async function changeVaultPassword() {
   });
   if (!newPassword) return;
   const newConfig = await createVaultConfig(newPassword);
-  const newKey = await deriveVaultKey(newPassword, newConfig.salt);
+  const newKey = await deriveVaultKey(newPassword, newConfig);
   entries = await Promise.all(entries.map(async (entry, index) => {
     const credential = decryptedCredentials[index];
     const archive = decryptedArchives[index];
-    return {
-      ...entry,
+    return touchEntry(entry, {
       credentialVault: credential ? { version: 1, ...(await encryptPayload(newKey, credential)) } : null,
       esArchiveVault: archive ? { version: 1, ...(await encryptPayload(newKey, archive)) } : null
-    };
+    });
   }));
   vaultConfig = newConfig;
   saveVaultConfig();
   rememberProtectedPassword(newPassword);
   save();
+  rebuildMigrationSnapshot();
   render();
   vaultSettingsStatus.textContent = "保護パスワードを変更しました。保存済みの保護データは残っています。";
 }
@@ -1981,8 +2660,9 @@ async function resetForgottenVaultPassword() {
     return;
   }
   const password = forgotVaultPassword.value;
-  if (password.length < 4) {
-    forgotVaultError.textContent = "4文字以上で入力してください。";
+  const creationError = validateNewProtectionSecret(password, "新しい保護パスワード");
+  if (creationError) {
+    forgotVaultError.textContent = creationError;
     return;
   }
   if (password !== forgotVaultConfirmPassword.value) {
@@ -1990,12 +2670,15 @@ async function resetForgottenVaultPassword() {
     return;
   }
   vaultConfig = await createVaultConfig(password);
-  entries = entries.map(entry => ({ ...entry, portalUrl: "", credentialVault: null, esArchiveVault: null }));
+  entries = entries.map(entry => touchEntry(entry, { portalUrl: "", credentialVault: null, esArchiveVault: null }));
   saveVaultConfig();
   rememberProtectedPassword(password);
   save();
+  rebuildMigrationSnapshot();
   render();
   forgotVaultDialog.close();
+  forgotVaultPassword.value = "";
+  forgotVaultConfirmPassword.value = "";
   vaultSettingsStatus.textContent = "保護パスワードを再設定しました。必要なログイン情報やESアーカイブはもう一度入力してください。";
 }
 
@@ -2009,21 +2692,21 @@ async function buildCredentialVault(data, existingEntry) {
     return existingEntry?.credentialVault || null;
   }
   const password = await getVaultPasswordForSave();
-  const key = await deriveVaultKey(password, vaultConfig.salt);
+  const key = await deriveVaultKey(password, vaultConfig);
   return { version: 1, ...(await encryptPayload(key, credential)) };
 }
 
 async function decryptCredential(vault, password) {
-  const key = await deriveVaultKey(password, vaultConfig.salt);
+  const key = await deriveVaultKey(password, vaultConfig);
   return decryptPayload(key, vault);
 }
 
 function normalizeStageHistory(history, currentStage) {
   const values = Array.isArray(history)
-    ? history.map(normalizeStageName).filter(stage => stages.includes(stage))
+    ? history.slice(0, 80).map(normalizeStageName).map(normalizeFlowStepLabel).filter(Boolean)
     : [];
-  const inferred = inferStageHistory(currentStage);
-  return [...new Set([...inferred, ...values, currentStage].filter(stage => stages.includes(stage)))];
+  const inferred = values.length ? [] : inferStageHistory(currentStage);
+  return [...new Set([...inferred, ...values, normalizeFlowStepLabel(currentStage)].filter(Boolean))];
 }
 
 function addStageToHistory(history, stage) {
@@ -2034,8 +2717,52 @@ function removeStageFromHistory(history, stage) {
   return (history || []).map(normalizeStageName).filter(item => item !== stage);
 }
 
+function normalizeStageTimeline(timeline, currentStage, fallbackTimestamp = appBootTimestamp) {
+  const fallback = isValidTimestamp(fallbackTimestamp) ? fallbackTimestamp : appBootTimestamp;
+  const allowedActions = new Set(["start", "advance", "fail", "result", "edit", "back"]);
+  const normalized = (Array.isArray(timeline) ? timeline.slice(-200) : [])
+    .map(event => {
+      const stage = normalizeFlowStepLabel(normalizeStageName(event?.stage || event?.toStage || ""));
+      const fromStage = normalizeFlowStepLabel(normalizeStageName(event?.fromStage || event?.from || ""));
+      if (!stage) return null;
+      return {
+        stage,
+        fromStage,
+        at: isValidTimestamp(event?.at) ? event.at : fallback,
+        action: allowedActions.has(event?.action) ? event.action : "advance"
+      };
+    })
+    .filter(Boolean);
+  if (normalized.length) return normalized;
+  const stage = normalizeFlowStepLabel(normalizeStageName(currentStage || "応募予定")) || "応募予定";
+  return [{ stage, fromStage: "", at: fallback, action: "start" }];
+}
+
+function recordStageTransition(timeline, fromStage, toStage, action = "advance", at = new Date().toISOString()) {
+  const normalizedTo = normalizeFlowStepLabel(normalizeStageName(toStage || "応募予定")) || "応募予定";
+  const normalizedFrom = normalizeFlowStepLabel(normalizeStageName(fromStage || ""));
+  if (!normalizedFrom) {
+    return [{ stage: normalizedTo, fromStage: "", at, action: "start" }];
+  }
+  const history = normalizeStageTimeline(timeline, normalizedFrom, at);
+  if (normalizedFrom === normalizedTo) return history;
+  return [...history, { stage: normalizedTo, fromStage: normalizedFrom, at, action }];
+}
+
+function rewindStageTimeline(timeline, currentStage, previousStage) {
+  const now = new Date().toISOString();
+  const current = normalizeFlowStepLabel(normalizeStageName(currentStage));
+  const previous = normalizeFlowStepLabel(normalizeStageName(previousStage));
+  const history = normalizeStageTimeline(timeline, current, now);
+  if (history.length > 1 && history.at(-1)?.stage === current) {
+    const rewound = history.slice(0, -1);
+    if (rewound.at(-1)?.stage === previous) return rewound;
+  }
+  return [...history, { stage: previous, fromStage: current, at: now, action: "back" }];
+}
+
 function inferStageHistory(stage) {
-  if (!stage || !stages.includes(stage)) return [];
+  if (!stage || !stages.includes(stage)) return stage ? [stage] : [];
   if (winStages.has(stage)) return [...stages.slice(0, stages.indexOf("結果待ち") + 1), stage];
   if (doneStages.has(stage)) return [stage];
   return stages.slice(0, stages.indexOf(stage) + 1);
@@ -2046,27 +2773,146 @@ function openAnalytics() {
   analyticsDialog.showModal();
 }
 
+function setAnalysisSelectionType(type) {
+  if (!["インターン", "本選考"].includes(type)) return;
+  analysisSelectionType = type;
+  localStorage.setItem(analysisScopeKey, type);
+  renderAnalytics();
+}
+
 function renderAnalytics() {
+  const scopedEntries = entries.filter(entry => entry.type === analysisSelectionType);
+  const scopeLabel = analysisSelectionType === "インターン" ? "インターン選考" : "本選考";
+  const industryResultLabel = analysisSelectionType === "インターン" ? "合格" : "内定";
+  analysisTypeSwitch.dataset.activeIndex = analysisSelectionType === "本選考" ? "1" : "0";
+  analysisTypeSwitch.querySelectorAll("[data-analysis-type]").forEach(button => {
+    const active = button.dataset.analysisType === analysisSelectionType;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  analysisScopeSummary.textContent = `${scopeLabel}として登録した${scopedEntries.length}件を集計`;
   const stats = [
-    ...analysisPhaseDefinitions.map(item => buildSimplePassRate(item)),
-    buildInterviewPassRate()
+    ...analysisPhaseDefinitions.map(item => buildSimplePassRate(item, scopedEntries)),
+    buildInterviewPassRate(scopedEntries)
   ];
-  const industryStats = buildIndustryPassRates();
+  const industryStats = buildIndustryPassRates(scopedEntries);
+  const overview = buildAnalysisOverview(scopedEntries);
+  const funnelStats = buildAnalysisFunnel(scopedEntries);
   analyticsContent.innerHTML = `
-    <h3 class="analysis-section-title">フェーズ別</h3>
+    ${analysisOverviewMarkup(overview, industryResultLabel)}
+    ${analysisFunnelMarkup(funnelStats, scopeLabel)}
+    <h3 class="analysis-section-title">${scopeLabel}・フェーズ別</h3>
     ${stats.map(item => analysisCardMarkup(item, "対象")).join("")}
-    <h3 class="analysis-section-title">業界別 最終合格率</h3>
-    ${industryStats.length ? industryStats.map((item, index) => analysisCardMarkup({ ...item, color: industryColors[index % industryColors.length] }, "判定", "合格")).join("") : `
+    <h3 class="analysis-section-title">${scopeLabel}・業界別 ${industryResultLabel}率</h3>
+    ${industryStats.length ? industryStats.map((item, index) => analysisCardMarkup({ ...item, color: industryColors[index % industryColors.length] }, "判定", industryResultLabel)).join("") : `
       <section class="analysis-card" style="--accent:#61f4de;">
         <div class="analysis-top">
           <strong>業界データなし</strong>
-          <span class="analysis-rate">0%</span>
+          <span class="analysis-rate" data-rate="0">0%</span>
         </div>
         <div class="analysis-bar"><div class="analysis-fill" style="--rate:0%"></div></div>
-        <div class="analysis-detail">企業の業界と最終結果を入れると、ここに合格・内定率が表示されます。</div>
+        <div class="analysis-detail">${scopeLabel}の企業に業界と最終結果を入れると、ここに${industryResultLabel}率が表示されます。</div>
       </section>
     `}
   `;
+  animateAnalysisRates();
+}
+
+function buildAnalysisOverview(sourceEntries) {
+  const startedEntries = sourceEntries.filter(hasStartedSelection);
+  const decidedEntries = sourceEntries.filter(entry => winStages.has(entry.stage) || failStages.has(entry.stage));
+  const successCount = decidedEntries.filter(entry => winStages.has(entry.stage)).length;
+  const successRate = decidedEntries.length ? Math.round((successCount / decidedEntries.length) * 100) : 0;
+  const bestIndustry = buildIndustryPassRates(sourceEntries)
+    .sort((first, second) => {
+      const firstRate = first.total ? first.passed / first.total : 0;
+      const secondRate = second.total ? second.passed / second.total : 0;
+      return secondRate - firstRate || second.total - first.total || first.label.localeCompare(second.label, "ja");
+    })[0] || null;
+  return {
+    started: startedEntries.length,
+    successCount,
+    successRate,
+    decisionTotal: decidedEntries.length,
+    bestIndustry
+  };
+}
+
+function hasStartedSelection(entry) {
+  return !["気になる", "応募予定"].includes(normalizeStageName(entry.stage));
+}
+
+function buildAnalysisFunnel(sourceEntries) {
+  const startedEntries = sourceEntries.filter(hasStartedSelection);
+  const phasePassCount = definition => startedEntries.filter(entry => phaseOutcome(entry, definition)?.passed).length;
+  const interviewPassCount = startedEntries.filter(entry => interviewOutcomes(entry).some(Boolean)).length;
+  const successCount = startedEntries.filter(entry => winStages.has(entry.stage)).length;
+  const total = startedEntries.length;
+  const [esDefinition, webDefinition, gdDefinition] = analysisPhaseDefinitions;
+  return [
+    { label: "応募・選考開始", count: total },
+    { label: "ES通過", count: phasePassCount(esDefinition) },
+    { label: "Webテスト通過", count: phasePassCount(webDefinition) },
+    { label: "GD通過", count: phasePassCount(gdDefinition) },
+    { label: "面接通過", count: interviewPassCount },
+    { label: analysisSelectionType === "インターン" ? "インターン合格" : "内定", count: successCount }
+  ].map(item => ({ ...item, rate: total ? Math.min(100, Math.round((item.count / total) * 100)) : 0 }));
+}
+
+function analysisOverviewMarkup(overview, resultLabel) {
+  const bestIndustry = overview.bestIndustry;
+  const bestIndustryDetail = bestIndustry ? `${bestIndustry.passed}/${bestIndustry.total} ${resultLabel}` : "最終結果の登録後に表示";
+  return `
+    <section class="analysis-overview" aria-label="選考サマリー">
+      <div class="analysis-overview-item"><small>応募数</small><strong>${overview.started}<em>社</em></strong><span>選考開始済み</span></div>
+      <div class="analysis-overview-item"><small>${resultLabel}数</small><strong>${overview.successCount}<em>社</em></strong><span>最終結果</span></div>
+      <div class="analysis-overview-item"><small>${resultLabel}率</small><strong>${overview.successRate}<em>%</em></strong><span>${overview.successCount}/${overview.decisionTotal} 判定</span></div>
+      <div class="analysis-overview-item industry"><small>好成績業界</small><strong>${escapeHtml(bestIndustry?.label || "データなし")}</strong><span>${escapeHtml(bestIndustryDetail)}</span></div>
+    </section>
+  `;
+}
+
+function analysisFunnelMarkup(items, scopeLabel) {
+  return `
+    <section class="analysis-funnel" aria-label="${scopeLabel}の選考ファネル">
+      <div class="analysis-funnel-head"><div><small>SELECTION FUNNEL</small><h3>選考ファネル</h3></div><span>通過した企業数</span></div>
+      <div class="analysis-funnel-list">
+        ${items.map((item, index) => `
+          <div class="analysis-funnel-row" style="--funnel-rate:${item.rate}%;--funnel-delay:${index * 70}ms;">
+            <span class="analysis-funnel-label">${escapeHtml(item.label)}</span>
+            <span class="analysis-funnel-track"><i></i></span>
+            <strong class="analysis-funnel-count"><b>${item.count}</b><em>社</em></strong>
+          </div>
+        `).join("")}
+      </div>
+      <p>企業ごとに存在するフェーズだけを集計しています。</p>
+    </section>
+  `;
+}
+
+function animateAnalysisRates() {
+  if (analysisRateAnimationFrame !== null) cancelAnimationFrame(analysisRateAnimationFrame);
+  const labels = [...analyticsContent.querySelectorAll(".analysis-rate[data-rate]")];
+  if (!labels.length) return;
+  const reducedMotion = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+  if (reducedMotion) {
+    labels.forEach(label => { label.textContent = `${label.dataset.rate}%`; });
+    analysisRateAnimationFrame = null;
+    return;
+  }
+  const startedAt = performance.now();
+  const duration = 620;
+  const draw = now => {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    labels.forEach(label => {
+      const target = Number(label.dataset.rate) || 0;
+      label.textContent = `${Math.round(target * eased)}%`;
+    });
+    if (progress < 1) analysisRateAnimationFrame = requestAnimationFrame(draw);
+    else analysisRateAnimationFrame = null;
+  };
+  analysisRateAnimationFrame = requestAnimationFrame(draw);
 }
 
 function analysisCardMarkup(item, totalLabel = "対象", passedLabel = "通過") {
@@ -2076,7 +2922,7 @@ function analysisCardMarkup(item, totalLabel = "対象", passedLabel = "通過")
     <section class="analysis-card" style="--accent:${item.color};">
       <div class="analysis-top">
         <strong>${escapeHtml(item.label)}</strong>
-        <span class="analysis-rate">${rate}%</span>
+        <span class="analysis-rate" data-rate="${rate}">0%</span>
       </div>
       <div class="analysis-bar"><div class="analysis-fill" style="--rate:${rate}%"></div></div>
       <div class="analysis-detail">${passedLabel} ${item.passed} / ${totalLabel} ${item.total} ・ ${note}</div>
@@ -2197,6 +3043,17 @@ function getCalendarEvents() {
         priority: 3
       });
     }
+    if (entry.stage === "内定" && entry.offerResponseDeadline && normalizeOfferDecision(entry.offerDecision) !== "辞退") {
+      result.push({
+        entryId: entry.id,
+        company: entry.company,
+        date: entry.offerResponseDeadline,
+        label: "内定回答期限",
+        detail: `${normalizeOfferDecision(entry.offerDecision)} ・ ${offerDeadlineText(entry)}`,
+        color: "#d6ae56",
+        priority: 2
+      });
+    }
     const scheduleStatus = getInternScheduleStatus(entry);
     if (scheduleStatus === "confirmed" || scheduleStatus === "tentative") {
       internshipDateKeys(entry).forEach(date => {
@@ -2230,6 +3087,9 @@ function nextCalendarLabel(entry) {
 function internshipDateKeys(entry) {
   if (entry.internScheduleMode === "range") {
     return dateKeysBetween(entry.internStartDate, entry.internEndDate);
+  }
+  if (entry.internScheduleMode === "custom") {
+    return normalizeCustomDates(entry.internCustomDates);
   }
   if (isDateKey(entry.internSingleDate)) return [entry.internSingleDate];
   return [];
@@ -2270,10 +3130,10 @@ function formatLongDate(value) {
   return `${date.getMonth() + 1}/${date.getDate()}（${weekday}）`;
 }
 
-function buildSimplePassRate(definition) {
+function buildSimplePassRate(definition, sourceEntries = entries) {
   let total = 0;
   let passed = 0;
-  entries.forEach(entry => {
+  sourceEntries.forEach(entry => {
     const outcome = phaseOutcome(entry, definition);
     if (!outcome) return;
     total += 1;
@@ -2287,12 +3147,26 @@ function phaseOutcome(entry, definition) {
   const history = normalizeStageHistory(entry.stageHistory, entry.stage);
   const didFail = definition.failStages.includes(entry.stage);
   if (didFail) return { passed: false };
-  const didPass = definition.passStages.some(stage => history.includes(stage)) || winStages.has(entry.stage);
+  const sequence = activeStageSequence(entry);
+  const phaseIndexes = sequence
+    .map((stage, index) => phaseStepMatches(definition.key, stage) ? index : -1)
+    .filter(index => index >= 0);
+  const lastPhaseIndex = phaseIndexes.at(-1) ?? -1;
+  const passedCustomPhase = lastPhaseIndex >= 0 && history.some(stage => sequence.indexOf(stage) > lastPhaseIndex);
+  const didPass = definition.passStages.some(stage => history.includes(stage)) || passedCustomPhase || winStages.has(entry.stage);
   return didPass ? { passed: true } : null;
 }
 
-function buildInterviewPassRate() {
-  const outcomes = entries.flatMap(interviewOutcomes);
+function phaseStepMatches(key, stage) {
+  if (key === "es") return /(ES|エントリーシート|書類)/i.test(stage);
+  if (key === "webTest") return /(Web|WEB|ウェブ|SPI|玉手箱|適性検査|テスト)/i.test(stage);
+  if (key === "gd") return /(GD|グループディスカッション)/i.test(stage);
+  if (key === "interview") return /(面接|面談)/.test(stage);
+  return false;
+}
+
+function buildInterviewPassRate(sourceEntries = entries) {
+  const outcomes = sourceEntries.flatMap(interviewOutcomes);
   const total = outcomes.length;
   const passed = outcomes.filter(Boolean).length;
   return { label: "面接", total, passed, color: "#36d399" };
@@ -2304,15 +3178,16 @@ function interviewOutcomes(entry) {
   if (!interviewStages.length) return [];
   const history = normalizeStageHistory(entry.stageHistory, entry.stage);
   if (entry.stage === "面接不合格") return [false];
+  const sequence = activeStageSequence(entry);
   return interviewStages
     .filter(stage => history.includes(stage))
-    .filter(stage => history.some(item => stages.indexOf(item) > stages.indexOf(stage)) || winStages.has(entry.stage))
+    .filter(stage => history.some(item => sequence.indexOf(item) > sequence.indexOf(stage)) || winStages.has(entry.stage))
     .map(() => true);
 }
 
-function buildIndustryPassRates() {
+function buildIndustryPassRates(sourceEntries = entries) {
   const map = new Map();
-  entries.forEach(entry => {
+  sourceEntries.forEach(entry => {
     const industry = normalizeIndustry(entry.industry);
     if (industry === "未設定") return;
     const passed = winStages.has(entry.stage);
@@ -2357,6 +3232,10 @@ function buildScheduleFromForm(targetForm, prefix, fallback = "") {
   if (mode === "single") {
     return formatScheduleDate(targetForm.elements[`${prefix}SingleDate`].value) || fallback;
   }
+  if (mode === "custom") {
+    const dates = normalizeCustomDates(scheduleCustomDates[prefix]);
+    return dates.length ? dates.map(formatScheduleDate).join("・") : fallback;
+  }
   const start = formatScheduleDate(targetForm.elements[`${prefix}StartDate`].value);
   const end = formatScheduleDate(targetForm.elements[`${prefix}EndDate`].value);
   if (start && end) return `${start}〜${end}`;
@@ -2369,8 +3248,14 @@ function scheduleDataFromForm(targetForm, prefix, fallback = "") {
     internScheduleMode: targetForm.elements[`${prefix}ScheduleMode`].value,
     internSingleDate: targetForm.elements[`${prefix}SingleDate`].value || "",
     internStartDate: targetForm.elements[`${prefix}StartDate`].value || "",
-    internEndDate: targetForm.elements[`${prefix}EndDate`].value || ""
+    internEndDate: targetForm.elements[`${prefix}EndDate`].value || "",
+    internCustomDates: normalizeCustomDates(scheduleCustomDates[prefix])
   };
+}
+
+function normalizeCustomDates(values = []) {
+  const dates = Array.isArray(values) ? values : [];
+  return [...new Set(dates.slice(0, 366).filter(isDateKey))].sort();
 }
 
 function getInternScheduleStatus(entry = {}) {
@@ -2386,11 +3271,13 @@ function isPostWinDeclined(entry = {}) {
 }
 
 function setScheduleForm(targetForm, prefix, entry = {}) {
-  const mode = entry.internScheduleMode || "single";
+  const mode = ["single", "range", "custom"].includes(entry.internScheduleMode) ? entry.internScheduleMode : "single";
   targetForm.elements[`${prefix}ScheduleMode`].value = mode;
   targetForm.elements[`${prefix}SingleDate`].value = entry.internSingleDate || "";
   targetForm.elements[`${prefix}StartDate`].value = entry.internStartDate || "";
   targetForm.elements[`${prefix}EndDate`].value = entry.internEndDate || "";
+  scheduleCustomDates[prefix] = normalizeCustomDates(entry.internCustomDates);
+  renderCustomScheduleDates(prefix);
   updateScheduleMode(targetForm, prefix);
 }
 
@@ -2398,6 +3285,32 @@ function updateScheduleMode(targetForm, prefix) {
   const mode = targetForm.elements[`${prefix}ScheduleMode`].value;
   document.querySelector(`#${prefix}SingleField`).hidden = mode !== "single";
   document.querySelector(`#${prefix}RangeFields`).hidden = mode !== "range";
+  document.querySelector(`#${prefix}CustomFields`).hidden = mode !== "custom";
+}
+
+function addCustomScheduleDate(prefix) {
+  const picker = document.querySelector(`#${prefix}CustomDatePicker`);
+  if (!isDateKey(picker.value)) {
+    picker.focus();
+    return;
+  }
+  scheduleCustomDates[prefix] = normalizeCustomDates([...scheduleCustomDates[prefix], picker.value]);
+  picker.value = "";
+  renderCustomScheduleDates(prefix);
+}
+
+function renderCustomScheduleDates(prefix) {
+  const container = document.querySelector(`#${prefix}CustomDateList`);
+  const dates = normalizeCustomDates(scheduleCustomDates[prefix]);
+  container.innerHTML = dates.length
+    ? dates.map(date => `<span class="custom-date-chip"><b>${escapeHtml(formatLongDate(date))}</b><button type="button" data-custom-date="${escapeHtml(date)}" aria-label="${escapeHtml(formatLongDate(date))}を削除">×</button></span>`).join("")
+    : `<p>まだ日程が追加されていません。</p>`;
+  container.querySelectorAll("[data-custom-date]").forEach(button => {
+    button.addEventListener("click", () => {
+      scheduleCustomDates[prefix] = dates.filter(date => date !== button.dataset.customDate);
+      renderCustomScheduleDates(prefix);
+    });
+  });
 }
 
 function deadlineText(entry) {
@@ -2447,25 +3360,38 @@ function deadlineRank(entry) {
   return left;
 }
 
-function stageProgress(stage) {
-  const index = Math.max(0, stages.indexOf(stage));
-  return Math.round((index / (stages.length - 1)) * 100);
+function stageProgress(entry) {
+  if (doneStages.has(entry.stage)) return 100;
+  const sequence = activeStageSequence(entry);
+  const index = sequence.indexOf(entry.stage);
+  if (index < 0) return 0;
+  return Math.round((index / Math.max(1, sequence.length - 1)) * 100);
 }
 
 function filteredEntries() {
   const word = document.querySelector("#search").value.trim().toLowerCase();
+  const sortOrder = document.querySelector("#sortOrder").value;
   return entries
     .filter(entry => {
       if (activeFilter === "deadline") return daysLeft(entry.deadline) !== null;
       if (activeFilter === "all") return true;
-      if (activeFilter === "面接") return entry.stage.includes("面接");
+      if (activeFilter === "面接") return /(面接|面談)/.test(entry.stage);
       if (activeFilter === "合格") return winStages.has(entry.stage);
       if (activeFilter === "不合格") return failStages.has(entry.stage);
-      if (["書類選考中", "GD", "結果待ち"].includes(activeFilter)) return entry.stage === activeFilter;
+      if (activeFilter === "書類選考中") return /(ES|エントリーシート|書類)/i.test(entry.stage);
+      if (activeFilter === "GD") return /(GD|グループディスカッション)/i.test(entry.stage);
+      if (activeFilter === "結果待ち") return entry.stage === "結果待ち";
       return entry.type === activeFilter;
     })
-    .filter(entry => !word || [entry.company, entry.role, entry.industry, entry.stage, entry.memo, entry.internSchedule, entry.nextPlan, ...normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther)].join(" ").toLowerCase().includes(word))
+    .filter(entry => !word || [entry.company, entry.role, entry.industry, entry.internSeason, entry.stage, entry.memo, entry.internSchedule, entry.nextPlan, entry.offerRole, entry.offerMemo, ...normalizeFlowSteps(entry.flowSteps, entry), ...normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther)].join(" ").toLowerCase().includes(word))
     .sort((a, b) => {
+      if (sortOrder === "updated") return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+      if (sortOrder === "company") return a.company.localeCompare(b.company, "ja");
+      if (sortOrder === "nextDate") {
+        const first = a.nextDate ? parseDateKey(a.nextDate).getTime() : Number.MAX_SAFE_INTEGER;
+        const second = b.nextDate ? parseDateKey(b.nextDate).getTime() : Number.MAX_SAFE_INTEGER;
+        if (first !== second) return first - second;
+      }
       const rankDiff = deadlineRank(a) - deadlineRank(b);
       if (rankDiff !== 0) return rankDiff;
       return a.company.localeCompare(b.company, "ja");
@@ -2483,6 +3409,8 @@ function render() {
     return left !== null && left <= 7 && left >= 0 && !doneStages.has(entry.stage);
   }).length;
   document.querySelector("#winCount").textContent = entries.filter(entry => winStages.has(entry.stage)).length;
+  renderOffers();
+  window.dispatchEvent(new CustomEvent("nextround:data-changed", { detail: { count: entries.length } }));
 
   entries
     .filter(isDeadlineNear)
@@ -2496,7 +3424,7 @@ function render() {
     });
 
   if (!visible.length) {
-    cards.innerHTML = `<div class="empty">まだ表示できる選考がありません。下の追加ボタンから入れられます。</div>`;
+    cards.innerHTML = `<div class="empty">まだ表示できる選考がありません。上の追加ボタンから入れられます。</div>`;
     paintFilters();
     if (calendarDialog.open) renderCalendar();
     return;
@@ -2511,7 +3439,7 @@ function createCard(entry) {
   const card = document.createElement("article");
   const postWinDeclined = isPostWinDeclined(entry);
   card.className = `card${winStages.has(entry.stage) ? " win" : ""}${postWinDeclined ? " post-win-declined" : ""}${deadlineClassName(entry) ? ` ${deadlineClassName(entry)}` : ""}`;
-  const progress = stageProgress(entry.stage);
+  const progress = stageProgress(entry);
   const stageColor = stageColors[entry.stage] || stageColors["応募予定"];
   const deadlineClass = deadlineMetaClass(entry);
   const primaryStage = getPrimaryStage(entry);
@@ -2531,23 +3459,24 @@ function createCard(entry) {
         </div>
         <div class="entry-badges">
           <span class="type">${escapeHtml(entry.type)}</span>
+          ${entry.type === "インターン" && normalizeInternSeason(entry.internSeason) !== "未設定" ? `<span class="season-pill">${escapeHtml(normalizeInternSeason(entry.internSeason))}</span>` : ""}
           ${industry !== "未設定" ? `<span class="industry-pill">${escapeHtml(industry)}</span>` : ""}
         </div>
       </div>
-      <div class="stage-row">
+      <button class="stage-row" data-action="timeline" type="button" aria-label="${escapeHtml(entry.company)}の選考タイムラインを表示">
         <span class="status-pill">${escapeHtml(entry.stage)}</span>
-        <div class="stage-label"><strong>${escapeHtml(statusHint(entry))}</strong><span>${progress}%</span></div>
+        <div class="stage-label"><strong>${escapeHtml(statusHint(entry))}</strong><span>${progress}% · 履歴 ›</span></div>
         <div class="track"><div class="bar" style="width:${progress}%"></div></div>
-      </div>
+      </button>
       ${postWinDeclined ? `<div class="post-win-declined-badge">${escapeHtml(entry.type === "インターン" ? "合格後辞退" : "内定辞退")}<span>分析では合格として集計</span></div>` : ""}
       ${selectionTagsMarkup(entry)}
       ${["tentative", "confirmed", "declined"].includes(internScheduleStatus) ? internshipScheduleMarkup(entry, internScheduleStatus) : ""}
       ${done ? "" : deadlineMetaMarkup(entry, deadlineClass)}
-      ${winStages.has(entry.stage) ? `<button class="post-win-decline-btn${postWinDeclined ? " active" : ""}" data-action="togglePostWinDecline" type="button">${escapeHtml(postWinDeclined ? "辞退の記録を取り消す" : (entry.type === "インターン" ? "合格後辞退として記録" : "内定辞退として記録"))}</button>` : ""}
-      <div class="meta-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
+      ${entry.stage === "内定" ? offerCardSummaryMarkup(entry) : winStages.has(entry.stage) ? `<button class="post-win-decline-btn${postWinDeclined ? " active" : ""}" data-action="togglePostWinDecline" type="button">${escapeHtml(postWinDeclined ? "辞退の記録を取り消す" : "合格後辞退として記録")}</button>` : ""}
+      <div class="meta-box memo-box"><span>メモ</span><b>${escapeHtml(entry.memo || "メモなし")}</b></div>
       <div class="protected-actions">
         <button class="archive-open" data-action="esArchive" type="button">ESアーカイブ${entry.esArchiveVault ? "を開く" : "を作成"}</button>
-        ${portalUrl ? `<a class="portal-link" href="${escapeHtml(portalUrl)}" target="_blank" rel="noopener noreferrer">マイページを開く</a>` : ""}
+        ${portalUrl ? `<a class="portal-link" href="${escapeHtml(portalUrl)}" target="_blank" rel="noopener noreferrer">マイページを開く · ${escapeHtml(portalHostname(portalUrl))}</a>` : ""}
         ${entry.credentialVault ? `<button class="secret-open" data-action="credential" type="button">マイページ情報を表示</button>` : ""}
       </div>
     </div>
@@ -2574,7 +3503,85 @@ function createCard(entry) {
   if (editButton) editButton.addEventListener("click", () => openForm(entry));
   const postWinDeclineButton = card.querySelector('[data-action="togglePostWinDecline"]');
   if (postWinDeclineButton) postWinDeclineButton.addEventListener("click", () => togglePostWinDecline(entry.id));
+  const offerButton = card.querySelector('[data-action="manageOffer"]');
+  if (offerButton) offerButton.addEventListener("click", () => openOfferDialog(entry));
+  const timelineButton = card.querySelector('[data-action="timeline"]');
+  if (timelineButton) timelineButton.addEventListener("click", () => openTimeline(entry));
   return card;
+}
+
+function openTimeline(entry) {
+  timelineTargetId = entry.id;
+  const timeline = normalizeStageTimeline(entry.stageTimeline, entry.stage, entry.updatedAt);
+  timelineTitle.textContent = `${entry.company} の選考履歴`;
+  timelineSummary.innerHTML = `
+    <div><small>CURRENT STAGE</small><strong>${escapeHtml(entry.stage)}</strong></div>
+    <div><small>RECORDED</small><strong>${timeline.length}件</strong></div>
+  `;
+  timelineList.innerHTML = timeline.map((event, index) => {
+    const tone = timelineEventTone(event);
+    const current = index === timeline.length - 1 ? " current" : "";
+    const detail = event.fromStage
+      ? `${escapeHtml(event.fromStage)} → ${escapeHtml(event.stage)}`
+      : "この状態から記録を開始";
+    return `
+      <li class="timeline-item ${tone}${current}">
+        <time datetime="${escapeHtml(event.at)}">${escapeHtml(formatTimelineTimestamp(event.at))}</time>
+        <i aria-hidden="true"></i>
+        <div><strong>${escapeHtml(timelineEventLabel(event))}</strong><span>${detail}</span></div>
+      </li>
+    `;
+  }).join("");
+  timelineNote.textContent = "操作した日時を自動で記録します。導入前のデータは、現在のステータスを開始地点として扱います。";
+  timelineDialog.showModal();
+}
+
+function timelineEventTone(event) {
+  if (winStages.has(event.stage)) return "win";
+  if (failStages.has(event.stage)) return "fail";
+  if (event.stage === "結果待ち") return "waiting";
+  if (event.action === "back" || event.action === "edit" || event.action === "start") return "neutral";
+  return "pass";
+}
+
+function timelineEventLabel(event) {
+  if (event.action === "start") return `${event.stage}から履歴を開始`;
+  if (event.action === "back") return `${event.stage}へ戻す`;
+  if (event.action === "edit") return `編集で${event.stage}に変更`;
+  if (failStages.has(event.stage) || winStages.has(event.stage)) return event.stage;
+  if (event.stage === "結果待ち") return `${timelinePhaseLabel(event.fromStage)}完了・結果待ち`;
+  const passed = timelinePassedLabel(event.fromStage, event.stage);
+  return passed ? `${passed}通過` : `${event.stage}へ進行`;
+}
+
+function timelinePassedLabel(fromStage, toStage) {
+  const from = String(fromStage || "");
+  const to = String(toStage || "");
+  if (/(ES|エントリーシート|書類)/i.test(from) && !/(ES|エントリーシート|書類)/i.test(to)) return "ES";
+  if (/(Web|WEB|ウェブ|SPI|玉手箱|適性検査|テスト)/i.test(from) && !/(Web|WEB|ウェブ|SPI|玉手箱|適性検査|テスト)/i.test(to)) return "Webテスト";
+  if (/(GD|グループディスカッション)/i.test(from) && !/(GD|グループディスカッション)/i.test(to)) return "GD";
+  if (/(面接|面談)/.test(from) && from !== to) return from;
+  return "";
+}
+
+function timelinePhaseLabel(stage) {
+  if (/(ES|エントリーシート|書類)/i.test(stage || "")) return "ES";
+  if (/(Web|WEB|ウェブ|SPI|玉手箱|適性検査|テスト)/i.test(stage || "")) return "Webテスト";
+  if (/(GD|グループディスカッション)/i.test(stage || "")) return "GD";
+  if (/(面接|面談)/.test(stage || "")) return stage;
+  return stage || "選考";
+}
+
+function formatTimelineTimestamp(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "日時不明";
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
 }
 
 function openCredentialDialog(entry) {
@@ -2605,7 +3612,7 @@ async function unlockCredential() {
     rememberProtectedPassword(password);
     const legacyUrl = normalizePortalUrl(credential.url);
     if (!entry.portalUrl && legacyUrl) {
-      entries = entries.map(item => item.id === entry.id ? { ...item, portalUrl: legacyUrl } : item);
+      entries = entries.map(item => item.id === entry.id ? touchEntry(item, { portalUrl: legacyUrl }) : item);
       save();
       render();
     }
@@ -2647,6 +3654,106 @@ function internshipScheduleMarkup(entry, status = getInternScheduleStatus(entry)
   return `<div class="meta-box schedule-box${tentative ? " tentative" : ""}${declined ? " declined" : ""}"><span>${label}</span><b>${escapeHtml(entry.internSchedule || "未設定（編集から追加）")}</b>${note}</div>`;
 }
 
+function normalizeOfferDecision(value) {
+  return ["検討中", "承諾", "辞退"].includes(value) ? value : "検討中";
+}
+
+function offerDeadlineText(entry) {
+  if (!entry.offerResponseDeadline) return "回答期限未設定";
+  const left = daysLeft(entry.offerResponseDeadline);
+  if (left < 0) return `${Math.abs(left)}日超過`;
+  if (left === 0) return "今日が回答期限";
+  return `回答まであと${left}日`;
+}
+
+function offerCardSummaryMarkup(entry) {
+  const decision = normalizeOfferDecision(entry.offerDecision);
+  return `
+    <button class="offer-inline ${decision === "承諾" ? "accepted" : decision === "辞退" ? "declined" : ""}" data-action="manageOffer" type="button">
+      <span><small>OFFER STATUS</small><strong>${escapeHtml(decision)}</strong></span>
+      <em>${escapeHtml(offerDeadlineText(entry))}</em>
+      <b>管理する ›</b>
+    </button>
+  `;
+}
+
+function renderOffers() {
+  const overview = document.querySelector("#offerOverview");
+  const list = document.querySelector("#offerList");
+  if (!overview || !list) return;
+  const offers = entries.filter(entry => entry.stage === "内定");
+  const activeOffers = offers.filter(entry => normalizeOfferDecision(entry.offerDecision) !== "辞退");
+  const accepted = offers.filter(entry => normalizeOfferDecision(entry.offerDecision) === "承諾").length;
+  const urgent = activeOffers.filter(entry => {
+    const left = daysLeft(entry.offerResponseDeadline);
+    return left !== null && left >= 0 && left <= 7;
+  }).length;
+  overview.innerHTML = `
+    <div class="offer-title"><small>OFFER CONTROL</small><h2>内定管理</h2><p>回答期限と判断状況を、選考一覧とは別に整理します。</p></div>
+    <div class="offer-metrics">
+      <div><span>保有内定</span><strong>${activeOffers.length}</strong></div>
+      <div><span>承諾</span><strong>${accepted}</strong></div>
+      <div class="${urgent ? "urgent" : ""}"><span>7日以内</span><strong>${urgent}</strong></div>
+    </div>
+  `;
+  const sorted = [...offers].sort((first, second) => {
+    const firstDate = first.offerResponseDeadline || "9999-12-31";
+    const secondDate = second.offerResponseDeadline || "9999-12-31";
+    return firstDate.localeCompare(secondDate) || first.company.localeCompare(second.company, "ja");
+  });
+  list.innerHTML = sorted.length ? sorted.map(entry => {
+    const decision = normalizeOfferDecision(entry.offerDecision);
+    const offerDays = daysLeft(entry.offerResponseDeadline);
+    const deadlineLevel = offerDays !== null && offerDays <= 7 ? " urgent" : "";
+    return `
+      <article class="offer-item ${decision === "承諾" ? "accepted" : decision === "辞退" ? "declined" : ""}">
+        <div class="offer-item-top">
+          <div><small>${escapeHtml(entry.industry || "業界未設定")}</small><h3>${escapeHtml(entry.company)}</h3><p>${escapeHtml(entry.offerRole || entry.role || "職種・配属未設定")}</p></div>
+          <span>${escapeHtml(decision)}</span>
+        </div>
+        <div class="offer-item-deadline${deadlineLevel}"><small>回答期限</small><strong>${escapeHtml(entry.offerResponseDeadline ? formatLongDate(entry.offerResponseDeadline) : "未設定")}</strong><em>${escapeHtml(offerDeadlineText(entry))}</em></div>
+        ${entry.offerMemo ? `<p class="offer-item-memo">${escapeHtml(entry.offerMemo)}</p>` : ""}
+        <button type="button" data-offer-entry="${escapeHtml(entry.id)}">内定情報を編集</button>
+      </article>
+    `;
+  }).join("") : `<div class="offer-empty"><strong>内定はまだ登録されていません</strong><p>本選考を「内定」にすると、ここへ自動で追加されます。</p></div>`;
+  list.querySelectorAll("[data-offer-entry]").forEach(button => {
+    button.addEventListener("click", () => {
+      const entry = entries.find(item => item.id === button.dataset.offerEntry);
+      if (entry) openOfferDialog(entry);
+    });
+  });
+}
+
+function openOfferDialog(entry) {
+  if (!entry || entry.stage !== "内定") return;
+  offerTargetId = entry.id;
+  offerDialogTitle.textContent = `${entry.company} の内定管理`;
+  offerForm.elements.offerResponseDeadline.value = entry.offerResponseDeadline || "";
+  offerForm.elements.offerDecision.value = normalizeOfferDecision(entry.offerDecision);
+  offerForm.elements.offerRole.value = entry.offerRole || entry.role || "";
+  offerForm.elements.offerMemo.value = entry.offerMemo || "";
+  offerDialog.showModal();
+}
+
+function saveOfferDetails(event) {
+  event.preventDefault();
+  const entry = entries.find(item => item.id === offerTargetId);
+  if (!entry) return;
+  const data = Object.fromEntries(new FormData(offerForm).entries());
+  const decision = normalizeOfferDecision(data.offerDecision);
+  entries = entries.map(item => item.id === entry.id ? touchEntry(item, {
+    offerResponseDeadline: isDateKey(data.offerResponseDeadline) ? data.offerResponseDeadline : "",
+    offerDecision: decision,
+    offerRole: String(data.offerRole || "").trim().slice(0, 80),
+    offerMemo: String(data.offerMemo || "").trim(),
+    declinedAfterWin: decision === "辞退"
+  }) : item);
+  save();
+  offerDialog.close();
+  render();
+}
+
 function selectionTagsMarkup(entry) {
   const tags = normalizeSelectionTags(entry.selectionTags, entry.selectionTagOther);
   if (!tags.length) return "";
@@ -2659,8 +3766,7 @@ function getPrimaryStage(entry) {
   const sequence = activeStageSequence(entry);
   const currentIndex = sequence.indexOf(entry.stage);
   if (currentIndex >= 0) return sequence[Math.min(currentIndex + 1, sequence.length - 1)];
-  const next = sequence.find(stage => stages.indexOf(stage) > stages.indexOf(entry.stage));
-  return next || "結果待ち";
+  return sequence[0] || "結果待ち";
 }
 
 function getQuickStage(entry) {
@@ -2679,10 +3785,10 @@ function quickLabel(entry, stage) {
 }
 
 function getFailStage(entry) {
-  if (["書類選考中", "ES提出済"].includes(entry.stage)) return "ES不合格";
-  if (entry.stage === "Webテスト") return "Webテスト不合格";
-  if (entry.stage === "GD") return "GD不合格";
-  if (entry.stage.includes("面接")) return "面接不合格";
+  if (/(ES|エントリーシート|書類)/i.test(entry.stage)) return "ES不合格";
+  if (/(Web|WEB|ウェブ|SPI|玉手箱|適性検査|テスト)/i.test(entry.stage)) return "Webテスト不合格";
+  if (/(GD|グループディスカッション)/i.test(entry.stage)) return "GD不合格";
+  if (/(面接|面談)/.test(entry.stage)) return "面接不合格";
   return entry.type === "インターン" ? "インターン不合格" : "不採用";
 }
 
@@ -2701,27 +3807,33 @@ function statusHint(entry) {
 function advance(id, direction) {
   entries = entries.map(entry => {
     if (entry.id !== id) return entry;
-    const current = stages.indexOf(entry.stage);
-    const next = direction > 0
-      ? stages.indexOf(getPrimaryStage(entry))
-      : stages.indexOf(getPreviousStage(entry));
-    const nextStage = stages[next];
+    const nextStage = direction > 0 ? getPrimaryStage(entry) : getPreviousStage(entry);
     const baseHistory = direction < 0
       ? removeStageFromHistory(entry.stageHistory, entry.stage)
       : entry.stageHistory;
+    const stageTimeline = direction < 0
+      ? rewindStageTimeline(entry.stageTimeline, entry.stage, nextStage)
+      : recordStageTransition(entry.stageTimeline, entry.stage, nextStage, "advance");
     const nextEntry = {
       ...entry,
       stage: nextStage,
       declinedAfterWin: winStages.has(nextStage) && Boolean(entry.declinedAfterWin),
-      stageHistory: addStageToHistory(baseHistory, nextStage)
+      stageHistory: addStageToHistory(baseHistory, nextStage),
+      stageTimeline
     };
-    return { ...nextEntry, internScheduleStatus: getInternScheduleStatus(nextEntry) };
+    return touchEntry(nextEntry, { internScheduleStatus: getInternScheduleStatus(nextEntry) });
   });
   save();
   render();
 }
 
 function getPreviousStage(entry) {
+  if (doneStages.has(entry.stage)) {
+    const recordedPrevious = normalizeStageHistory(entry.stageHistory, entry.stage)
+      .filter(stage => stage !== entry.stage && !doneStages.has(stage))
+      .at(-1);
+    if (recordedPrevious) return recordedPrevious;
+  }
   const map = {
     "ES不合格": "ES提出済",
     "Webテスト不合格": "Webテスト",
@@ -2737,7 +3849,7 @@ function getPreviousStage(entry) {
   const sequence = activeStageSequence(entry);
   const current = sequence.indexOf(entry.stage);
   if (current >= 0) return sequence[Math.max(0, current - 1)];
-  return stages[Math.max(0, stages.indexOf(entry.stage) - 1)];
+  return sequence[0] || "応募予定";
 }
 
 function lastInterviewStage(entry) {
@@ -2747,14 +3859,16 @@ function lastInterviewStage(entry) {
 function setStage(id, stage, extras = {}) {
   entries = entries.map(entry => {
     if (entry.id !== id) return entry;
+    const timelineAction = failStages.has(stage) ? "fail" : winStages.has(stage) ? "result" : "advance";
     const nextEntry = {
       ...entry,
       stage,
       declinedAfterWin: winStages.has(stage) && Boolean(entry.declinedAfterWin),
       stageHistory: addStageToHistory(entry.stageHistory, stage),
+      stageTimeline: recordStageTransition(entry.stageTimeline, entry.stage, stage, timelineAction),
       ...extras
     };
-    return { ...nextEntry, internScheduleStatus: getInternScheduleStatus(nextEntry) };
+    return touchEntry(nextEntry, { internScheduleStatus: getInternScheduleStatus(nextEntry) });
   });
   save();
   render();
@@ -2769,7 +3883,10 @@ function togglePostWinDecline(id) {
     const confirmed = confirm(`${entry.company}を「${label}」として記録しますか？\n\n合格・内定の記録は残り、分析でも合格として集計されます。`);
     if (!confirmed) return;
   }
-  entries = entries.map(item => item.id === id ? { ...item, declinedAfterWin: willDecline } : item);
+  entries = entries.map(item => item.id === id ? touchEntry(item, {
+    declinedAfterWin: willDecline,
+    offerDecision: item.stage === "内定" ? (willDecline ? "辞退" : "検討中") : item.offerDecision
+  }) : item);
   save();
   render();
 }
@@ -2791,7 +3908,10 @@ function applyResult(passed) {
   const stage = passed
     ? (entry.type === "インターン" ? "インターン合格" : "内定")
     : (entry.type === "インターン" ? "インターン不合格" : "不採用");
-  const extras = { declinedAfterWin: false };
+  const extras = {
+    declinedAfterWin: false,
+    offerDecision: stage === "内定" ? "検討中" : entry.offerDecision
+  };
   if (stage === "インターン合格") {
     Object.assign(extras, scheduleDataFromForm(resultForm, "result", entry.internSchedule || ""));
   }
@@ -2806,13 +3926,15 @@ function openForm(entry) {
   form.reset();
   form.elements.company.value = entry?.company || "";
   form.elements.type.value = entry?.type || "インターン";
-  form.elements.stage.value = entry?.stage || "応募予定";
+  form.elements.internSeason.value = normalizeInternSeason(entry?.internSeason);
   form.elements.industry.value = normalizeIndustry(entry?.industry);
   form.elements.role.value = entry?.role || "";
   form.elements.deadline.value = entry?.deadline || "";
   form.elements.nextDate.value = entry?.nextDate || "";
   form.elements.nextPlan.value = entry?.nextPlan || "";
-  setFlowForm(entry || {});
+  flowBuilderDirty = false;
+  setFlowBuilder(entry || { type: form.elements.type.value });
+  syncStageOptions(entry?.stage || "応募予定");
   setSelectionTagsForm(entry || {});
   setScheduleForm(form, "intern", entry || {});
   form.elements.memo.value = entry?.memo || "";
@@ -2825,7 +3947,12 @@ function openForm(entry) {
     ? "保存済みです。URLはカードから開けます。ID・パスワードを変更する時だけ新しく入力してください。"
     : "URLはカードから開けるように保存します。ID・パスワードは保護パスワードで暗号化します。";
   updateInternScheduleVisibility();
+  updateInternSeasonVisibility();
   dialog.showModal();
+}
+
+function updateInternSeasonVisibility() {
+  internSeasonField.hidden = form.elements.type.value !== "インターン";
 }
 
 function updateInternScheduleVisibility() {
@@ -2864,5 +3991,31 @@ function escapeHtml(value) {
   })[char]);
 }
 
+async function readLimitedResponseJson(response, maximumBytes = 1_000_000) {
+  const contentLength = Number(response.headers.get("Content-Length") || 0);
+  if (contentLength > maximumBytes || !response.body) throw new Error("response-too-large");
+  const reader = response.body.getReader();
+  const chunks = [];
+  let received = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received += value.byteLength;
+    if (received > maximumBytes) {
+      await reader.cancel();
+      throw new Error("response-too-large");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  chunks.forEach(chunk => {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  });
+  return JSON.parse(textDecoder.decode(bytes));
+}
+
+prepareLocalDataForRefresh();
 render();
 initCloudSync();

@@ -1,33 +1,141 @@
 <!doctype html>
 <html lang="ja">
 <head>
+  <meta name="robots" content="noindex, nofollow, noarchive">
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://nextround-notifications.nextround-app.workers.dev https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com; frame-src https://next-round-936c6.firebaseapp.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#070b11">
+  <meta name="theme-color" content="#080b0f">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>NEXTROUND</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="apple-mobile-web-app-title" content="NEXTROUND TEST">
+  <title>NEXTROUND TEST</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script src="theme-init.js?v=2.8.1"></script>
+  <link rel="stylesheet" href="styles.css?v=2.8.1">
 </head>
 <body>
   <div class="splash" id="splash" aria-hidden="true">
-    <div class="splash-mark">
-      <div class="splash-logo">NEXTROUND</div>
-      <div class="splash-line"></div>
-      <div class="splash-sub">Loading...</div>
-      <div class="splash-tagline">Your Next Move</div>
+    <div class="splash-frame">
+      <div class="splash-rail"><span>NR / 02</span><i></i><span>SELECTION OS</span></div>
+      <div class="splash-mark">
+        <div class="splash-signal"><i></i><span>WORKSPACE ONLINE</span></div>
+        <div class="splash-logo">NEXTROUND</div>
+        <div class="splash-line"><i></i></div>
+        <div class="splash-sub"><span>LOADING WORKSPACE</span><b>•••</b></div>
+      </div>
+      <div class="splash-footer"><span>Your Next Move</span><span>SECURE / LOCAL-FIRST</span></div>
     </div>
   </div>
-  <main class="app">
-    <header>
+
+  <main class="refresh-login" id="refreshLogin" hidden>
+    <section class="login-shell" aria-labelledby="loginTitle">
+      <div class="login-brand">
+        <span class="brand-rule"></span>
+        <strong>NEXTROUND</strong>
+        <p>Your Next Move</p>
+      </div>
+      <div class="login-heading">
+        <span>SELECTION WORKSPACE</span>
+        <h1 id="loginTitle">選考を、次の一手へ。</h1>
+        <p>締切・予定・選考状況を、ひとつの場所で。</p>
+      </div>
+      <div class="migration-notice" id="migrationNotice" hidden>
+        <strong>この端末に選考データがあります</strong>
+        <p>ログイン後にクラウドのデータと安全に統合できます。元データの退避も残します。</p>
+        <div class="migration-counts" id="migrationCounts"></div>
+      </div>
+      <form class="login-form" id="refreshLoginForm">
+        <label>メールアドレス
+          <input id="refreshEmail" type="email" inputmode="email" autocomplete="email" placeholder="example@gmail.com">
+        </label>
+        <label>パスワード
+          <span class="password-input-wrap">
+            <input id="refreshPassword" type="password" autocomplete="current-password" maxlength="128" placeholder="8文字以上・英数字を含む">
+            <button type="button" id="refreshPasswordToggle" aria-label="パスワードを表示">表示</button>
+          </span>
+        </label>
+        <button class="login-primary" type="submit" id="refreshEmailLogin">ログイン</button>
+        <button class="login-secondary" type="button" id="refreshEmailRegister">新規登録</button>
+        <button class="login-text" type="button" id="refreshPasswordReset">パスワードを忘れた場合</button>
+        <div class="login-divider"><span>または</span></div>
+        <button class="login-google" type="button" id="refreshGoogleLogin">
+          <span class="google-mark" aria-hidden="true">G</span>
+          <span id="refreshGoogleLoginLabel">Googleでログイン・新規登録</span>
+        </button>
+        <button class="local-data-entry" type="button" id="refreshLocalEntry" hidden>この端末のデータを開く</button>
+        <p class="login-error" id="refreshLoginError" aria-live="polite"></p>
+      </form>
+      <section class="login-update">
+        <span>NEW</span>
+        <div><small>Ver.2.8.1 / 2026.08.28</small><strong>セキュリティを、もっと分かりやすく</strong><p>暗号化・クラウド・AIのデータ経路を確認できるSecurity Centerを追加しました。</p></div>
+      </section>
+      <footer class="login-footer">
+        <button type="button" data-open-legal="privacy">プライバシー</button>
+        <button type="button" data-open-legal="terms">利用規約</button>
+        <button type="button" data-open-legal="disclaimer">免責事項</button>
+        <a href="https://x.com/si28620" target="_blank" rel="noopener noreferrer">問い合わせ</a>
+      </footer>
+    </section>
+  </main>
+
+  <main class="refresh-home" id="refreshHome" hidden>
+    <header class="home-header">
+      <div class="home-brand"><strong>NEXTROUND</strong><span>SELECTION WORKSPACE</span></div>
+      <div class="home-header-actions">
+        <button class="inbox-button" type="button" id="homeInboxBtn" data-notification-feature hidden><span>NEWS</span><strong>お知らせ</strong><i class="inbox-count" data-inbox-count hidden>0</i></button>
+        <button class="profile-button" type="button" id="profileMenuBtn" aria-label="メニューを開く"><img id="profileImage" alt="" hidden><span id="profileInitial">N</span></button>
+      </div>
+    </header>
+    <section class="home-intro">
+      <div class="home-date-line" id="homeDateLabel"></div>
+      <h1>今日の予定</h1>
+      <p id="homeGreeting">おはようございます。今日の締切と予定を確認しましょう。</p>
+    </section>
+    <section class="migration-complete" id="migrationCompleteBanner" hidden>
+      <div><strong>データの引き継ぎが完了しました</strong><p id="migrationCompleteText"></p></div>
+      <button type="button" id="dismissMigrationComplete" aria-label="閉じる">×</button>
+    </section>
+    <button class="selection-launch" type="button" id="selectionLaunchBtn">
+      <span><small>SELECTIONS</small><strong>選考管理を開く</strong><em id="homeSelectionSummary">進行中 0件</em></span>
+      <b aria-hidden="true">→</b>
+    </button>
+    <section class="home-section" aria-labelledby="todayHeading">
+      <div class="home-section-head"><div><small>TODAY</small><h2 id="todayHeading">今日</h2></div><span id="todayEventCount">0件</span></div>
+      <div class="home-event-list" id="homeTodayEvents"></div>
+    </section>
+    <section class="home-section" aria-labelledby="weekHeading">
+      <div class="home-section-head"><div><small>NEXT 7 DAYS</small><h2 id="weekHeading">7日以内</h2></div><button type="button" id="homeCalendarBtn">カレンダー</button></div>
+      <div class="home-event-list" id="homeWeekEvents"></div>
+    </section>
+    <section class="home-update-band">
+      <div><small>UPDATE 2.8.1 / 2026.08.28</small><h2>Security Centerを追加</h2><p>暗号化・クラウド・AIが扱う情報を、サービス別に確認できます。</p></div>
+      <button type="button" id="homeUpdatesBtn">詳しく見る</button>
+    </section>
+    <footer class="home-footer">
+      <strong>NEXTROUND</strong>
+      <div>
+        <button type="button" data-open-legal="privacy">プライバシー</button>
+        <button type="button" data-open-legal="terms">利用規約</button>
+        <button type="button" data-open-legal="disclaimer">免責事項</button>
+        <a href="https://x.com/si28620" target="_blank" rel="noopener noreferrer">サポート</a>
+      </div>
+    </footer>
+  </main>
+
+  <main class="app" id="refreshSelection" hidden>
+    <header class="selection-header">
       <div class="brand">
-        <h1>NEXTROUND</h1>
-        <p class="sub">インターンも本選考も、タップで進める。</p>
+        <span class="selection-kicker">SELECTIONS</span>
+        <h1>選考管理</h1>
+        <p class="sub">締切・進捗・結果をまとめて確認</p>
       </div>
       <div class="header-tools">
-        <button class="settings-btn" type="button" id="settingsBtn">設定</button>
-        <button class="settings-btn login-glow" type="button" id="cloudBtn">ログイン</button>
         <button class="settings-btn" type="button" id="analyticsBtn">分析</button>
         <button class="today" type="button" id="calendarBtn" aria-label="カレンダーを開く"><span>今日</span><strong id="dateLabel"></strong><small id="weekdayLabel"></small></button>
+        <button class="selection-add" type="button" id="addBtn"><span>＋</span>追加</button>
+        <button type="button" id="settingsBtn" hidden>設定</button>
+        <button type="button" id="cloudBtn" hidden>ログイン</button>
       </div>
     </header>
 
@@ -38,18 +146,127 @@
     </section>
 
     <section class="toolbar">
-      <input id="search" class="search" type="search" placeholder="会社名・業界・職種・メモで検索">
+      <div class="search-sort-row">
+        <input id="search" class="search" type="search" placeholder="会社名・業界・職種・メモで検索">
+        <select id="sortOrder" class="sort-order" aria-label="並び順">
+          <option value="deadline">締切が近い順</option>
+          <option value="nextDate">次の予定が近い順</option>
+          <option value="updated">更新が新しい順</option>
+          <option value="company">会社名順</option>
+        </select>
+      </div>
       <div id="chips" class="chips" aria-label="表示フィルター"></div>
     </section>
 
-    <section id="deadlineStrip" class="deadline-strip" aria-label="締切"></section>
-    <section id="cards" class="cards" aria-label="選考一覧"></section>
+    <div class="selection-view-segment" id="selectionViewSegment" data-active-index="0" aria-label="選考の表示方法">
+      <button class="active" type="button" data-selection-view="list">一覧</button>
+      <button type="button" data-selection-view="pipeline">パイプライン</button>
+      <button type="button" data-selection-view="offers">内定管理</button>
+      <i class="selection-tab-indicator" aria-hidden="true"></i>
+    </div>
+
+    <div id="selectionListView">
+      <section id="deadlineStrip" class="deadline-strip" aria-label="締切"></section>
+      <section id="cards" class="cards" aria-label="選考一覧"></section>
+    </div>
+    <section id="selectionPipelineView" class="pipeline-board" aria-label="選考パイプライン" hidden></section>
+    <section id="selectionOffersView" class="offers-workspace" aria-label="内定管理" hidden>
+      <div class="offer-overview" id="offerOverview"></div>
+      <div class="offer-list" id="offerList"></div>
+    </section>
   </main>
 
-  <nav class="bottom-nav" aria-label="主要操作">
-    <button class="nav-btn active" data-filter="all">一覧</button>
-    <button class="nav-btn" data-filter="deadline">締切</button>
-    <button class="nav-btn fab" id="addBtn">＋ 追加</button>
+  <main class="ai-workspace" id="refreshAi" hidden>
+    <header class="ai-page-head">
+      <div>
+        <span class="ai-page-kicker">NEXTROUND INTELLIGENCE / BETA</span>
+        <h1>AI添削</h1>
+        <p>企業を調査し、選考を想定してESを厳しく評価します。</p>
+      </div>
+      <span class="ai-quota" id="aiQuota"><i></i><b>確認中</b></span>
+    </header>
+
+    <section class="ai-security-strip" aria-label="AI添削のデータ保護">
+      <span>PRIVACY CONTROL</span>
+      <p>送信ボタンを押したESだけを処理します。ES本文と添削結果はNEXTROUNDのサーバーへ保存しません。</p>
+    </section>
+
+    <div class="ai-layout">
+      <form class="ai-review-form" id="aiReviewForm">
+        <div class="ai-section-title"><span>01 / INPUT</span><h2>添削するES</h2></div>
+        <label>企業名
+          <input id="aiCompany" type="text" maxlength="80" list="aiCompanyOptions" autocomplete="organization" placeholder="例：SCSK" required>
+          <datalist id="aiCompanyOptions"></datalist>
+        </label>
+        <label>ESのお題・設問
+          <textarea id="aiQuestion" maxlength="1000" rows="3" placeholder="例：学生時代に最も力を入れたことを教えてください。" required></textarea>
+          <small class="ai-input-count"><span id="aiQuestionCount">0</span>/1000</small>
+        </label>
+        <label class="ai-character-limit">文字数上限
+          <span><input id="aiCharacterLimit" type="number" min="50" max="4000" step="1" inputmode="numeric" placeholder="400"><b>文字</b></span>
+        </label>
+        <label>ES本文
+          <textarea id="aiEssay" maxlength="4000" rows="12" placeholder="添削したい文章を入力してください。" required></textarea>
+          <small class="ai-input-count"><span id="aiEssayCount">0</span>/4000</small>
+        </label>
+        <div class="ai-submit-note">
+          <strong>送信される情報</strong>
+          <p>企業名・設問・文字数上限・ES本文をCloudflare Workers AIへ送ります。企業検索サービスへ送るのは企業名だけです。</p>
+        </div>
+        <p class="ai-form-status" id="aiFormStatus" aria-live="polite"></p>
+        <button class="ai-review-submit" id="aiReviewSubmit" type="submit" disabled>
+          <span class="ai-submit-label">企業を調査して添削</span>
+          <span class="ai-submit-loading" hidden><i></i>ANALYZING</span>
+        </button>
+        <small class="ai-form-footnote">AIは誤る場合があります。応募前に必ずご自身で確認してください。</small>
+      </form>
+
+      <aside class="ai-empty-state" id="aiEmptyState">
+        <span class="ai-empty-signal" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <small>REVIEW ENGINE</small>
+        <strong>5つの視点で、文章の構造を可視化。</strong>
+        <p>主体性・思考力・実行力・他者理解力・再現性を各20点で評価します。</p>
+        <div><span>STRICT REVIEW</span><span>COMPANY RESEARCH</span><span>NO SERVER SAVE</span></div>
+      </aside>
+
+      <section class="ai-result" id="aiResult" hidden aria-live="polite">
+        <div class="ai-result-head">
+          <div><small>AI REVIEW RESULT</small><h2 id="aiResultCompany"></h2><p id="aiResultSummary"></p></div>
+          <div class="ai-score-ring" id="aiScoreRing" style="--score:0"><strong id="aiTotalScore">0</strong><span>/ 100</span></div>
+        </div>
+        <div class="ai-research-state" id="aiResearchState"></div>
+        <div class="ai-criteria" id="aiCriteria"></div>
+
+        <section class="ai-result-section" id="aiDeductionsSection">
+          <div class="ai-result-section-head"><span>DEDUCTIONS</span><h3>減点されたポイント</h3></div>
+          <ul id="aiDeductions"></ul>
+        </section>
+        <section class="ai-result-section">
+          <div class="ai-result-section-head"><span>TO 90+</span><h3>90点以上へ引き上げるには</h3></div>
+          <ol id="aiImprovementPoints"></ol>
+        </section>
+        <section class="ai-result-section ai-revised-section">
+          <div class="ai-result-section-head"><span>REVISED DRAFT</span><h3>改善後の文章例</h3></div>
+          <p class="ai-revised-meta" id="aiRevisedMeta"></p>
+          <div class="ai-revised-text" id="aiRevisedEssay"></div>
+          <button class="ai-copy-button" id="aiCopyResult" type="button">改善例をコピー</button>
+        </section>
+        <section class="ai-sources" id="aiSourcesSection" hidden>
+          <div class="ai-result-section-head"><span>SOURCES</span><h3>企業調査の参考ページ</h3></div>
+          <div id="aiSources"></div>
+        </section>
+        <p class="ai-result-caution" id="aiResultCaution"></p>
+        <button class="ai-new-review" id="aiNewReview" type="button">別のESを添削</button>
+      </section>
+    </div>
+  </main>
+
+  <nav class="bottom-nav refresh-bottom-nav" id="refreshBottomNav" aria-label="主要操作" hidden>
+    <button class="nav-btn active" type="button" data-refresh-view="home"><span>HOME</span>ホーム</button>
+    <button class="nav-btn" type="button" data-refresh-view="selection"><span>TRACK</span>選考管理</button>
+    <button class="nav-btn ai-nav-btn" type="button" data-refresh-view="ai"><span>AI</span>AI添削</button>
+    <button class="nav-btn" type="button" data-refresh-view="calendar"><span>PLAN</span>カレンダー</button>
+    <button class="nav-btn" type="button" data-refresh-view="menu"><span>MORE</span>メニュー</button>
   </nav>
 
   <dialog id="addChoiceDialog">
@@ -65,7 +282,12 @@
         </button>
         <button class="choice-card" type="button" id="memoImportBtn">
           メモからまとめて追加
-          <span>iPhoneメモなどを貼り付けて、候補を確認して追加します。</span>
+          <span>iPhoneメモなどを貼り付けて候補を作ります。</span>
+        </button>
+        <button class="choice-card notion-choice-card" type="button" id="notionImportBtn">
+          <small>NOTION IMPORT</small>
+          Notionから移行
+          <span>選考管理表のCSVを読み込み、列を自動判定します。</span>
         </button>
       </div>
     </div>
@@ -93,6 +315,14 @@
           <select name="stage"></select>
         </label>
       </div>
+      <label id="internSeasonField" hidden>インターン時期
+        <select name="internSeason">
+          <option value="未設定">未設定</option>
+          <option value="サマー">サマー</option>
+          <option value="秋">秋</option>
+          <option value="冬">冬</option>
+        </select>
+      </label>
       <label>業界
         <select name="industry"></select>
       </label>
@@ -110,22 +340,32 @@
       <label>次の予定内容
         <input name="nextPlan" placeholder="例: AI面接 / 動画提出 / Webテスト受験">
       </label>
-      <section class="schedule-picker">
-        <label>この選考であるフェーズ</label>
-        <div class="flow-options">
-          <label><input type="checkbox" name="flowEs" checked><span>ES</span></label>
-          <label><input type="checkbox" name="flowWebTest" checked><span>Webテスト</span></label>
-          <label><input type="checkbox" name="flowGd" checked><span>GD</span></label>
-          <label><input type="checkbox" name="flowInterview" checked><span>面接</span></label>
+      <section class="schedule-picker flow-builder">
+        <div class="flow-builder-head">
+          <div><label>選考フロー</label><p class="schedule-note">名称変更、並び替え、追加・削除ができます。</p></div>
+          <button type="button" id="resetFlowBtn">標準に戻す</button>
         </div>
-        <label>面接回数
-          <select name="interviewCount">
-            <option value="0">なし</option>
-            <option value="1">1回</option>
-            <option value="2">2回</option>
-            <option value="3">3回以上</option>
-          </select>
-        </label>
+        <div class="document-flow-control" id="documentFlowControl">
+          <div><strong>書類選考の形式</strong><small>ESとWebテストの受け方</small></div>
+          <div class="document-flow-options">
+            <label><input type="radio" name="documentFlowMode" value="separate" checked><span>ESの後にWebテスト</span></label>
+            <label><input type="radio" name="documentFlowMode" value="combined"><span>ES＋Webテスト同時</span></label>
+          </div>
+        </div>
+        <div class="interview-count-control">
+          <div><strong>面接回数</strong><small>一括設定</small></div>
+          <div class="interview-count-buttons" id="interviewCountButtons">
+            <button type="button" data-interview-count="0">なし</button>
+            <button type="button" data-interview-count="1">1回</button>
+            <button type="button" data-interview-count="2">2回</button>
+            <button type="button" data-interview-count="3">3回以上</button>
+          </div>
+        </div>
+        <div class="flow-step-list" id="flowStepList"></div>
+        <div class="flow-add-row">
+          <input id="flowStepInput" type="text" maxlength="30" placeholder="例: AI面接 / 動画選考 / 人事面談">
+          <button type="button" id="addFlowStepBtn">追加</button>
+        </div>
       </section>
       <section class="schedule-picker">
         <label>選考タグ</label>
@@ -139,7 +379,8 @@
         <p class="schedule-note" id="internScheduleNote">選考中は候補としてカレンダーに表示し、合格すると自動で確定します。</p>
         <div class="segment">
           <label><input type="radio" name="internScheduleMode" value="single" checked><span>1日</span></label>
-          <label><input type="radio" name="internScheduleMode" value="range"><span>複数日</span></label>
+          <label><input type="radio" name="internScheduleMode" value="range"><span>連続日程</span></label>
+          <label><input type="radio" name="internScheduleMode" value="custom"><span>個別日程</span></label>
         </div>
         <label id="internSingleField">実施日
           <input name="internSingleDate" type="date">
@@ -151,6 +392,15 @@
           <label>終了日
             <input name="internEndDate" type="date">
           </label>
+        </div>
+        <div id="internCustomFields" class="custom-date-fields" hidden>
+          <div class="custom-date-add">
+            <label>実施日を追加
+              <input id="internCustomDatePicker" type="date">
+            </label>
+            <button type="button" id="internAddCustomDateBtn">追加</button>
+          </div>
+          <div class="custom-date-list" id="internCustomDateList"></div>
         </div>
       </div>
       <label>メモ
@@ -185,15 +435,40 @@
 
   <dialog id="importDialog">
     <div class="form-head settings-head">
-      <h2>メモからまとめて追加</h2>
+      <h2>まとめて追加・移行</h2>
       <button class="x" type="button" id="closeImportDialog" aria-label="閉じる">×</button>
     </div>
     <div class="import-body">
-      <p class="settings-note">1行1社に近いほど精度が上がります。読み取れない項目は空欄のまま候補にします。</p>
-      <label>メモを貼り付け
-        <textarea id="importText" placeholder="例: サイバーエージェント インターン ES提出済 6/20締切&#10;NRI 本選考 GD 6/25"></textarea>
-      </label>
-      <button class="save" type="button" id="parseImportBtn">候補を作成</button>
+      <div class="import-mode-switch" role="tablist" aria-label="取り込み方法">
+        <button class="active" type="button" role="tab" aria-selected="true" data-import-mode="memo">メモから</button>
+        <button type="button" role="tab" aria-selected="false" data-import-mode="notion">Notion CSV</button>
+      </div>
+      <section id="memoImportPanel" class="import-mode-panel">
+        <p class="settings-note">1行1社に近いほど精度が上がります。読み取れない項目は空欄のまま候補にします。</p>
+        <label>メモを貼り付け
+          <textarea id="importText" placeholder="例: サイバーエージェント サマーインターン ES提出済 6/20締切&#10;NRI 本選考 GD 6/25"></textarea>
+        </label>
+        <button class="save" type="button" id="parseImportBtn">候補を作成</button>
+      </section>
+      <section id="notionImportPanel" class="import-mode-panel notion-import-panel" hidden>
+        <details class="notion-export-guide">
+          <summary>NotionからCSVを出す方法</summary>
+          <ol>
+            <li>Notionで選考管理のデータベースを開く</li>
+            <li>右上の「•••」から「エクスポート」を選ぶ</li>
+            <li>形式をCSVにして書き出す</li>
+            <li>書き出したCSVを下から選ぶ</li>
+          </ol>
+          <p>ページ本文や添付ファイルは対象外です。表の列に入っている会社名、進捗、日付、メモなどを移行します。</p>
+        </details>
+        <input id="notionCsvFile" type="file" accept=".csv,text/csv" hidden>
+        <button class="notion-file-button" type="button" id="chooseNotionCsvBtn"><span>CSV FILE</span><strong>NotionのCSVを選ぶ</strong></button>
+        <div class="notion-file-summary" id="notionFileSummary" hidden></div>
+        <div class="notion-ai-panel">
+          <div><small>AI COLUMN MATCH</small><strong>分かりにくい列名をAIで判定</strong><p>押した時だけ、列名と短いサンプルをCloudflare Workers AIへ送ります。CSVファイル自体は保存しません。</p></div>
+          <button type="button" id="notionAiMapBtn" disabled>AIで列を判定</button>
+        </div>
+      </section>
       <div id="importPreview" class="import-preview"></div>
       <button class="save" type="button" id="confirmImportBtn" hidden>候補をまとめて追加</button>
       <div class="settings-status" id="importStatus" aria-live="polite"></div>
@@ -210,7 +485,8 @@
         <label>合格時のインターン日程</label>
         <div class="segment">
           <label><input type="radio" name="resultScheduleMode" value="single" checked><span>1日</span></label>
-          <label><input type="radio" name="resultScheduleMode" value="range"><span>複数日</span></label>
+          <label><input type="radio" name="resultScheduleMode" value="range"><span>連続日程</span></label>
+          <label><input type="radio" name="resultScheduleMode" value="custom"><span>個別日程</span></label>
         </div>
         <label id="resultSingleField">実施日
           <input name="resultSingleDate" type="date">
@@ -223,9 +499,56 @@
             <input name="resultEndDate" type="date">
           </label>
         </div>
+        <div id="resultCustomFields" class="custom-date-fields" hidden>
+          <div class="custom-date-add">
+            <label>実施日を追加
+              <input id="resultCustomDatePicker" type="date">
+            </label>
+            <button type="button" id="resultAddCustomDateBtn">追加</button>
+          </div>
+          <div class="custom-date-list" id="resultCustomDateList"></div>
+        </div>
       </div>
       <button class="save" type="button" id="passResultBtn">合格</button>
       <button class="save danger" type="button" id="failResultBtn">不合格</button>
+    </form>
+  </dialog>
+
+  <dialog id="timelineDialog" class="timeline-dialog">
+    <div class="form-head timeline-head">
+      <div><small class="dialog-kicker">SELECTION TIMELINE</small><h2 id="timelineTitle">選考タイムライン</h2></div>
+      <button class="x" type="button" id="closeTimelineDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="timeline-body">
+      <section class="timeline-summary" id="timelineSummary"></section>
+      <ol class="timeline-list" id="timelineList"></ol>
+      <p class="timeline-note" id="timelineNote"></p>
+    </div>
+  </dialog>
+
+  <dialog id="offerDialog" class="offer-dialog">
+    <form id="offerForm" method="dialog">
+      <div class="form-head">
+        <div><small class="dialog-kicker">OFFER CONTROL</small><h2 id="offerDialogTitle">内定を管理</h2></div>
+        <button class="x" type="button" id="closeOfferDialog" aria-label="閉じる">×</button>
+      </div>
+      <label>回答期限
+        <input name="offerResponseDeadline" type="date">
+      </label>
+      <label>現在の判断
+        <select name="offerDecision">
+          <option>検討中</option>
+          <option>承諾</option>
+          <option>辞退</option>
+        </select>
+      </label>
+      <label>内定職種・配属
+        <input name="offerRole" maxlength="80" placeholder="例: 総合職 / 東京配属">
+      </label>
+      <label>条件・比較メモ
+        <textarea name="offerMemo" placeholder="給与、勤務地、回答前に確認したいことなど"></textarea>
+      </label>
+      <button class="save" type="submit">内定情報を保存</button>
     </form>
   </dialog>
 
@@ -281,10 +604,10 @@
     <div class="vault-body">
       <p class="settings-note" id="vaultMessage"></p>
       <label>保護パスワード
-        <input id="vaultPassword" type="password" autocomplete="new-password">
+        <input id="vaultPassword" type="password" autocomplete="new-password" maxlength="128">
       </label>
       <label id="vaultConfirmField" hidden>もう一度入力
-        <input id="vaultConfirmPassword" type="password" autocomplete="new-password">
+        <input id="vaultConfirmPassword" type="password" autocomplete="new-password" maxlength="128">
       </label>
       <button class="save" type="button" id="vaultSubmitBtn">続ける</button>
       <div class="vault-error" id="vaultError" aria-live="polite"></div>
@@ -305,10 +628,10 @@
         NEXTROUND内のログイン情報とESアーカイブが削除されることを理解しました
       </label>
       <label>新しい保護パスワード
-        <input id="forgotVaultPassword" type="password" autocomplete="new-password">
+        <input id="forgotVaultPassword" type="password" autocomplete="new-password" maxlength="128">
       </label>
       <label>もう一度入力
-        <input id="forgotVaultConfirmPassword" type="password" autocomplete="new-password">
+        <input id="forgotVaultConfirmPassword" type="password" autocomplete="new-password" maxlength="128">
       </label>
       <button class="save danger" type="button" id="forgotVaultSubmitBtn">保護データを削除して再設定</button>
       <div class="vault-error" id="forgotVaultError" aria-live="polite"></div>
@@ -353,14 +676,14 @@
       <button class="x" type="button" id="closeCloudDialog" aria-label="閉じる">×</button>
     </div>
     <div class="vault-body">
-      <p class="settings-note">メールログインすると、ホーム画面版でも選考データを復元キーで暗号化してFirebaseに自動保存できます。</p>
+      <p class="settings-note">ログインすると、選考データを復元キーで暗号化してFirebaseに自動保存できます。</p>
       <div class="settings-status" id="cloudStatus">未ログイン</div>
       <section class="mail-login-panel">
         <label>メールアドレス
           <input id="cloudEmail" type="email" inputmode="email" autocomplete="email" placeholder="example@gmail.com">
         </label>
         <label>パスワード
-          <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="8文字以上・英数字を含む">
+          <input id="cloudPassword" type="password" autocomplete="current-password" maxlength="128" placeholder="8文字以上・英数字を含む">
         </label>
         <p class="settings-note">新規登録は8文字以上、英字と数字を含むパスワードを推奨します。空白は使えません。</p>
         <div class="settings-actions">
@@ -370,24 +693,26 @@
         <button class="text-btn" type="button" id="cloudPasswordResetBtn">パスワードを忘れた場合</button>
         <div class="vault-error" id="cloudEmailError" aria-live="polite"></div>
       </section>
-      <div class="settings-actions">
-        <button class="soft-btn" type="button" id="cloudLoginBtn">Googleでログイン</button>
-        <button class="soft-btn" type="button" id="cloudLogoutBtn" hidden>ログアウト</button>
-      </div>
-      <p class="settings-note">GoogleログインはSafari通常タブ向けです。iPhoneのホーム画面版ではメールログインを使ってください。</p>
+      <div class="login-divider cloud-login-divider"><span>または</span></div>
+      <button class="soft-btn cloud-google-btn" type="button" id="cloudGoogleLoginBtn">
+        <span class="google-mark" aria-hidden="true">G</span>
+        <span>Googleでログイン・新規登録</span>
+      </button>
+      <p class="settings-note google-auth-note">Google認証がホーム画面版で開かない場合は、Safariの通常タブで公開URLを開いてください。端末データをそのまま引き継ぐ場合は、この画面のメール登録が確実です。</p>
+      <button class="soft-btn" type="button" id="cloudLogoutBtn" hidden>ログアウト</button>
       <section class="settings-section" id="cloudRestoreSection" hidden>
         <h4 id="cloudRestoreTitle">復元キー</h4>
         <p class="settings-note" id="cloudRestoreNote">復元キーは、別端末でクラウドデータを開く時に必要です。忘れるとクラウドの中身は復元できません。</p>
         <label>復元キー
-          <input id="cloudRestoreKey" type="password" autocomplete="new-password">
+          <input id="cloudRestoreKey" type="password" autocomplete="new-password" maxlength="128">
         </label>
         <label id="cloudRestoreConfirmField" hidden>もう一度入力
-          <input id="cloudRestoreConfirm" type="password" autocomplete="new-password">
+          <input id="cloudRestoreConfirm" type="password" autocomplete="new-password" maxlength="128">
         </label>
         <button class="save" type="button" id="cloudRestoreSubmitBtn">復元キーを設定</button>
         <div class="vault-error" id="cloudRestoreError" aria-live="polite"></div>
       </section>
-      <p class="settings-note">ログイン後、クラウドに保存データがあれば自動で確認します。端末にデータがある場合だけ、置き換える前に確認します。</p>
+      <p class="settings-note">ログイン後、クラウドに保存データがあれば自動で確認します。端末にもデータがある場合は、元データを退避してから新しい更新を優先して統合します。</p>
     </div>
   </dialog>
 
@@ -437,6 +762,108 @@
     </div>
   </dialog>
 
+  <dialog id="notificationDialog" data-notification-feature hidden>
+    <div class="form-head settings-head">
+      <div><small class="dialog-kicker">WEB PUSH</small><h2>通知設定</h2></div>
+      <button class="x" type="button" id="closeNotificationDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="notification-dialog-content">
+      <section class="notification-panel" id="notificationPanel">
+        <div class="notification-panel-head">
+          <div>
+            <span class="settings-kicker">REMINDER CONTROL</span>
+            <h3>締切・予定の通知</h3>
+          </div>
+          <span class="notification-state" id="notificationState" data-state="off"><i></i><b>未設定</b></span>
+        </div>
+        <p class="settings-note">アプリを閉じていても、締切や予定を端末へ通知します。通知の利用にはログインが必要です。</p>
+        <div class="notification-options" id="notificationOptions">
+          <label class="notification-option">
+            <input type="checkbox" id="notifyDeadline7" checked>
+            <span><strong>締切の7日前</strong><small>提出準備を始めるタイミングで通知</small></span>
+            <i aria-hidden="true"></i>
+          </label>
+          <label class="notification-option">
+            <input type="checkbox" id="notifyDeadline1" checked>
+            <span><strong>締切の前日</strong><small>約24時間前にもう一度通知</small></span>
+            <i aria-hidden="true"></i>
+          </label>
+          <label class="notification-option">
+            <input type="checkbox" id="notifyScheduleToday" checked>
+            <span><strong>予定日の当日</strong><small>面接・GD・確定インターンを通知</small></span>
+            <i aria-hidden="true"></i>
+          </label>
+          <label class="notification-time-row" for="notificationTime">
+            <span><strong>通知時刻</strong><small>端末の現地時刻で送信</small></span>
+            <input type="time" id="notificationTime" value="09:00" step="900">
+          </label>
+        </div>
+        <div class="notification-actions">
+          <button class="soft-btn accent notification-enable" type="button" id="enableNotificationsBtn">通知を有効にする</button>
+          <button class="soft-btn" type="button" id="testNotificationBtn" hidden>テスト通知</button>
+          <button class="text-btn notification-disable" type="button" id="disableNotificationsBtn" hidden>通知を停止</button>
+        </div>
+        <div class="settings-status notification-status" id="notificationStatus" aria-live="polite"></div>
+        <p class="notification-privacy-note"><b>送信しない情報</b> 会社名・選考状況・メモ・ES・マイページ情報は通知サーバーへ送りません。通知日時と種類だけを匿名化した端末IDに結び付けて保存します。</p>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="inboxDialog" class="refresh-sheet inbox-dialog" data-notification-feature hidden>
+    <div class="form-head settings-head">
+      <div><small class="dialog-kicker">INBOX</small><h2>お知らせ</h2></div>
+      <div class="inbox-head-actions">
+        <button class="inbox-compose" type="button" id="openAnnouncementComposerBtn" hidden>作成</button>
+        <button class="x" type="button" id="closeInboxDialog" aria-label="閉じる">×</button>
+      </div>
+    </div>
+    <div class="inbox-body">
+      <div class="inbox-controls">
+        <div class="inbox-tabs" aria-label="お知らせの種類">
+          <button class="active" type="button" data-inbox-filter="all">すべて</button>
+          <button type="button" data-inbox-filter="reminder">リマインド</button>
+          <button type="button" data-inbox-filter="announcement">運営から</button>
+        </div>
+        <button class="inbox-clear" type="button" id="clearReadInboxBtn" disabled>既読を一括削除</button>
+      </div>
+      <p class="inbox-status" id="inboxStatus" aria-live="polite">お知らせを読み込んでいます...</p>
+      <div class="inbox-list" id="inboxList"></div>
+    </div>
+  </dialog>
+
+  <dialog id="announcementComposerDialog" class="announcement-composer" data-notification-feature hidden>
+    <form id="announcementForm">
+      <div class="form-head settings-head">
+        <div><small class="dialog-kicker">OWNER CONSOLE</small><h2>お知らせを作成</h2></div>
+        <button class="x" type="button" id="closeAnnouncementComposer" aria-label="閉じる">×</button>
+      </div>
+      <div class="announcement-form-body">
+        <p class="announcement-owner-note">この画面は運営者アカウントだけに表示されます。</p>
+        <label>種類
+          <select id="announcementLevel">
+            <option value="update">アップデート</option>
+            <option value="important">重要なお知らせ</option>
+            <option value="info">ご案内</option>
+          </select>
+        </label>
+        <label>タイトル
+          <input id="announcementTitle" type="text" maxlength="60" placeholder="例：カレンダー機能を更新しました" required>
+        </label>
+        <label>本文
+          <textarea id="announcementBody" maxlength="600" rows="6" placeholder="変更内容や利用者への案内を入力" required></textarea>
+          <small class="announcement-counter"><span id="announcementBodyCount">0</span>/600</small>
+        </label>
+        <label class="announcement-push-option">
+          <input id="announcementSendPush" type="checkbox">
+          <span><strong>端末通知でも知らせる</strong><small>通知を有効にしている利用者へタイトルを送信</small></span>
+          <i aria-hidden="true"></i>
+        </label>
+        <p class="announcement-status" id="announcementStatus" aria-live="polite"></p>
+        <button class="announcement-submit" type="submit" id="sendAnnouncementBtn">お知らせを送信</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="privacyDialog">
     <div class="form-head settings-head">
       <h2>データとプライバシー</h2>
@@ -451,17 +878,18 @@
         </section>
         <section class="privacy-item">
           <strong>取得・保存される情報</strong>
-          <p>利用者が入力した場合、会社名、業界、職種・コース、選考種別、選考状況、締切日、次の予定日・内容、インターン日程、選考タグ、通常メモ、ESアーカイブ、マイページURL、マイページID・パスワード、企業フィット診断の回答・貼り付け文章・診断結果が保存対象になります。</p>
-          <p>メールログインまたはGoogleログインを使う場合、ログイン用のメールアドレスがFirebase Authenticationに保存されます。ログイン用パスワードそのものをNEXTROUND内に保存することはありません。</p>
+          <p>利用者が入力した場合、会社名、業界、職種・コース、選考種別、インターン時期、選考状況、書類選考の形式、独自に設定した選考フロー、締切日、次の予定日・内容、インターン日程、内定の回答期限・判断状況・条件メモ、選考タグ、通常メモ、ESアーカイブ、マイページURL、マイページID・パスワード、企業フィット診断の回答・貼り付け文章・診断結果が保存対象になります。</p>
+          <p>メールログインまたはGoogleログインを利用する場合、ログイン用のメールアドレスと認証方法がFirebase Authenticationに保存されます。ログイン用パスワードそのものをNEXTROUND内に保存することはありません。</p>
         </section>
         <section class="privacy-item">
           <strong>利用目的</strong>
-          <p>保存された情報は、選考状況の管理、締切・予定の表示、カレンダー表示、選考分析、企業フィット診断、別端末との同期、データ保存・復元、問い合わせ対応のために利用されます。</p>
+          <p>保存された情報は、選考状況と内定の管理、締切・予定の表示、カレンダー表示、選考分析、企業フィット診断、AI添削、別端末との同期、データ保存・復元、問い合わせ対応のために利用されます。</p>
           <p>入力内容を広告配信、第三者への販売、利用者の選考状況を外部に公開する目的で利用することはありません。</p>
         </section>
         <section class="privacy-item">
           <strong>端末内保存</strong>
           <p>クラウド同期を使わない場合、入力データは利用者のブラウザ内に保存されます。管理者が会社名、選考状況、メモ、ES内容、マイページ情報を取得・閲覧することはありません。</p>
+          <p>ログイン後の端末内データは、Firebaseが発行する利用者ごとの識別子で分けて保存します。同じ端末で別のアカウントへ切り替えても、選考情報や企業フィット診断の内容が混ざらない設計です。</p>
           <p>企業フィット診断の回答、企業文章、診断結果は端末内だけに保存され、Firebaseクラウド同期の対象には含まれません。貼り付けた文章を外部AIへ送信する処理も行いません。</p>
           <p>ブラウザやOSの仕様、端末の初期化、キャッシュ削除、長期間未使用などにより、端末内の保存データが消える可能性があります。選考管理データは設定画面から保存できますが、企業フィット診断データは現在バックアップ対象外です。</p>
         </section>
@@ -472,14 +900,39 @@
           <p>復元キーはクラウド上に保存されません。復元キーを忘れると、クラウド上の暗号化データは復元できません。利便性のため、ログイン済み端末のブラウザ内には復元キーが保存される場合があります。</p>
         </section>
         <section class="privacy-item">
+          <strong>締切・予定の通知</strong>
+          <p>通知を利用者自身が有効にした場合に限り、Cloudflare WorkersとCloudflare D1へ、匿名化した所有者識別子、ランダムな端末ID、ブラウザが発行するPush購読情報、通知予定日時、通知の種類、タイムゾーンを保存します。</p>
+          <p>会社名、業界、選考状況、メモ、ES本文、マイページURL・ID・パスワード、復元キー、保護パスワードは通知サーバーへ送信しません。通知文にも企業名を表示せず、詳細は利用者の端末内にあるNEXTROUNDを開いて確認する設計です。</p>
+          <p>通知を停止すると未送信の予約と端末の購読情報を削除します。送信済み通知の技術記録は、不具合確認と重複送信防止のため最大30日間保持した後、自動削除します。</p>
+          <p>通知の配送には、Apple、Google、Mozillaなどブラウザ提供元のPush通知基盤が利用される場合があります。OSの省電力設定、通信状況、サービス障害などにより、通知が遅れたり届かなかったりする可能性があります。重要な締切は応募先の公式案内も確認してください。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>アプリ内のお知らせ</strong>
+          <p>「お知らせ」には、NEXTROUNDから全利用者へ配信するアップデート情報と、利用者本人の端末へ送信済みの締切・予定リマインドを表示します。</p>
+          <p>未読・既読・一覧から非表示にした状態は、ログイン中の端末間で揃えるため、内容を特定できない所有者識別子とお知らせIDに結び付けてCloudflare D1へ保存します。会社名、選考状況、メモ、ES、マイページ情報はお知らせ機能へ送信しません。</p>
+          <p>アプリには過去30日間のお知らせを表示します。配信内容と既読・非表示状態の技術記録は最大180日後に自動削除します。</p>
+        </section>
+        <section class="privacy-item">
+          <strong>AI添削</strong>
+          <p>AI添削は、ログイン中の利用者が「企業を調査して添削」ボタンを押した場合に限り実行されます。企業名は公開情報を探すためTavilyへ送信され、企業名、ESの設問、文字数上限、ES本文、取得した企業情報は添削処理のためCloudflare Workers AIへ送信されます。</p>
+          <p>ES本文と添削結果は、NEXTROUNDのCloudflare D1やFirebase Firestoreへ保存せず、AI処理も保存を要求しない設定で実行します。利用回数の制限に必要な匿名化した所有者識別子、日付、利用回数と、一般公開されている企業情報・参照URLだけをCloudflare D1へ保存します。</p>
+          <p>企業の公開情報は検索回数を抑えるため最大30日間再利用します。企業検索サービスへES本文、設問、ログイン用メールアドレス、選考データ、マイページ情報は送信しません。Cloudflareは、明示的な同意なくWorkers AIへ送信された内容をモデル学習へ利用しない方針を示しています。</p>
+          <p>氏名、住所、電話番号、メールアドレスなど、添削に不要な個人情報はES本文へ入力しないでください。AIの評価や企業情報は参考情報であり、正確性、採用結果、90点以上の評価を保証するものではありません。</p>
+          <p>Notion CSVの「AIで列を判定」を押した場合は、列名と短いサンプル値だけをCloudflare Workers AIへ送信します。パスワードやログインIDと判断した列の値は送信せず、CSVファイルや判定結果をNEXTROUNDのサーバーへ保存しません。</p>
+          <a class="privacy-link" href="https://developers.cloudflare.com/workers-ai/platform/data-usage/" target="_blank" rel="noopener noreferrer">Cloudflare Workers AIのデータ利用方針</a>
+          <a class="privacy-link" href="https://www.tavily.com/privacy" target="_blank" rel="noopener noreferrer">Tavilyのプライバシーポリシー</a>
+        </section>
+        <section class="privacy-item">
           <strong>ログイン情報の扱い</strong>
-          <p>メールログインのパスワードはFirebase Authenticationで管理されます。NEXTROUNDの管理者が利用者のログイン用パスワードを閲覧することはできません。</p>
+          <p>メールログインのパスワードはFirebase Authenticationで管理されます。GoogleログインではGoogleアカウントのパスワードをNEXTROUNDへ送信・保存しません。NEXTROUNDの管理者が利用者のログイン用パスワードを閲覧することはできません。</p>
           <p>Firebase Authenticationの管理画面では、管理者がログインユーザーのメールアドレス、ログイン方法、作成日時などを確認できる場合があります。</p>
           <p>マイページID・パスワードの入力は任意です。入力した場合、保護パスワードで暗号化して保存されます。マイページURLはカードから開けるよう保存されます。</p>
         </section>
         <section class="privacy-item">
           <strong>管理者が見られる可能性がある情報</strong>
           <p>クラウド同期を使う場合、管理者はFirebase Authentication上でログイン用メールアドレスを確認できる場合があります。また、Firestore上で暗号化された保存データ、保存日時、技術的な識別子を確認できる場合があります。</p>
+          <p>通知を使う場合、管理者はCloudflare上で、内容を特定できない所有者識別子、ランダムな端末ID、Push購読情報、通知予定日時、通知の種類、送信成否などの技術情報を確認できる場合があります。これらに会社名や選考内容は含まれません。</p>
+          <p>AI添削を使う場合、管理者は匿名化した利用回数と、再利用のため保存された公開企業情報・参照URLを確認できる場合があります。ES本文と添削結果はNEXTROUNDのデータベースへ保存しません。</p>
           <p>問い合わせを送った場合、X（Twitter）のDM上で利用者が送信した内容を確認します。問い合わせ時は、会社名、マイページID、パスワード、ES本文などを送らないでください。</p>
         </section>
         <section class="privacy-item">
@@ -489,7 +942,7 @@
         </section>
         <section class="privacy-item">
           <strong>第三者サービス</strong>
-          <p>NEXTROUNDは、公開にGitHub Pages、ログイン・クラウド同期にFirebase AuthenticationおよびFirebase Firestore、問い合わせにX（Twitter）を利用します。</p>
+          <p>NEXTROUNDは、公開にGitHub Pages、ログイン・クラウド同期にFirebase AuthenticationおよびFirebase Firestore、Googleログインの認証にGoogle、任意の締切・予定通知にCloudflare WorkersおよびCloudflare D1と各ブラウザのPush通知基盤、AI添削にCloudflare Workers AIとTavily、問い合わせにX（Twitter）を利用します。</p>
           <p>これらのサービスでは、サービス提供、安全管理、不正利用防止、障害対応のために、アクセス情報、端末情報、ログイン情報などが各サービス側で取り扱われる場合があります。</p>
         </section>
         <section class="privacy-item">
@@ -500,6 +953,7 @@
         <section class="privacy-item">
           <strong>削除・利用停止</strong>
           <p>端末内データは、アプリ内の削除機能、ブラウザのサイトデータ削除、または端末側の操作で削除できます。クラウド同期を利用している場合は、ログアウトだけではクラウド上の暗号化データは削除されません。</p>
+          <p>通知設定の「通知を停止」を押すと、その端末のPush購読と未送信の通知予定を通知サーバーから削除します。ログアウト時も、その端末の通知を停止します。</p>
           <p>クラウド上のデータ削除を希望する場合は、問い合わせ先まで連絡してください。本人確認や対象アカウントの確認が必要になる場合があります。</p>
         </section>
         <section class="privacy-item">
@@ -523,9 +977,114 @@
         </section>
         <section class="privacy-item">
           <strong>更新日</strong>
-          <p>2026年7月11日</p>
+          <p>2026年8月28日</p>
         </section>
       </div>
+    </div>
+  </dialog>
+
+  <dialog id="securityDialog" class="refresh-sheet security-dialog">
+    <div class="form-head settings-head security-head">
+      <div><small class="dialog-kicker">SECURITY CENTER</small><h2>セキュリティについて</h2></div>
+      <button class="x" type="button" id="closeSecurityDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="security-body">
+      <section class="security-hero">
+        <div class="security-hero-mark" aria-hidden="true"><i></i><b>NR</b></div>
+        <div class="security-hero-copy">
+          <small>SECURITY OVERVIEW</small>
+          <h3>選考データを、必要以上に渡さない。</h3>
+          <p>NEXTROUNDは、ログイン、同期、通知、AIを別々の仕組みに分けています。ひとつのサービスへ全情報を集めず、その機能に必要な情報だけを送る設計です。</p>
+        </div>
+        <div class="security-status-grid" aria-label="主な安全対策">
+          <div><span>クラウド保存</span><strong>暗号化</strong></div>
+          <div><span>データアクセス</span><strong>本人単位</strong></div>
+          <div><span>AI送信</span><strong>操作時のみ</strong></div>
+          <div><span>動作確認</span><strong>コード公開</strong></div>
+        </div>
+      </section>
+
+      <section class="security-section">
+        <header><span>01</span><div><small>CORE PROTECTION</small><h3>NEXTROUNDが行っていること</h3></div></header>
+        <div class="security-control-grid">
+          <article class="security-control encryption"><small>ENCRYPTION</small><strong>読めない形でクラウド保存</strong><p>選考データは、利用者が決めた復元キーから作った鍵で暗号化してからFirebaseへ送ります。復元キー自体はクラウドへ保存しません。</p></article>
+          <article class="security-control access"><small>ACCESS CONTROL</small><strong>自分の保存先だけにアクセス</strong><p>ログイン状態と利用者IDを照合し、Firestoreのルールで他人の保存領域の読み書きを拒否します。</p></article>
+          <article class="security-control minimum"><small>MINIMUM DATA</small><strong>機能ごとに最小限だけ送信</strong><p>通知サーバーには会社名やメモを送りません。企業検索には企業名だけを使い、ES本文やメールアドレスは送りません。</p></article>
+          <article class="security-control consent"><small>USER CONTROL</small><strong>AIは押した時だけ動く</strong><p>ES添削やNotionのAI列判定は、利用者が実行ボタンを押した時だけ送信します。画面を開いただけでESがAIへ送られることはありません。</p></article>
+        </div>
+      </section>
+
+      <section class="security-section security-services">
+        <header><span>02</span><div><small>SERVICE MAP</small><h3>使っているサービスと役割</h3></div></header>
+        <p class="security-section-lead">いずれもNEXTROUNDを動かすための外部サービスです。ただし、受け取る情報は役割ごとに異なります。</p>
+        <div class="security-service-list">
+          <article>
+            <div class="security-service-name"><span>LOGIN &amp; SYNC</span><strong>Firebase</strong><em>Google</em></div>
+            <div><h4>ログインと暗号化データの同期</h4><p><b>扱う情報：</b>メールアドレス、認証方法、利用者ID、暗号化済みの選考データ。</p><p><b>大切な点：</b>ログイン用パスワードはFirebase Authenticationが管理し、NEXTROUND管理者が平文で見ることはできません。Firestoreには復元キーなしでは読めない暗号文を保存します。</p></div>
+          </article>
+          <article>
+            <div class="security-service-name"><span>API &amp; NOTICE</span><strong>Cloudflare</strong><em>Workers / D1</em></div>
+            <div><h4>通知・お知らせ・AIの入口</h4><p><b>扱う情報：</b>匿名化した利用者識別子、Push購読情報、通知日時と種類、お知らせの既読状態、AI利用回数。</p><p><b>大切な点：</b>通知用データには会社名、選考状況、メモ、ES本文、マイページ情報を含めません。許可した公開元とログイン済みの利用者からの通信だけを受け付けます。</p></div>
+          </article>
+          <article>
+            <div class="security-service-name"><span>AI REVIEW</span><strong>Workers AI</strong><em>Qwen / Llama</em></div>
+            <div><h4>ESの採点と改善案の生成</h4><p><b>扱う情報：</b>実行時に入力した企業名、設問、文字数上限、ES本文、取得した公開企業情報。</p><p><b>大切な点：</b>ES本文と添削結果はNEXTROUNDのD1やFirestoreへ保存しません。Cloudflareは、明示的な同意なしにWorkers AIの入力・出力をモデル学習やサービス改善へ使わない方針を公開しています。</p></div>
+          </article>
+          <article>
+            <div class="security-service-name"><span>WEB RESEARCH</span><strong>Tavily</strong><em>Search API</em></div>
+            <div><h4>企業の公開情報を検索</h4><p><b>扱う情報：</b>企業名をもとに作った検索文。</p><p><b>送らない情報：</b>ES本文、設問、ログイン用メールアドレス、選考状況、メモ、マイページ情報。検索結果と参照URLは再検索を減らすため最大30日間保存します。</p></div>
+          </article>
+          <article>
+            <div class="security-service-name"><span>DELIVERY</span><strong>Pages / Web Push</strong><em>GitHub・Cloudflare・ブラウザ</em></div>
+            <div><h4>画面ファイルの配信と端末通知</h4><p><b>扱う情報：</b>Webサイトを表示するための通常のアクセス情報と、通知を有効にした端末のPush配送情報。</p><p><b>大切な点：</b>GitHub PagesやCloudflare Pagesへ入力した選考データを保存する処理はありません。通知文は企業名を含まない共通文面にしています。</p></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="security-section security-data-boundary">
+        <header><span>03</span><div><small>DATA BOUNDARY</small><h3>送る情報・送らない情報</h3></div></header>
+        <div class="security-boundary-grid">
+          <article><small>通常利用</small><strong>端末内または暗号化クラウド</strong><p>会社名、選考状況、日程、メモ、ESアーカイブ、マイページ情報は、通常利用だけで通知・お知らせ・企業検索サーバーへ送信されません。</p></article>
+          <article><small>AI添削</small><strong>実行した文章だけAIへ</strong><p>添削ボタンを押すと、入力したESと設問をWorkers AIへ送ります。処理後にNEXTROUNDのデータベースへ本文と結果を保存しません。</p></article>
+          <article><small>Notion移行</small><strong>CSV解析は原則端末内</strong><p>CSV本体は端末内で読み取ります。AI列判定を押した時だけ、列名と短いサンプルを送り、パスワード・ログインID・ESと判断した列の値は除外します。</p></article>
+        </div>
+      </section>
+
+      <section class="security-section security-overseas">
+        <header><span>04</span><div><small>GLOBAL SERVICES</small><h3>海外のクラウドを使う理由</h3></div></header>
+        <p>Firebase、Cloudflare、Tavily、GitHubなど、海外事業者が提供するクラウドを利用しています。そのため、通信情報や各機能で必要なデータが、日本国外の設備や事業者によって処理される場合があります。</p>
+        <p>海外サービスを使わないと説明するのではなく、<strong>どの機能が何を送るかを明示し、送信量を絞り、機密データは暗号化する</strong>ことでリスクを抑えています。各社の最新方針は下の公式ページから確認できます。</p>
+      </section>
+
+      <section class="security-section security-technical">
+        <header><span>05</span><div><small>TECHNICAL DETAILS</small><h3>もう少し詳しく確認したい方へ</h3></div></header>
+        <details>
+          <summary>暗号化の仕組み</summary>
+          <p>ブラウザ標準のWeb Crypto APIを使い、AES-GCM 256bitで暗号化しています。鍵は復元キーからPBKDF2-SHA-256（600,000回）で作ります。復元キーを忘れると管理者でも復号できません。</p>
+        </details>
+        <details>
+          <summary>不正アクセスを防ぐ仕組み</summary>
+          <p>Firestoreは、ログイン中のFirebase UIDと保存先UIDが一致する時だけ、本人の1件の暗号化データへアクセスできるルールです。一覧取得と他の場所への読み書きは拒否します。Cloudflare APIもFirebaseのログイントークンを検証し、許可した公開元以外を拒否します。</p>
+        </details>
+        <details>
+          <summary>それでも利用者にお願いしたいこと</summary>
+          <p>完全に事故が起きないことを保証する仕組みではありません。端末ロックを設定し、復元キー・保護パスワードを使い回さず、共有端末ではログアウトしてください。AI添削へ氏名、住所、電話番号など不要な個人情報を入力しないでください。</p>
+        </details>
+      </section>
+
+      <section class="security-official-links">
+        <small>OFFICIAL INFORMATION</small>
+        <h3>各サービスの公式情報</h3>
+        <div>
+          <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer"><span>Firebaseのプライバシーとセキュリティ</span><b>›</b></a>
+          <a href="https://firebase.google.com/docs/firestore/security/get-started" target="_blank" rel="noopener noreferrer"><span>Firestore Security Rules</span><b>›</b></a>
+          <a href="https://developers.cloudflare.com/workers-ai/platform/data-usage/" target="_blank" rel="noopener noreferrer"><span>Cloudflare Workers AIのデータ利用</span><b>›</b></a>
+          <a href="https://www.cloudflare.com/trust-hub/" target="_blank" rel="noopener noreferrer"><span>Cloudflare Trust Hub</span><b>›</b></a>
+          <a href="https://www.tavily.com/privacy" target="_blank" rel="noopener noreferrer"><span>Tavilyのプライバシーポリシー</span><b>›</b></a>
+          <a href="https://github.com/n6548yjd79-lang/NEXTROUND2" target="_blank" rel="noopener noreferrer"><span>NEXTROUNDの公開ソースコード</span><b>›</b></a>
+        </div>
+        <p>最終更新：2026年8月28日</p>
+      </section>
     </div>
   </dialog>
 
@@ -540,6 +1099,12 @@
         <span class="fit-launch-arrow" aria-hidden="true">›</span>
       </button>
       <p class="settings-note">ES・Webテスト・GD・面接は各フェーズの通過率、業界別は最終的な合格・内定率を集計します。</p>
+      <div class="analysis-type-switch" id="analysisTypeSwitch" data-active-index="0" role="group" aria-label="分析する選考区分">
+        <button class="active" type="button" data-analysis-type="インターン" aria-pressed="true">インターン選考</button>
+        <button type="button" data-analysis-type="本選考" aria-pressed="false">本選考</button>
+        <i class="analysis-tab-indicator" aria-hidden="true"></i>
+      </div>
+      <p class="analysis-scope-summary" id="analysisScopeSummary"></p>
       <div class="analytics-grid" id="analyticsContent"></div>
     </div>
   </dialog>
@@ -629,40 +1194,220 @@
     </div>
   </dialog>
 
-  <dialog id="calendarDialog">
-    <div class="form-head settings-head">
-      <h2>カレンダー</h2>
+  <dialog id="calendarDialog" class="calendar-dialog">
+    <div class="calendar-shell-head">
+      <div><small>SCHEDULE</small><h2>予定カレンダー</h2></div>
       <button class="x" type="button" id="closeCalendarDialog" aria-label="閉じる">×</button>
     </div>
     <div class="calendar-body">
-      <div class="calendar-toolbar">
-        <button class="calendar-nav" type="button" id="calendarPrevBtn" aria-label="前の月">‹</button>
-        <h3 class="calendar-month" id="calendarMonthLabel"></h3>
-        <button class="calendar-nav" type="button" id="calendarNextBtn" aria-label="次の月">›</button>
-      </div>
-      <div class="calendar-weekdays" aria-hidden="true">
-        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
-      </div>
-      <div class="calendar-grid" id="calendarGrid"></div>
-      <div class="calendar-legend" aria-label="予定の色分け">
-        <span class="legend-item"><i class="legend-dot" style="--dot:#ff6678;"></i>締切</span>
-        <span class="legend-item"><i class="legend-dot" style="--dot:#ffbd72;"></i>締切間近</span>
-        <span class="legend-item"><i class="legend-dot" style="--dot:#61f4de;"></i>次の予定</span>
-        <span class="legend-item"><i class="legend-dot" style="--dot:#7ad7ff;"></i>候補日程</span>
-        <span class="legend-item"><i class="legend-dot" style="--dot:#ffdf72;"></i>確定日程</span>
-      </div>
-      <div class="calendar-events">
-        <h3 id="calendarSelectedLabel"></h3>
+      <section class="calendar-primary">
+        <div class="calendar-toolbar">
+          <h3 class="calendar-month" id="calendarMonthLabel"></h3>
+          <div class="calendar-month-actions">
+            <button class="calendar-nav" type="button" id="calendarPrevBtn" aria-label="前の月">‹</button>
+            <button class="calendar-nav" type="button" id="calendarNextBtn" aria-label="次の月">›</button>
+          </div>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="calendar-legend" aria-label="予定の色分け">
+          <span class="legend-item"><i class="legend-dot" style="--dot:#e55763;"></i>締切</span>
+          <span class="legend-item"><i class="legend-dot" style="--dot:#df8b32;"></i>締切間近</span>
+          <span class="legend-item"><i class="legend-dot" style="--dot:#2fa89b;"></i>次の予定</span>
+          <span class="legend-item"><i class="legend-dot" style="--dot:#4888c7;"></i>候補日程</span>
+          <span class="legend-item"><i class="legend-dot" style="--dot:#c39a34;"></i>確定日程</span>
+        </div>
+      </section>
+      <aside class="calendar-agenda">
+        <div class="calendar-agenda-head"><small>SELECTED DATE</small><h3 id="calendarSelectedLabel"></h3></div>
         <div id="calendarEventList"></div>
-      </div>
-      <button class="soft-btn accent" type="button" id="calendarTodayBtn">今日に戻る</button>
+        <button class="calendar-today-button" type="button" id="calendarTodayBtn">今日を表示</button>
+      </aside>
     </div>
   </dialog>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="fit.js"></script>
-  <script src="app.js"></script>
+  <dialog id="refreshMenuDialog" class="refresh-sheet">
+    <div class="form-head settings-head">
+      <div><small class="dialog-kicker">ACCOUNT & APP</small><h2>メニュー</h2></div>
+      <button class="x" type="button" id="closeRefreshMenu" aria-label="閉じる">×</button>
+    </div>
+    <div class="refresh-menu-body">
+      <section class="account-row">
+        <span class="account-avatar"><img id="menuAccountImage" alt="" hidden><b id="menuAccountInitial">N</b></span>
+        <div><strong id="menuAccountName">端末内で利用中</strong><p id="menuAccountDetail">データはこの端末に保存されています</p></div>
+        <i id="menuSyncState">LOCAL</i>
+      </section>
+      <div class="menu-group">
+        <small>アカウント</small>
+        <button type="button" data-menu-action="cloud"><span>ログイン・クラウド同期</span><b>›</b></button>
+        <button type="button" data-menu-action="settings"><span>設定・データ管理</span><b>›</b></button>
+        <button type="button" data-menu-action="inbox" data-notification-feature hidden><span>お知らせ</span><b class="menu-inbox-count" data-inbox-count hidden>0</b></button>
+        <button type="button" data-menu-action="notifications" data-notification-feature hidden><span>通知設定</span><b>›</b></button>
+      </div>
+      <div class="menu-group">
+        <small>ヘルプ</small>
+        <button type="button" data-menu-action="features"><span>機能紹介</span><b>›</b></button>
+        <button type="button" data-menu-action="updates"><span>更新情報</span><b>›</b></button>
+        <a href="https://x.com/si28620" target="_blank" rel="noopener noreferrer"><span>問い合わせ・要望</span><b>›</b></a>
+        <button type="button" data-open-legal="privacy"><span>データとプライバシー</span><b>›</b></button>
+        <button type="button" data-open-legal="terms"><span>利用規約</span><b>›</b></button>
+        <button type="button" data-open-legal="disclaimer"><span>免責事項</span><b>›</b></button>
+      </div>
+      <div class="menu-group menu-security-group">
+        <small>セキュリティ</small>
+        <button class="menu-security-launch" type="button" data-menu-action="security">
+          <span><strong>セキュリティについて</strong><em>暗号化・クラウド・AIの仕組み</em></span>
+          <b>SECURE</b>
+        </button>
+      </div>
+      <div class="menu-group">
+        <small>アプリ情報</small>
+        <div class="version-row" id="notificationTesterTrigger"><span>NEXTROUND</span><b>Version 2.8.1</b></div>
+        <a href="https://github.com/n6548yjd79-lang/NEXTROUND2" target="_blank" rel="noopener noreferrer"><span>ソースコード</span><b>›</b></a>
+      </div>
+      <button class="menu-logout" type="button" id="refreshLogoutBtn" hidden>ログアウト</button>
+    </div>
+  </dialog>
+
+  <dialog id="featureGuideDialog" class="refresh-sheet feature-guide-dialog">
+    <div class="form-head settings-head">
+      <div><small class="dialog-kicker">APP GUIDE</small><h2>機能紹介</h2></div>
+      <button class="x" type="button" id="closeFeatureGuideDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="feature-guide-body">
+      <section class="feature-guide-intro">
+        <small>NEXTROUND AT A GLANCE</small>
+        <h3>NEXTROUNDで、できること。</h3>
+        <p>選考の進捗、締切、予定、記録をひとつにまとめて管理。</p>
+        <div class="feature-guide-orbit" aria-hidden="true">
+          <span>TRACK</span><i></i><span>PLAN</span><i></i><span>ANALYZE</span>
+        </div>
+      </section>
+
+      <div class="feature-guide-list">
+        <article class="feature-guide-item feature-ai">
+          <header><span>AI</span><div><small>AI REVIEW</small><h4>企業を調査してES添削</h4></div></header>
+          <p>企業名・設問・ESを入力すると、5項目100点で厳しく評価。改善理由と文章例まで確認できます。</p>
+        </article>
+        <article class="feature-guide-item feature-track">
+          <header><span>01</span><div><small>SELECTIONS</small><h4>選考を一元管理</h4></div></header>
+          <p>会社名、状況、締切、予定、メモを一覧で確認。そのまま次のフェーズへ進めます。</p>
+          <div class="feature-mini-flow" aria-hidden="true"><i class="done"></i><i class="done"></i><i class="active"></i><i></i><i></i></div>
+        </article>
+        <article class="feature-guide-item feature-plan">
+          <header><span>02</span><div><small>SCHEDULE</small><h4>締切と予定をカレンダーへ</h4></div></header>
+          <p>ES締切、面接、GD、インターン日程を色分け。予定の重なりも見渡せます。</p>
+          <div class="feature-mini-calendar" aria-hidden="true"><i></i><i></i><i class="deadline"></i><i></i><i class="plan"></i><i></i><i class="confirmed"></i></div>
+        </article>
+        <article class="feature-guide-item feature-analyze">
+          <header><span>03</span><div><small>ANALYTICS</small><h4>選考結果を分析</h4></div></header>
+          <p>インターン・本選考を切り替え、フェーズ別通過率や業界別成績を確認できます。</p>
+          <div class="feature-mini-bars" aria-hidden="true"><i style="--bar:82%"></i><i style="--bar:64%"></i><i style="--bar:46%"></i></div>
+        </article>
+        <article class="feature-guide-item">
+          <header><span>04</span><div><small>CUSTOM FLOW</small><h4>企業ごとに選考をカスタマイズ</h4></div></header>
+          <p>面接回数や選考タグを自由に調整。ESとWebテストの同時提出、AI面接、動画選考にも対応します。</p>
+        </article>
+        <article class="feature-guide-item">
+          <header><span>05</span><div><small>PRIVATE VAULT</small><h4>ES・マイページ情報を保護</h4></div></header>
+          <p>提出したESを設問ごとに保存。ID・パスワードは保護パスワード内で暗号化し、一定時間後に再ロックします。</p>
+        </article>
+        <article class="feature-guide-item">
+          <header><span>06</span><div><small>CLOUD SYNC</small><h4>スマホとPCを自動同期</h4></div></header>
+          <p>ログイン中は選考データを暗号化してクラウドへ自動保存。別の端末でも同じ選考状況を確認できます。</p>
+        </article>
+        <article class="feature-guide-item">
+          <header><span>07</span><div><small>NOTIFICATIONS</small><h4>締切・予定を通知</h4></div></header>
+          <p>締切の前日や予定日の当日にWeb Pushでお知らせ。送信済み通知と運営からの案内はアプリ内でも確認できます。</p>
+        </article>
+      </div>
+
+      <section class="feature-guide-safety">
+        <small>PRIVACY FIRST</small>
+        <strong>データの扱いを、利用者自身で選べます。</strong>
+        <p>クラウド同期では選考データを暗号化して保存。AI添削は明示的に送信した時だけ処理し、ES本文と結果をサーバーへ保存しません。</p>
+      </section>
+
+      <div class="feature-guide-actions">
+        <button type="button" id="featureGuideSelectionBtn">選考管理を開く</button>
+        <button type="button" id="featureGuideCalendarBtn">カレンダーを開く</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="updatesDialog" class="refresh-sheet">
+    <div class="form-head settings-head">
+      <div><small class="dialog-kicker">WHAT'S NEW</small><h2>更新情報</h2></div>
+      <button class="x" type="button" id="closeUpdatesDialog" aria-label="閉じる">×</button>
+    </div>
+    <div class="updates-body">
+      <section class="update-entry featured">
+        <time>2026.08.28</time><span>UPDATE 2.8.1 BETA</span>
+        <h3>Security Centerを追加</h3>
+        <p>メニューに「セキュリティについて」を独立して追加。暗号化、本人ごとのアクセス制御、通知、AI添削、Notion移行で扱う情報を、サービス別に分かりやすく確認できるようにしました。</p>
+        <p>Firebase、Cloudflare、Tavily、GitHubなど外部サービスの役割と、海外のクラウドで処理される可能性も明記しています。</p>
+      </section>
+      <section class="update-entry featured">
+        <time>2026.08.28</time><span>UPDATE 2.8.0 BETA</span>
+        <h3>Notionから、選考データをまとめて移行</h3>
+        <p>＋追加の最初の画面に「Notionから移行」を新設。CSVを端末内で解析し、会社名、選考状況、締切、次の予定、業界、メモなどを確認してからまとめて登録できます。分かりにくい列名は、明示的にボタンを押した場合だけAIで判定します。</p>
+        <p>インターンはサマー・秋・冬を登録でき、ESとWebテストを別々に受ける選考と同時提出する選考も、追加時点で選べるようになりました。</p>
+      </section>
+      <section class="update-entry featured release-overview">
+        <time>2026.08.27</time><span>UPDATE 2.7.5 BETA</span>
+        <h3>NEXTROUND 全面刷新</h3>
+        <p>これまで追加・改善してきた機能を、本日の大型アップデートとしてひとつに統合しました。</p>
+        <div class="release-update-list">
+          <article><small>01 / WORKSPACE</small><h4>画面と操作を全面刷新</h4><p>ログイン、ホーム、選考管理、カレンダー、メニューを再設計。起動アニメーション、時間帯で変わる案内、押した瞬間の反応、滑らかな画面切り替えを追加し、スマホの安全領域にも対応しました。</p></article>
+          <article><small>02 / SELECTIONS</small><h4>選考を自由に、一元管理</h4><p>インターン・本選考、業界、締切、次の予定、メモを一覧化。面接回数や選考フローの自由編集、選考タグ、不合格絞り込み、辞退、内定管理、連続しないインターン日程、操作履歴が分かる選考タイムラインに対応しました。</p></article>
+          <article><small>03 / SCHEDULE</small><h4>締切と予定を見逃さない</h4><p>24時間以内は赤、7日以内はオレンジで強調し、個別カウントダウンを表示。締切、面接、GD、インターン候補日・確定日をカレンダーへ集約しました。</p></article>
+          <article><small>04 / ANALYTICS</small><h4>選考結果をダッシュボード化</h4><p>応募数、合格・内定数、最終成功率、好成績業界を集約。インターンと本選考を切り替え、フェーズ別通過率、業界別最終合格率、アニメーション付き選考ファネルを確認できます。</p></article>
+          <article><small>05 / DATA &amp; SECURITY</small><h4>ログイン、同期、データ保護</h4><p>メール・GoogleログインとFirebase自動同期に対応。既存の端末データを保護して引き継ぎ、競合時は新しい更新を優先して統合します。端末間移行、データ保存・読込、プライバシーポリシー、公開ソースコードも整備しました。</p></article>
+          <article><small>06 / PRIVATE RECORDS</small><h4>ESとマイページ情報を安全に保存</h4><p>ESアーカイブ、ラベル、文字数表示を追加。マイページID・パスワードは保護パスワードで守り、一定時間後の再ロックとパスワード再設定に対応。ログインURLだけはカードからすぐ開けます。</p></article>
+          <article data-notification-feature hidden><small>07 / NOTIFICATIONS</small><h4>通知とお知らせをアプリ内へ</h4><p>締切の7日前・前日、面接・GD・確定インターン当日にWeb Pushで通知。通知設定を独立させ、送信履歴、運営からのお知らせ、未読表示、既読の一括削除をひとつにまとめました。</p></article>
+          <article><small>08 / AI REVIEW</small><h4>企業研究から始めるAI添削</h4><p>企業の公開情報を調べ、主体性・思考力・実行力・他者理解力・再現性を厳格に採点。本文の良かった点、不足要素、具体的な改善案を示し、改善例は指定文字数の9割以上に調整します。ES本文と添削結果はサーバーへ保存しません。</p></article>
+          <article><small>09 / GUIDE</small><h4>初めてでも機能が分かる</h4><p>メニューへ機能紹介を追加。選考管理、カレンダー、分析、クラウド同期、通知、データ保護など、NEXTROUNDでできることをまとめて確認できます。</p></article>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="termsDialog" class="refresh-sheet legal-dialog">
+    <div class="form-head settings-head"><h2>利用規約</h2><button class="x" type="button" data-close-dialog="termsDialog" aria-label="閉じる">×</button></div>
+    <div class="legal-body">
+      <p>この利用規約は、NEXTROUNDの利用条件を定めるものです。利用者は、本規約とデータとプライバシーの内容を確認したうえで利用してください。</p>
+      <h3>利用目的</h3><p>NEXTROUNDは、就職活動における選考状況、締切、予定、メモなどを利用者自身が管理するためのWebアプリです。</p>
+      <h3>禁止事項</h3><p>不正アクセス、サービス運営の妨害、第三者の権利侵害、法令に反する目的での利用を禁止します。</p>
+      <h3>データ管理</h3><p>端末やブラウザの操作、復元キーや保護パスワードの管理、必要なバックアップは利用者自身の責任で行ってください。</p>
+      <h3>AI機能</h3><p>AI添削の利用回数制限を回避する行為、過度な自動送信、サービスへ負荷を与える行為を禁止します。AI機能の提供内容や上限は、無料枠や外部サービスの状況に応じて変更・停止する場合があります。</p>
+      <h3>変更</h3><p>機能追加や安全性向上のため、本規約を変更する場合があります。重要な変更はアプリ内の更新情報などで案内します。</p>
+    </div>
+  </dialog>
+
+  <dialog id="disclaimerDialog" class="refresh-sheet legal-dialog">
+    <div class="form-head settings-head"><h2>免責事項</h2><button class="x" type="button" data-close-dialog="disclaimerDialog" aria-label="閉じる">×</button></div>
+    <div class="legal-body">
+      <p>NEXTROUNDは選考管理を補助するツールであり、応募、提出、日程参加、合否、内定などを保証するものではありません。</p>
+      <p>表示される締切や予定は利用者が入力した内容に基づきます。応募先の公式案内も必ず確認してください。</p>
+      <p>通知機能は確認を補助するものであり、OSの設定、通信状況、外部サービスの障害などにより遅延または不達となる場合があります。</p>
+      <p>ブラウザやOSの仕様、通信障害、端末の初期化、保存領域の削除などによりデータが失われる可能性があります。重要なデータは設定から定期的に保存してください。</p>
+      <p>企業フィット診断や選考分析は参考情報です。採用可能性や企業との実際の適合を断定するものではありません。</p>
+      <p>AI添削の採点、企業情報、改善例は参考情報です。内容の正確性、特定企業の評価基準との一致、選考通過、採用結果を保証するものではありません。応募前に利用者自身で事実と文章を確認してください。</p>
+    </div>
+  </dialog>
+
+  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+  <script src="notification-config.js?v=2.8.1"></script>
+  <script src="fit.js?v=2.8.1"></script>
+  <script src="app.js?v=2.8.1"></script>
+  <script src="notion-import.js?v=2.8.1"></script>
+  <script src="notifications.js?v=2.8.1"></script>
+  <script src="inbox.js?v=2.8.1"></script>
+  <script src="ai-review.js?v=2.8.1"></script>
+  <script src="refresh.js?v=2.8.1"></script>
 </body>
 </html>
