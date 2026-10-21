@@ -152,6 +152,9 @@ const seed = [
 ];
 
 let entries = load();
+let renderedEntries = null;
+let selectionRenderedDate = "";
+const weekdayFormatter = new Intl.DateTimeFormat("ja-JP", { weekday: "short" });
 let vaultConfig = loadVaultConfig();
 let activeFilter = "all";
 let editingId = null;
@@ -293,7 +296,7 @@ const now = new Date();
 calendarCursor = new Date(now.getFullYear(), now.getMonth(), 1);
 selectedCalendarDate = localDateKey(now);
 document.querySelector("#dateLabel").textContent = `${now.getMonth() + 1}/${now.getDate()}`;
-document.querySelector("#weekdayLabel").textContent = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(now);
+document.querySelector("#weekdayLabel").textContent = weekdayFormatter.format(now);
 stages.forEach(stage => stageSelect.add(new Option(stage, stage)));
 industryOptions.forEach(industry => industrySelect.add(new Option(industry, industry)));
 selectionTagOptionsEl.innerHTML = visibleSelectionTagOptions.map(tag => `
@@ -3126,7 +3129,7 @@ function parseDateKey(value) {
 
 function formatLongDate(value) {
   const date = parseDateKey(value);
-  const weekday = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(date);
+  const weekday = weekdayFormatter.format(date);
   return `${date.getMonth() + 1}/${date.getDate()}（${weekday}）`;
 }
 
@@ -3400,7 +3403,7 @@ function filteredEntries() {
 
 function render() {
   const visible = filteredEntries();
-  cards.innerHTML = "";
+  const dataChanged = renderedEntries !== entries;
   deadlineStrip.innerHTML = "";
 
   document.querySelector("#activeCount").textContent = entries.filter(entry => !doneStages.has(entry.stage)).length;
@@ -3409,9 +3412,6 @@ function render() {
     return left !== null && left <= 7 && left >= 0 && !doneStages.has(entry.stage);
   }).length;
   document.querySelector("#winCount").textContent = entries.filter(entry => winStages.has(entry.stage)).length;
-  renderOffers();
-  window.dispatchEvent(new CustomEvent("nextround:data-changed", { detail: { count: entries.length } }));
-
   entries
     .filter(isDeadlineNear)
     .sort((a, b) => daysLeft(a.deadline) - daysLeft(b.deadline))
@@ -3425,14 +3425,19 @@ function render() {
 
   if (!visible.length) {
     cards.innerHTML = `<div class="empty">まだ表示できる選考がありません。上の追加ボタンから入れられます。</div>`;
-    paintFilters();
-    if (calendarDialog.open) renderCalendar();
-    return;
+  } else {
+    const fragment = document.createDocumentFragment();
+    visible.forEach(entry => fragment.append(createCard(entry)));
+    cards.replaceChildren(fragment);
   }
-
-  visible.forEach(entry => cards.append(createCard(entry)));
   paintFilters();
   if (calendarDialog.open) renderCalendar();
+  renderedEntries = entries;
+  selectionRenderedDate = localDateKey(new Date());
+  window.dispatchEvent(new CustomEvent("nextround:selection-rendered"));
+  if (dataChanged) {
+    window.dispatchEvent(new CustomEvent("nextround:data-changed", { detail: { count: entries.length } }));
+  }
 }
 
 function createCard(entry) {

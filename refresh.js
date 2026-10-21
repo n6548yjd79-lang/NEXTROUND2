@@ -20,6 +20,9 @@
   const loginError = document.querySelector("#refreshLoginError");
   const refreshEmail = document.querySelector("#refreshEmail");
   const refreshPassword = document.querySelector("#refreshPassword");
+  const homeDateFormatter = new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric", month: "long", day: "numeric", weekday: "long"
+  });
   let localAccess = sessionStorage.getItem(localAccessKey) === "1";
   let authResolved = false;
   let currentView = "home";
@@ -80,8 +83,12 @@
       button.classList.toggle("active", button.dataset.refreshView === currentView);
     });
     updateAccountUi();
-    updateHome();
-    if (currentView === "selection") render();
+    if (currentView === "home") updateHome();
+    if (currentView === "selection") {
+      // Data edits already render the cards; only the date can become stale while away.
+      if (selectionRenderedDate !== localDateKey(new Date())) render();
+      else renderActiveSelectionView();
+    }
     if (currentView === "ai") window.nextroundAi?.activate();
     window.scrollTo({ top: 0, behavior: "auto" });
     playViewTransition(currentView === "selection" ? selectionScreen : currentView === "ai" ? aiScreen : homeScreen);
@@ -141,7 +148,7 @@
 
   function formatHomeDate(value) {
     const date = parseDateKey(value);
-    const weekday = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(date);
+    const weekday = weekdayFormatter.format(date);
     return `${date.getMonth() + 1}/${date.getDate()} ${weekday}`;
   }
 
@@ -163,12 +170,7 @@
     const hour = currentDate.getHours();
     const isMorning = hour >= 5 && hour < 12;
     const isDaytime = hour >= 12 && hour < 18;
-    document.querySelector("#homeDateLabel").textContent = new Intl.DateTimeFormat("ja-JP", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      weekday: "long"
-    }).format(currentDate);
+    document.querySelector("#homeDateLabel").textContent = homeDateFormatter.format(currentDate);
     document.querySelector("#homeGreeting").textContent = isMorning
       ? "おはようございます。今日の締切と予定を確認しましょう。"
       : isDaytime
@@ -264,8 +266,13 @@
       button.classList.toggle("active", button.dataset.selectionView === selectedView);
     });
     localStorage.setItem("nextround-selection-view-v1", selectedView);
-    if (pipeline) renderPipeline();
-    if (offers && typeof renderOffers === "function") renderOffers();
+    renderActiveSelectionView();
+  }
+
+  function renderActiveSelectionView() {
+    if (selectionScreen.hidden) return;
+    if (!selectionPipelineView.hidden) renderPipeline();
+    if (!selectionOffersView.hidden && typeof renderOffers === "function") renderOffers();
   }
 
   function updateAccountUi() {
@@ -432,12 +439,13 @@
     updateAccountUi();
   });
   window.addEventListener("nextround:data-changed", () => {
-    updateHome();
-    renderPipeline();
-    if (typeof renderOffers === "function") renderOffers();
+    if (!homeScreen.hidden) updateHome();
   });
+  window.addEventListener("nextround:selection-rendered", renderActiveSelectionView);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") updateHome();
+    if (document.visibilityState !== "visible") return;
+    if (!homeScreen.hidden) updateHome();
+    if (!selectionScreen.hidden && selectionRenderedDate !== localDateKey(new Date())) render();
   });
   setInterval(updateHomeGreeting, 60 * 1000);
   setSelectionView(localStorage.getItem("nextround-selection-view-v1") || "list");

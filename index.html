@@ -11,8 +11,8 @@
   <title>NEXTROUND</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <script src="theme-init.js?v=2.8.1"></script>
-  <link rel="stylesheet" href="styles.css?v=2.8.1">
+  <script src="theme-init.js?v=2.8.2"></script>
+  <link rel="stylesheet" href="styles.css?v=2.8.2">
 </head>
 <body>
   <div class="splash" id="splash" aria-hidden="true">
@@ -68,7 +68,7 @@
       </form>
       <section class="login-update">
         <span>NEW</span>
-        <div><small>Ver.2.8.1 / 2026.08.28</small><strong>セキュリティを、もっと分かりやすく</strong><p>暗号化・クラウド・AIのデータ経路を確認できるSecurity Centerを追加しました。</p></div>
+        <div><small>Ver.2.8.2 / 2026.10.21</small><strong>選考管理を、もっとスムーズに</strong><p>ホームから選考管理への切り替えを軽量化しました。</p></div>
       </section>
       <footer class="login-footer">
         <button type="button" data-open-legal="privacy">プライバシー</button>
@@ -109,7 +109,7 @@
       <div class="home-event-list" id="homeWeekEvents"></div>
     </section>
     <section class="home-update-band">
-      <div><small>UPDATE 2.8.1 / 2026.08.28</small><h2>Security Centerを追加</h2><p>暗号化・クラウド・AIが扱う情報を、サービス別に確認できます。</p></div>
+      <div><small>UPDATE 2.8.2 / 2026.10.21</small><h2>選考管理の切り替えを軽量化</h2><p>ホームから一覧へ、よりスムーズに移動できるよう改善しました。</p></div>
       <button type="button" id="homeUpdatesBtn">詳しく見る</button>
     </section>
     <footer class="home-footer">
@@ -1264,7 +1264,7 @@
       </div>
       <div class="menu-group">
         <small>アプリ情報</small>
-        <div class="version-row" id="notificationTesterTrigger"><span>NEXTROUND</span><b>Version 2.8.1</b></div>
+        <div class="version-row" id="notificationTesterTrigger"><span>NEXTROUND</span><b>Version 2.8.2</b></div>
         <a href="https://github.com/n6548yjd79-lang/NEXTROUND2" target="_blank" rel="noopener noreferrer"><span>ソースコード</span><b>›</b></a>
       </div>
       <button class="menu-logout" type="button" id="refreshLogoutBtn" hidden>ログアウト</button>
@@ -1344,6 +1344,11 @@
     </div>
     <div class="updates-body">
       <section class="update-entry featured">
+        <time>2026.10.21</time><span>UPDATE 2.8.2</span>
+        <h3>ホームから選考管理への切り替えを軽量化</h3>
+        <p>データが変わっていない場合は企業カードを再利用し、表示中の画面だけを更新するよう改善しました。日付が変わった場合は締切表示を更新します。</p>
+      </section>
+      <section class="update-entry featured">
         <time>2026.08.28</time><span>UPDATE 2.8.1 BETA</span>
         <h3>Security Centerを追加</h3>
         <p>メニューに「セキュリティについて」を独立して追加。暗号化、本人ごとのアクセス制御、通知、AI添削、Notion移行で扱う情報を、サービス別に分かりやすく確認できるようにしました。</p>
@@ -1401,13 +1406,13 @@
   <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
-  <script src="notification-config.js?v=2.8.1"></script>
-  <script src="fit.js?v=2.8.1"></script>
-  <script src="app.js?v=2.8.1"></script>
-  <script src="notion-import.js?v=2.8.1"></script>
-  <script src="notifications.js?v=2.8.1"></script>
-  <script src="inbox.js?v=2.8.1"></script>
-  <script src="ai-review.js?v=2.8.1"></script>
-  <script src="refresh.js?v=2.8.1"></script>
+  <script src="notification-config.js?v=2.8.2"></script>
+  <script src="fit.js?v=2.8.2"></script>
+  <script src="app.js?v=2.8.2"></script>
+  <script src="notion-import.js?v=2.8.2"></script>
+  <script src="notifications.js?v=2.8.2"></script>
+  <script src="inbox.js?v=2.8.2"></script>
+  <script src="ai-review.js?v=2.8.2"></script>
+  <script src="refresh.js?v=2.8.2"></script>
 </body>
 </html>
